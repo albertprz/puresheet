@@ -10,8 +10,6 @@ import Halogen.HTML as HH
 import Tecton.Halogen (styleSheet)
 import Type.Prelude (Proxy(..))
 
--- import Data.Symbol (SProxy(..))
-
 
 _table = Proxy :: Proxy "table"
 
@@ -30,6 +28,7 @@ component =
     , eval: H.mkEval H.defaultEval { handleAction = handleAction }
     }
 
+render :: _
 render _ = HH.div_ [
   styleSheet MainPage.css,
   HH.slot_ _table unit Table.component unit
