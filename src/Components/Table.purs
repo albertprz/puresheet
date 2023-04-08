@@ -3,9 +3,11 @@ module App.Components.Table where
 import Prelude
 
 import App.CSS.Table (strippedTable)
-import Data.Array ((..))
+import App.Utils.ArrayUtils ((..))
+
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Maybe (Maybe, fromMaybe)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Tuple.Nested ((/\))
 import Halogen as H
@@ -14,17 +16,18 @@ import Halogen.HTML.Properties as HP
 import Type.Prelude (Proxy(..))
 
 
+
 _headerCell = Proxy :: Proxy "headerCell"
 _bodyCell = Proxy :: Proxy "bodyCell"
 
 
-data Column = Column Char
-derive instance eqColumn :: Eq Column
-derive instance ordColumn :: Ord Column
+newtype Column = Column Char
+derive newtype instance eqColumn :: Eq Column
+derive newtype instance ordColumn :: Ord Column
 
-data Row = Row Int
-derive instance eqRow :: Eq Row
-derive instance ordRow :: Ord Row
+newtype Row = Row Int
+derive newtype instance eqRow :: Eq Row
+derive newtype instance ordRow :: Ord Row
 
 
 instance Show Column where
@@ -36,9 +39,14 @@ instance Show Row where
 
 type Cell = { column :: Column, row :: Row }
 
+
+showCell :: Cell -> String
+showCell { column, row } = show column <> show row
+
+
 type State
   = { selectedCell :: Cell,
-      tableData :: Map Cell String,
+      tableData :: Map Cell CellValue,
       columns :: Array Column,
       rows :: Array Row }
 
@@ -63,19 +71,23 @@ component =
 initialState :: State
 initialState = { selectedCell: { column: Column 'A', row: Row 1 },
                  tableData: Map.fromFoldable [
-                   { column: Column 'A', row: Row 1 } /\ "value"],
-                 columns: Column <$> ['A', 'B', 'C', 'D', 'E'],
+                   { column: Column 'A', row: Row 1 } /\ StringVal "value"],
+                 columns: Column <$> 'A' .. 'Z',
                  rows: Row <$> 1 .. 30 }
 
 
 renderHeaderCell :: forall i o. Column -> HH.HTML i o
 renderHeaderCell column =
-  HH.th_ [ HH.text $ show column ]
+  HH.th
+  [ HP.id   $ show column ]
+  [ HH.text $ show column ]
 
 
-renderBodyCell :: forall i o. CellValue -> HH.HTML i o
-renderBodyCell value =
-  HH.td_ [ HH.text $ show value ]
+renderBodyCell :: forall i o. Cell -> Maybe CellValue -> HH.HTML i o
+renderBodyCell cell value =
+  HH.td
+  [ HP.id   $ show cell ]
+  [ HH.text $ fromMaybe "" $ show <$> value ]
 
 
 render :: forall ac cs m. State -> H.ComponentHTML ac cs m
@@ -84,5 +96,11 @@ render state = HH.table
            [ HH.thead_ [
                 HH.tr_ $
                   renderHeaderCell <$> state.columns
-            ]
-          ]
+            ],
+             HH.tbody_ $
+               do row <- state.rows
+                  pure $ HH.tr_ $
+                    do column <- state.columns
+                       let cell = { column, row }
+                       pure $ renderBodyCell cell $ Map.lookup cell state.tableData
+           ]
