@@ -2,13 +2,16 @@ module App.CSS.Common where
 
 import Prelude
 
-import Color (Color, black, fromHexString)
+import Color (Color, fromHexString)
+import Color as Color
 import Data.Maybe (fromMaybe)
 
 
 hex :: String -> Color
 hex = fromMaybe black <<< fromHexString
 
+black :: Color
+black = Color.black
 
 darkGrey :: Color
 darkGrey = hex "#526066"

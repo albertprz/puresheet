@@ -9,6 +9,9 @@
   , "maybe"
   , "tuples"
   , "typelevel-prelude"
+  , "arrays"
+  , "ordered-collections"
+  , "strings"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

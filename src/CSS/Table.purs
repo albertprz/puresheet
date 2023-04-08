@@ -3,12 +3,12 @@ module App.CSS.Table where
 import Prelude
 import Tecton
 
-import App.CSS.Common (darkGrey, grey, lightGrey, lighterGrey)
-import CSS (black)
+import App.CSS.Common (black, darkGrey, grey, lightGrey, lighterGrey)
 import Data.Tuple.Nested ((/\))
 import Halogen (ClassName(..))
 import Tecton.Halogen as TH
 import Tecton.Rule as Rule
+
 
 
 strippedTable :: ClassName
