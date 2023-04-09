@@ -8,17 +8,13 @@ import Halogen (ClassName(..))
 import Tecton.Halogen as TH
 import Tecton.Rule as Rule
 
-
-
 strippedTable :: ClassName
 strippedTable = ClassName "stripped-table"
-
 
 css :: CSS
 css = do
   tableCss
   cellCss
-
 
 tableCss :: CSS
 tableCss = do
@@ -35,7 +31,6 @@ tableCss = do
 
   table TH.&. strippedTable |> tbody |> tr &: nthChild odd |> td ? Rule.do
     backgroundColor := lighterGrey
-
 
 cellCss :: CSS
 cellCss = do

@@ -1,6 +1,18 @@
-module FatPrelude (module Prelude, module ArrayUtils,
-                   module Data.Map, module Data.Set, module Maybe, module Array, module Tuple.Nested, module Type.Prelude, module Effect,
-                   module Unit, module Function, module Char, module CodeUnits) where
+module FatPrelude
+  ( module Prelude
+  , module ArrayUtils
+  , module Data.Map
+  , module Data.Set
+  , module Maybe
+  , module Array
+  , module Tuple.Nested
+  , module Type.Prelude
+  , module Effect
+  , module Unit
+  , module Function
+  , module Char
+  , module CodeUnits
+  ) where
 
 import Prelude
 

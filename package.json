@@ -6,7 +6,7 @@
     "spago": "^0.20.9"
   },
   "scripts": {
-    "build": "spago build -u '--stash --censor-codes=MissingTypeDeclaration,WildcardInferredType'",
+    "build": "spago build -u '--stash --censor-codes=MissingTypeDeclaration,WildcardInferredType,ImplicitImport' && purs-tidy format-in-place ./src/",
     "test": "spago test",
     "serve": "parcel dev/index.html --open",
     "build-prod": "rm -rf prod && mkdir -p prod && cp dev/index.html prod/ && spago bundle-app --to prod/index.js && parcel build prod/index.html"

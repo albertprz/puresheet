@@ -5,7 +5,6 @@ import FatPrelude
 import Color (Color, fromHexString)
 import Color as Color
 
-
 hex :: String -> Color
 hex = fromMaybe black <<< fromHexString
 

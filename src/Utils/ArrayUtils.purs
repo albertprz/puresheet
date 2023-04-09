@@ -6,9 +6,8 @@ import Data.Array (mapMaybe)
 import Data.Array as Array
 import Data.Char (fromCharCode, toCharCode)
 
-
-
 infixr 8 range as ..
+
 class Range a where
   range :: a -> a -> Array a
 
