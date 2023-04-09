@@ -1,10 +1,9 @@
 module App.CSS.Table where
 
-import Prelude
+import FatPrelude
 import Tecton
 
 import App.CSS.Common (black, darkGrey, grey, lightGrey, lighterGrey)
-import Data.Tuple.Nested ((/\))
 import Halogen (ClassName(..))
 import Tecton.Halogen as TH
 import Tecton.Rule as Rule

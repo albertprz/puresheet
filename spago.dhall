@@ -1,4 +1,4 @@
-{ name = "halogen-project"
+{ name = "halogen-app"
 , dependencies =
   [ "prelude"
   , "effect"

@@ -1,9 +1,8 @@
 module Main where
 
-import Prelude
+import FatPrelude
 
 import App.Components.MainPage as MainPage
-import Effect (Effect)
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 

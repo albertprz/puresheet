@@ -1,19 +1,14 @@
 module App.Components.Table where
 
-import Prelude
+import FatPrelude
+import Prim hiding (Row)
+import Data.Map as Map
 
 import App.CSS.Table (strippedTable)
-import App.Utils.ArrayUtils ((..))
-
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Maybe (Maybe, fromMaybe)
-import Data.String.CodeUnits (fromCharArray)
-import Data.Tuple.Nested ((/\))
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Type.Prelude (Proxy(..))
 
 
 
@@ -39,10 +34,7 @@ instance Show Row where
 
 type Cell = { column :: Column, row :: Row }
 
-
-showCell :: Cell -> String
-showCell { column, row } = show column <> show row
-
+data Action = WriteCell String
 
 type State
   = { selectedCell :: Cell,
@@ -65,15 +57,17 @@ component =
     { initialState: const initialState
     , render
     , eval: H.mkEval H.defaultEval
+      -- { handleAction = handleAction }
     }
 
 
 initialState :: State
 initialState = { selectedCell: { column: Column 'A', row: Row 1 },
-                 tableData: Map.fromFoldable [
-                   { column: Column 'A', row: Row 1 } /\ StringVal "value"],
+                 tableData: Map.fromFoldable
+                 [{ column: Column 'A', row: Row 1 } /\ StringVal "value"],
                  columns: Column <$> 'A' .. 'Z',
-                 rows: Row <$> 1 .. 30 }
+                 rows: Row <$> 1 .. 30
+               }
 
 
 renderHeaderCell :: forall i o. Column -> HH.HTML i o
@@ -83,14 +77,24 @@ renderHeaderCell column =
   [ HH.text $ show column ]
 
 
-renderBodyCell :: forall i o. Cell -> Maybe CellValue -> HH.HTML i o
+renderBodyCell :: forall i. Cell -> Maybe CellValue -> HH.HTML i Action
 renderBodyCell cell value =
   HH.td
   [ HP.id   $ show cell ]
-  [ HH.text $ fromMaybe "" $ show <$> value ]
+  [ HH.input
+    [ HP.type_ HP.InputText,
+      HP.name $ show cell,
+      HP.value $ fromMaybe "" $ show <$> value,
+      HE.onValueChange WriteCell
+    ]
+  ]
 
 
-render :: forall ac cs m. State -> H.ComponentHTML ac cs m
+showCell :: Cell -> String
+showCell { column, row } = show column <> show row
+
+
+render :: forall cs m. State -> H.ComponentHTML Action cs m
 render state = HH.table
            [ HP.class_ strippedTable ]
            [ HH.thead_ [
@@ -104,3 +108,6 @@ render state = HH.table
                        let cell = { column, row }
                        pure $ renderBodyCell cell $ Map.lookup cell state.tableData
            ]
+
+-- handleAction :: forall slots. Action -> H.HalogenM State Action slots o m Unit
+-- handleAction

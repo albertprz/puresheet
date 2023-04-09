@@ -1,10 +1,9 @@
 module App.CSS.Common where
 
-import Prelude
+import FatPrelude
 
 import Color (Color, fromHexString)
 import Color as Color
-import Data.Maybe (fromMaybe)
 
 
 hex :: String -> Color
