@@ -1,6 +1,7 @@
 module FatPrelude
   ( module Prelude
   , module ArrayUtils
+  , module CharUtils
   , module Data.Map
   , module Data.Set
   , module Maybe
@@ -19,6 +20,7 @@ module FatPrelude
 import Prelude
 
 import App.Utils.ArrayUtils (class Range, range, (..)) as ArrayUtils
+import App.Utils.CharUtils (nextChar, prevChar) as CharUtils
 import Data.Array hiding ((..), range) as Array
 import Data.Char (fromCharCode, toCharCode) as Char
 import Data.Function hiding (apply) as Function

@@ -5,7 +5,6 @@ import Prelude
 import Data.Array (mapMaybe)
 import Data.Array as Array
 import Data.Char (fromCharCode, toCharCode)
-import Data.Maybe (fromMaybe)
 
 infixr 8 range as ..
 
@@ -17,9 +16,3 @@ instance Range Char where
 
 instance Range Int where
   range = Array.range
-
-nextChar :: Char -> Char
-nextChar = fromMaybe '?' <<< fromCharCode <<< (_ + 1) <<< toCharCode
-
-prevChar :: Char -> Char
-prevChar = fromMaybe '?' <<< fromCharCode <<< (_ - 1) <<< toCharCode

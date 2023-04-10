@@ -1,6 +1,7 @@
 { name = "halogen-app"
 , dependencies =
-  [ "arrays"
+  [ "aff"
+  , "arrays"
   , "colors"
   , "dom-indexed"
   , "effect"
@@ -14,6 +15,9 @@
   , "tecton-halogen"
   , "tuples"
   , "typelevel-prelude"
+  , "web-dom"
+  , "web-events"
+  , "web-html"
   , "web-uievents"
   ]
 , packages = ./packages.dhall

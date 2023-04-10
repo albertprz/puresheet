@@ -4,7 +4,6 @@ import FatPrelude
 
 import App.CSS.MainPage as MainPage
 import App.Components.Table as Table
-import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
 import Tecton.Halogen (styleSheet)
