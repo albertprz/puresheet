@@ -12,6 +12,8 @@ module FatPrelude
   , module Function
   , module Char
   , module CodeUnits
+  , module AffClass
+  , module EffClass
   ) where
 
 import Prelude
@@ -29,3 +31,5 @@ import Data.Unit (Unit, unit) as Unit
 import Effect (Effect, forE, foreachE, untilE, whileE)
 import Prim hiding (Row) as Prim
 import Type.Prelude (Proxy(..))
+import Effect.Aff.Class (class MonadAff, liftAff) as AffClass
+import Effect.Class (class MonadEffect, liftEffect) as EffClass

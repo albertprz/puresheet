@@ -44,6 +44,9 @@ cellCss = do
     padding := em 0.5 ~ em 1
     overflow := visible
 
+  td |> input ? Rule.do
+    textAlign := center
+
   tbody |> tr &: lastChild |> td ? Rule.do
     borderBottomWidth := px 0
 

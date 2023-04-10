@@ -1,17 +1,20 @@
 { name = "halogen-app"
 , dependencies =
-  [ "prelude"
+  [ "arrays"
+  , "colors"
+  , "dom-indexed"
   , "effect"
   , "halogen"
-  , "tecton-halogen"
-  , "tecton"
-  , "colors"
+  , "integers"
   , "maybe"
+  , "ordered-collections"
+  , "prelude"
+  , "strings"
+  , "tecton"
+  , "tecton-halogen"
   , "tuples"
   , "typelevel-prelude"
-  , "arrays"
-  , "ordered-collections"
-  , "strings"
+  , "web-uievents"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
