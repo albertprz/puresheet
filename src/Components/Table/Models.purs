@@ -7,14 +7,15 @@ import App.Components.Table.Cell (Cell, CellValue, Column, Row)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
 data Action
-  = WriteCell Cell CellValue
+  = Initialize
+  | WriteCell Cell CellValue
   | KeyPress String KeyboardEvent
-  | SelectCell (Cell -> Cell)
+  | SelectCell (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
 
 type State =
   { selectedCell :: Cell
   , activeInput :: Boolean
   , tableData :: Map Cell CellValue
-  , columns :: Array Column
-  , rows :: Array Row
+  , columns :: NonEmptyArray Column
+  , rows :: NonEmptyArray Row
   }

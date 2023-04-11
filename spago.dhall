@@ -2,9 +2,11 @@
 , dependencies =
   [ "aff"
   , "arrays"
+  , "bifunctors"
   , "colors"
   , "dom-indexed"
   , "effect"
+  , "foldable-traversable"
   , "halogen"
   , "integers"
   , "maybe"

@@ -2,6 +2,7 @@ module App.Components.Table.Cell where
 
 import FatPrelude
 import Prim hiding (Row)
+
 import Data.Int as Int
 
 newtype Column = Column Char
@@ -14,17 +15,23 @@ data CellValue
   = StringVal String
   | IntVal Int
 
-nextColumn :: Column -> Column
-nextColumn (Column ch) = Column $ nextChar ch
+nextCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+nextCell = getCell inc
 
-prevColumn :: Column -> Column
-prevColumn (Column ch) = Column $ prevChar ch
+prevCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+prevCell = getCell dec
 
-nextCell :: Cell -> Cell
-nextCell cell = cell { column = nextColumn cell.column }
+nextColumnCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+nextColumnCell = getColumnCell inc
 
-prevCell :: Cell -> Cell
-prevCell cell = cell { column = prevColumn cell.column }
+prevColumnCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+prevColumnCell = getColumnCell dec
+
+nextRowCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+nextRowCell = getRowCell inc
+
+prevRowCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+prevRowCell = getRowCell dec
 
 showCell :: Cell -> String
 showCell { column, row } = show column <> show row
@@ -32,6 +39,22 @@ showCell { column, row } = show column <> show row
 parseCellValue :: String -> CellValue
 parseCellValue str =
   fromMaybe (StringVal str) (IntVal <$> Int.fromString str)
+
+getCell :: (Int -> Int) -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+getCell f columns rows = getElemSat f cells
+  where
+  cells = do
+    row <- rows
+    column <- columns
+    pure { column, row }
+
+getColumnCell :: (Int -> Int) -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+getColumnCell f columns _ { column, row } =
+  (\column' -> { column: column', row }) <$> getElemSat f columns column
+
+getRowCell :: (Int -> Int) -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+getRowCell f _ rows { column, row } =
+  (\row' -> { column, row: row' }) <$> getElemSat f rows row
 
 derive newtype instance eqColumn :: Eq Column
 derive newtype instance ordColumn :: Ord Column

@@ -1,4 +1,4 @@
-module App.Components.Table.Render where
+module App.Components.Table.Renderer where
 
 import FatPrelude
 import Prim hiding (Row)
@@ -15,25 +15,27 @@ import Halogen.HTML.Properties as HP
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 render :: forall cs m. State -> H.ComponentHTML Action cs m
-render st = HH.table
-  [ HP.class_ strippedTable, HE.onKeyDown \ev -> KeyPress (KeyboardEvent.code ev) ev ]
-  [ HH.thead_
-      [ HH.tr_
-          $ renderHeaderCell
-          <$> st.columns
-      ]
-  , HH.tbody_ $
-      do
-        row <- st.rows
-        pure $ HH.tr_ $
-          do
-            column <- st.columns
-            let
-              cell = { column, row }
-              value = Map.lookup cell st.tableData
-              active = cell == st.selectedCell && st.activeInput
-            pure $ renderBodyCell active cell value
-  ]
+render { selectedCell, activeInput, tableData, columns, rows } =
+  HH.table
+    [ HP.class_ strippedTable, HE.onKeyDown \ev -> KeyPress (KeyboardEvent.code ev) ev ]
+    [ HH.thead_
+        [ HH.tr_
+            $ toArray
+            $ renderHeaderCell
+            <$> columns
+        ]
+    , HH.tbody_ $
+        do
+          row <- toArray rows
+          pure $ HH.tr_ $
+            do
+              column <- toArray columns
+              let
+                cell = { column, row }
+                value = Map.lookup cell tableData
+                active = cell == selectedCell && activeInput
+              pure $ renderBodyCell active cell value
+    ]
 
 renderHeaderCell :: forall i o. Column -> HH.HTML i o
 renderHeaderCell column =

@@ -1,11 +1,7 @@
 module App.CSS.Table where
 
-import FatPrelude
-import Tecton
+import CSSPrelude
 
-import App.CSS.Common (black, darkGrey, grey, lightGrey, lighterGrey)
-import Halogen (ClassName(..))
-import Tecton.Halogen as TH
 import Tecton.Rule as Rule
 
 strippedTable :: ClassName
@@ -29,7 +25,7 @@ tableCss = do
     backgroundColor := lightGrey
     color := black
 
-  table TH.&. strippedTable |> tbody |> tr &: nthChild odd |> td ? Rule.do
+  table &. strippedTable |> tbody |> tr &: nthChild odd |> td ? Rule.do
     backgroundColor := lighterGrey
 
 cellCss :: CSS

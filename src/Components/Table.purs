@@ -4,9 +4,9 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (CellValue(..), Column(..), Row(..))
-import App.Components.Table.Models (State)
-import App.Components.Table.Render (render)
 import App.Components.Table.Handler (handleAction)
+import App.Components.Table.Models (Action(..), State)
+import App.Components.Table.Renderer (render)
 import Data.Map as Map
 import Halogen as H
 
@@ -15,7 +15,7 @@ component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval H.defaultEval { handleAction = handleAction, initialize = Just Initialize }
     }
 
 initialState :: forall a. a -> State
