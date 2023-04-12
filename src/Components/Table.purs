@@ -15,7 +15,8 @@ component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = handleAction, initialize = Just Initialize }
+    , eval: H.mkEval H.defaultEval
+        { handleAction = handleAction, initialize = Just Initialize }
     }
 
 initialState :: forall a. a -> State

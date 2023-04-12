@@ -22,3 +22,6 @@ lightGrey = hex "#e0e0e0"
 
 lighterGrey :: Color
 lighterGrey = hex "#f2f2f2"
+
+red :: Color
+red = hex "#FF0000"

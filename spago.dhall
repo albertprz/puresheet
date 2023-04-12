@@ -17,6 +17,7 @@
   , "tecton-halogen"
   , "tuples"
   , "typelevel-prelude"
+  , "unsafe-coerce"
   , "web-dom"
   , "web-events"
   , "web-html"

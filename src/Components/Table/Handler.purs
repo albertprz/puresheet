@@ -2,15 +2,12 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (nextCell, nextColumnCell, nextRowCell, prevCell, prevColumnCell, prevRowCell, showCell)
+import App.Components.Table.HandlerHelpers (actOnCell, prevent, withPrevent)
+import App.Components.Table.Cell (nextCell, nextColumnCell, nextRowCell, prevCell, prevColumnCell, prevRowCell)
 import App.Components.Table.Models (Action(..), State)
 import Data.Map as Map
 import Halogen as H
-import Halogen.Aff as HA
-import Web.DOM.ParentNode (QuerySelector(..))
-import Web.Event.Event (preventDefault)
 import Web.HTML.HTMLElement (focus)
-import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 handleAction
@@ -28,6 +25,10 @@ handleAction (WriteCell cell value) =
     { tableData = Map.insert cell value st.tableData
     , activeInput = false
     }
+
+handleAction (ClickCell cell ev) = withPrevent ev
+  $ handleAction
+  $ SelectCell (\_ _ _ -> Just cell)
 
 handleAction (KeyPress "Tab" ev) = do
   withPrevent ev $ handleAction $ SelectCell selectFn
@@ -48,6 +49,9 @@ handleAction (KeyPress "ArrowUp" ev) = do
 handleAction (KeyPress "ArrowDown" ev) = do
   withPrevent ev $ handleAction $ SelectCell nextRowCell
 
+handleAction (KeyPress "Space" ev) = do
+  prevent ev
+
 handleAction (KeyPress "Enter" _) =
   H.modify_ \st -> st
     { activeInput = true
@@ -64,8 +68,5 @@ handleAction (SelectCell cellFn) = do
     { selectedCell = newCell
     , activeInput = false
     }
-  element <- H.liftAff $ HA.selectElement $ QuerySelector $ "td#" <> showCell newCell
-  H.liftEffect $ fromMaybe (pure unit) (focus <$> element)
+  actOnCell newCell focus
 
-withPrevent :: forall m a. MonadAff m => KeyboardEvent -> m a -> m a
-withPrevent ev next = liftEffect (preventDefault $ KeyboardEvent.toEvent ev) *> next

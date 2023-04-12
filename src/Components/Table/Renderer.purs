@@ -46,13 +46,14 @@ renderHeaderCell column =
 renderBodyCell :: forall i. Boolean -> Cell -> Maybe CellValue -> HH.HTML i Action
 renderBodyCell active cell value =
   HH.td
-    [ HP.id $ showCell cell, HP.tabIndex 0 ]
+    [ HP.id $ showCell cell
+    , HP.tabIndex 0
+    , HE.onClick $ ClickCell cell
+    ]
     [ HH.input
         [ HP.type_ HP.InputText
         , HP.autocomplete AutocompleteOff
         , HP.disabled $ not active
-        , HP.autofocus true
-        , HP.name $ show cell
         , HP.value $ fromMaybe "" $ show <$> value
         , HE.onValueChange $ WriteCell cell <<< parseCellValue
         ]

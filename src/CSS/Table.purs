@@ -2,6 +2,7 @@ module App.CSS.Table where
 
 import CSSPrelude
 
+import App.CSS.Common (red)
 import Tecton.Rule as Rule
 
 strippedTable :: ClassName
@@ -42,6 +43,11 @@ cellCss = do
 
   td |> input ? Rule.do
     textAlign := center
+
+  td &: focus ? Rule.do
+    outlineColor := red
+    outlineStyle := solid
+    outlineWidth := (px 4)
 
   tbody |> tr &: lastChild |> td ? Rule.do
     borderBottomWidth := px 0
