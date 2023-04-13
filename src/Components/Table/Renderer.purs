@@ -17,7 +17,9 @@ import Web.UIEvent.KeyboardEvent as KeyboardEvent
 render :: forall cs m. State -> H.ComponentHTML Action cs m
 render { selectedCell, activeInput, tableData, columns, rows } =
   HH.table
-    [ HP.class_ strippedTable, HE.onKeyDown \ev -> KeyPress (KeyboardEvent.code ev) ev ]
+    [ HP.class_ strippedTable
+    , HE.onKeyDown \ev -> KeyPress (KeyboardEvent.code ev) ev
+    ]
     [ HH.thead_
         [ HH.tr_
             $ toArray
@@ -49,6 +51,7 @@ renderBodyCell active cell value =
     [ HP.id $ showCell cell
     , HP.tabIndex 0
     , HE.onClick $ ClickCell cell
+    , HE.onDoubleClick $ DoubleClickCell cell
     ]
     [ HH.input
         [ HP.type_ HP.InputText
@@ -56,6 +59,7 @@ renderBodyCell active cell value =
         , HP.disabled $ not active
         , HP.value $ fromMaybe "" $ show <$> value
         , HE.onValueChange $ WriteCell cell <<< parseCellValue
+        , HE.onKeyDown \ev -> InputKeyPress (KeyboardEvent.code ev) ev
         ]
     ]
 
