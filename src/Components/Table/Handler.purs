@@ -5,10 +5,11 @@ import FatPrelude
 import App.Components.Table.Cell (nextCell, nextColumnCell, nextRowCell, prevCell, prevColumnCell, prevRowCell)
 import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, prevent, selectCell, toKeyboardEvent, withPrevent)
 import App.Components.Table.Models (Action(..), State)
+import App.Utils.ArrayUtils (switchElements)
 import Data.Map as Map
 import Halogen as H
-import Web.UIEvent.KeyboardEvent as KeyboardEvent
 import Web.HTML.HTMLElement (focus)
+import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 handleAction
   :: forall slots o m
@@ -71,3 +72,17 @@ handleAction (KeyPress _ _) =
 
 handleAction (InputKeyPress _ _) = do
   pure unit
+
+handleAction (DragHeader startHeader) =
+  H.modify_ \st -> st
+    { draggedHeader = Just startHeader }
+
+handleAction (DropHeader endHeader) =
+  H.modify_ \st -> st
+    { columns = maybe st.columns (\col -> switchElements col endHeader st.columns) st.draggedHeader
+    , draggedHeader = Nothing
+    }
+
+handleAction (DragOverHeader ev) =
+  prevent ev
+

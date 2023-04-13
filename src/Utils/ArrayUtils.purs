@@ -2,18 +2,25 @@ module App.Utils.ArrayUtils where
 
 import Prelude
 
-import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, (!!))
+import App.Utils.IntUtils (dec, inc)
+import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, updateAtIndices, (!!))
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
 import Data.Maybe (Maybe, fromMaybe)
-import App.Utils.IntUtils (dec, inc)
+import Data.Tuple.Nested ((/\))
 
 getNextElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
 getNextElemSat = getElemSat inc
 
 getPrevElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
 getPrevElemSat = getElemSat dec
+
+switchElements :: forall a. Eq a => a -> a -> NonEmptyArray a -> NonEmptyArray a
+switchElements x y seq = fromMaybe seq $ do
+  idx1 <- findIndex (_ == x) seq
+  idx2 <- findIndex (_ == y) seq
+  pure $ updateAtIndices [ idx1 /\ y, idx2 /\ x ] seq
 
 getElemSat :: forall a. Eq a => (Int -> Int) -> NonEmptyArray a -> a -> Maybe a
 getElemSat f seq value = (seq !!! _) <<< f <$> idx
@@ -39,3 +46,4 @@ instance Range Char where
 
 instance Range Int where
   range = NonEmptyArray.range
+

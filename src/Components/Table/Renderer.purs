@@ -39,10 +39,16 @@ render { selectedCell, activeInput, tableData, columns, rows } =
               pure $ renderBodyCell active cell value
     ]
 
-renderHeaderCell :: forall i o. Column -> HH.HTML i o
+renderHeaderCell :: forall i. Column -> HH.HTML i Action
 renderHeaderCell column =
   HH.th
-    [ HP.id $ show column ]
+    [ HP.id $ show column
+    , HP.draggable true
+    , HP.style "cursor: grab"
+    , HE.onDragStart $ const $ DragHeader column
+    , HE.onDrop $ const $ DropHeader column
+    , HE.onDragOver $ DragOverHeader
+    ]
     [ HH.text $ show column ]
 
 renderBodyCell :: forall i. Boolean -> Cell -> Maybe CellValue -> HH.HTML i Action
@@ -50,6 +56,7 @@ renderBodyCell active cell value =
   HH.td
     [ HP.id $ showCell cell
     , HP.tabIndex 0
+    , HP.style "cursor: cell"
     , HE.onClick $ ClickCell cell
     , HE.onDoubleClick $ DoubleClickCell cell
     ]
@@ -58,6 +65,7 @@ renderBodyCell active cell value =
         , HP.autocomplete AutocompleteOff
         , HP.disabled $ not active
         , HP.value $ fromMaybe "" $ show <$> value
+        , HP.style "cursor: cell"
         , HE.onValueChange $ WriteCell cell <<< parseCellValue
         , HE.onKeyDown \ev -> InputKeyPress (KeyboardEvent.code ev) ev
         ]

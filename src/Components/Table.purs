@@ -29,5 +29,6 @@ initialState = const
       ]
   , columns: Column <$> 'A' .. 'Z'
   , rows: Row <$> 1 .. 30
+  , draggedHeader: Nothing
   }
 

@@ -18,8 +18,13 @@ import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.WheelEvent (WheelEvent)
 
-arrowMove :: forall slots o m a. MonadAff m => AnyEvent a => a -> CellMove
-             -> H.HalogenM State Action slots o m Unit
+arrowMove
+  :: forall slots o m a
+   . MonadAff m
+  => AnyEvent a
+  => a
+  -> CellMove
+  -> H.HalogenM State Action slots o m Unit
 arrowMove ev selectFn = do
   active <- H.gets \st -> st.activeInput
   when (not active) $ withPrevent ev $ selectCell selectFn
