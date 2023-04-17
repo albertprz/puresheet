@@ -2,13 +2,23 @@ module App.Utils.ArrayUtils where
 
 import Prelude
 
-import App.Utils.IntUtils (dec, inc)
-import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, updateAtIndices, (!!))
+import App.Utils.NumberUtils (dec, inc)
+import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, toArray, updateAtIndices, (!!))
+import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Tuple.Nested ((/\))
+
+last' :: forall a. Array a -> Maybe a
+last' = Array.last
+
+head' :: forall a. Array a -> Maybe a
+head' = Array.head
+
+toArray' :: forall a. Maybe (NonEmptyArray a) -> Array a
+toArray' = maybe [] toArray
 
 getNextElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
 getNextElemSat = getElemSat inc

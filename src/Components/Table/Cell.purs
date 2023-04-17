@@ -36,6 +36,14 @@ prevRowCell = getRowCell dec
 showCell :: Cell -> String
 showCell { column, row } = show column <> show row
 
+parseColumn :: String -> Maybe Column
+parseColumn elemId = case toCharArray elemId of
+  [ ch ] | isUpper ch -> Just $ Column ch
+  _ -> Nothing
+
+parseRow :: String -> Maybe Row
+parseRow elemId = Row <$> fromString elemId
+
 parseCellValue :: String -> CellValue
 parseCellValue str =
   fromMaybe (StringVal str) (IntVal <$> Int.fromString str)

@@ -28,7 +28,7 @@ initialState = const
       , { column: Column 'D', row: Row 1 } /\ StringVal "another value"
       ]
   , columns: Column <$> 'A' .. 'Z'
-  , rows: Row <$> 1 .. 30
+  , rows: Row <$> 1 .. 100
   , draggedHeader: Nothing
   }
 

@@ -3,12 +3,16 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.Components.Table.Cell (nextCell, nextColumnCell, nextRowCell, prevCell, prevColumnCell, prevRowCell)
-import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, prevent, selectCell, toKeyboardEvent, withPrevent)
+import App.Components.Table.HandlerHelpers (arrowMove, prevent, selectCell, toKeyboardEvent, withPrevent)
 import App.Components.Table.Models (Action(..), State)
 import App.Utils.ArrayUtils (switchElements)
+import App.Utils.DomUtils (elemsInViewport, selectAllElements, selectAllVisibleElements)
 import Data.Map as Map
+import Effect.Console (log)
 import Halogen as H
-import Web.HTML.HTMLElement (focus)
+import Web.DOM.Element (id)
+import Web.DOM.ParentNode (QuerySelector(..))
+import Web.HTML.HTMLElement (toElement)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 handleAction
@@ -64,13 +68,15 @@ handleAction (KeyPress "Enter" _) = do
   active <- H.gets \st -> st.activeInput
   H.modify_ \st -> st
     { activeInput = not active }
-  cell <- H.gets \st -> st.selectedCell
-  actOnCell cell focus $ whenMonoid (not active) $ Just "input"
+-- cell <- H.gets \st -> st.selectedCell
+-- actOnCell cell focus $ whenMonoid (not active) $ Just "input"
 
-handleAction (KeyPress _ _) =
-  pure unit
+handleAction (KeyPress _ _) = liftEffect $ do
+  visibleElems <- selectAllVisibleElements $ QuerySelector "th.column-header"
+  -- pure unit
+  traverse_ (log <=< id) visibleElems
 
-handleAction (InputKeyPress _ _) = do
+handleAction (InputKeyPress _ _) =
   pure unit
 
 handleAction (DragHeader startHeader) =

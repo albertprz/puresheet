@@ -24,7 +24,7 @@ data Action
   | DoubleClickCell Cell MouseEvent
   | KeyPress String KeyboardEvent
   | InputKeyPress String KeyboardEvent
-  | DragHeader Column 
+  | DragHeader Column
   | DropHeader Column
   | DragOverHeader DragEvent
 
