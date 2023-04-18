@@ -2,9 +2,8 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (nextCell, nextColumnCell, nextRowCell, prevCell, prevColumnCell, prevRowCell)
 import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, prevent, selectCell, withPrevent)
-import App.Components.Table.Models (Action(..), Key(..), State)
+import App.Components.Table.Models (Action(..), CellMove(..), Key(..), State)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
@@ -19,7 +18,7 @@ handleAction
 
 handleAction Initialize = do
   cell <- H.gets \st -> st.selectedCell
-  selectCell (\_ _ _ -> Just cell)
+  selectCell (OtherCell cell)
 
 handleAction (WriteCell cell value) =
   H.modify_ \st -> st
@@ -30,27 +29,27 @@ handleAction (WriteCell cell value) =
 handleAction (ClickCell cell ev) = do
   selectedCell <- H.gets \st -> st.selectedCell
 
-  arrowMove ev (\_ _ _ -> Just cell)
+  arrowMove ev (OtherCell cell)
   when (cell /= selectedCell) $ H.modify_ \st -> st
     { activeInput = false }
 
 handleAction (DoubleClickCell cell ev) = do
-  withPrevent ev $ selectCell (\_ _ _ -> Just cell)
+  withPrevent ev $ selectCell (OtherCell cell)
   { selectedCell, activeInput } <- H.modify \st -> st
     { activeInput = not st.activeInput }
   actOnCell selectedCell focus $ whenMonoid activeInput $ Just "input"
 
 handleAction (KeyPress ArrowLeft ev) =
-  arrowMove ev prevColumnCell
+  arrowMove ev PrevColumn
 
 handleAction (KeyPress ArrowRight ev) =
-  arrowMove ev nextColumnCell
+  arrowMove ev NextColumn
 
 handleAction (KeyPress ArrowUp ev) =
-  arrowMove ev prevRowCell
+  arrowMove ev PrevRow
 
 handleAction (KeyPress ArrowDown ev) =
-  arrowMove ev nextRowCell
+  arrowMove ev NextRow
 
 handleAction (KeyPress Enter ev) = withPrevent ev $ do
   { selectedCell, activeInput } <- H.modify \st -> st
@@ -58,11 +57,11 @@ handleAction (KeyPress Enter ev) = withPrevent ev $ do
   actOnCell selectedCell focus $ whenMonoid activeInput $ Just "input"
 
 handleAction (KeyPress Tab ev) =
-  withPrevent ev $ selectCell selectFn
+  withPrevent ev $ selectCell move
   where
-  selectFn
-    | KeyboardEvent.shiftKey ev = prevCell
-    | otherwise = nextCell
+  move
+    | KeyboardEvent.shiftKey ev = PrevCell
+    | otherwise = NextCell
 
 handleAction (KeyPress Space ev) = withPrevent ev $ do
   { selectedCell } <- H.modify \st -> st
@@ -76,10 +75,10 @@ handleAction (InputKeyPress _ _) =
   pure unit
 
 handleAction (WheelScroll ev)
-  | neg $ deltaX ev = arrowMove ev prevColumnCell
-  | pos $ deltaX ev = arrowMove ev nextColumnCell
-  | neg $ deltaY ev = arrowMove ev prevRowCell
-  | pos $ deltaY ev = arrowMove ev nextRowCell
+  | neg $ deltaX ev = arrowMove ev PrevColumn
+  | pos $ deltaX ev = arrowMove ev NextColumn
+  | neg $ deltaY ev = arrowMove ev PrevRow
+  | pos $ deltaY ev = arrowMove ev NextRow
   | otherwise = pure unit
 
 handleAction (DragHeader startHeader) =

@@ -55,10 +55,12 @@ getRowCell f _ rows { column, row } =
   (\row' -> { column, row: row' }) <$> getElemSat f rows row
 
 newtype Column = Column Char
+
 derive newtype instance eqColumn :: Eq Column
 derive newtype instance ordColumn :: Ord Column
 
 newtype Row = Row Int
+
 derive newtype instance eqRow :: Eq Row
 derive newtype instance ordRow :: Ord Row
 

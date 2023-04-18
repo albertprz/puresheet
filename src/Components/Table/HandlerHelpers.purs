@@ -3,8 +3,8 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, Column, Row, parseColumn, parseRow, showCell)
-import App.Components.Table.Models (Action, CellMove, Key(..), State)
+import App.Components.Table.Cell (Cell, Column, Row, nextCell, nextColumnCell, nextRowCell, parseColumn, parseRow, prevCell, prevColumnCell, prevRowCell, showCell)
+import App.Components.Table.Models (Action, CellMove(..), Key(..), State)
 import App.Utils.DomUtils (selectAllVisibleElements, selectElement)
 import App.Utils.NumberUtils (coalesce)
 import Data.Array as Array
@@ -32,16 +32,16 @@ arrowMove
   -> CellMove
   -> H.HalogenM State Action slots o m Unit
 
-arrowMove ev selectFn = withPrevent ev $ do
+arrowMove ev move = withPrevent ev $ do
   active <- H.gets \st -> st.activeInput
-  when (not active) $ selectCell selectFn
+  when (not active) $ selectCell move
 
 selectCell :: forall slots o m. MonadAff m => CellMove -> H.HalogenM State Action slots o m Unit
-selectCell cellFn = do
+selectCell move = do
   { selectedCell } <- H.modify \st -> st
     { activeInput = false
     , selectedCell = fromMaybe st.selectedCell
-        $ cellFn st.columns st.rows st.selectedCell
+        $ (interpretCellMove move) st.columns st.rows st.selectedCell
     }
   visibleCols <- selectAllVisibleElements $ QuerySelector "th.column-header"
   visibleRows <- selectAllVisibleElements $ QuerySelector "th.row-header"
@@ -78,6 +78,15 @@ actOnCell cell action subElem = do
     <> foldMap (" " <> _) subElem
   liftEffect $ traverse_ action element
 
+interpretCellMove :: CellMove -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
+interpretCellMove move = case move of
+  NextRow -> nextRowCell
+  PrevRow -> prevRowCell
+  NextColumn -> nextColumnCell
+  PrevColumn -> prevColumnCell
+  NextCell -> nextCell
+  PrevCell -> prevCell
+  OtherCell cell -> \_ _ _ -> Just cell
 
 withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
