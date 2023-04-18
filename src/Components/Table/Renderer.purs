@@ -1,10 +1,11 @@
 module App.Components.Table.Renderer where
 
-import App.CSS.Table
 import FatPrelude
 import Prim hiding (Row)
 
+import App.CSS.Table (columnHeader, cornerHeader, rowHeader, selectedCell, selectedHeader, strippedTable, tableCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Row, parseCellValue, showCell)
+import App.Components.Table.HandlerHelpers (parseKey)
 import App.Components.Table.Models (Action(..), State)
 import DOM.HTML.Indexed.AutocompleteType (AutocompleteType(..))
 import Data.Map as Map
@@ -19,7 +20,8 @@ render { selectedCell, activeInput, tableData, columns, rows } =
   HH.table
     [ HP.class_ strippedTable
     , HP.style "border-spacing: 0"
-    , HE.onKeyDown \ev -> KeyPress (KeyboardEvent.code ev) ev
+    , HE.onKeyDown \ev -> KeyPress (parseKey $ KeyboardEvent.code ev) ev
+    , HE.onWheel WheelScroll
     ]
     [ HH.thead_
         [ HH.tr_
@@ -48,7 +50,7 @@ renderRowHeaderCell cell row =
   HH.th
     [ HP.id $ show row
     , HP.classes $ [ rowHeader ] <>
-        if cell.row == row then [ selectedHeader ] else []
+        whenMonoid (cell.row == row) [ selectedHeader ]
     ]
     [ HH.text $ show row ]
 
@@ -57,7 +59,7 @@ renderColumnHeaderCell cell column =
   HH.th
     [ HP.id $ show column
     , HP.classes $ [ columnHeader ] <>
-        if cell.column == column then [ selectedHeader ] else []
+        whenMonoid (cell.column == column) [ selectedHeader ]
     , HP.draggable true
     , HP.style "cursor: grab"
     , HE.onDragStart $ const $ DragHeader column
@@ -78,7 +80,8 @@ renderBodyCell selected active cell value =
     [ HP.id $ showCell cell
     , HP.tabIndex 0
     , HP.style "cursor: cell"
-    , HP.classes $ [ tableCell ] <> whenMonoid selected [ selectedCell ]
+    , HP.classes $ [ tableCell ] <>
+        whenMonoid selected [ selectedCell ]
     , HE.onClick $ ClickCell cell
     , HE.onDoubleClick $ DoubleClickCell cell
     ]
@@ -86,10 +89,10 @@ renderBodyCell selected active cell value =
         [ HP.type_ HP.InputText
         , HP.autocomplete AutocompleteOff
         , HP.disabled $ not $ selected && active
-        , HP.value $ fold $ show <$> value
+        , HP.value $ foldMap show value
         , HP.style "cursor: cell"
         , HE.onValueChange $ WriteCell cell <<< parseCellValue
-        , HE.onKeyDown \ev -> InputKeyPress (KeyboardEvent.code ev) ev
+        , HE.onKeyDown \ev -> InputKeyPress (parseKey $ KeyboardEvent.code ev) ev
         ]
     ]
 

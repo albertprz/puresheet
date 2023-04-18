@@ -27,7 +27,7 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.ArrayUtils as ArrayUtils
+import App.Utils.ArrayUtils (class Range, getElemSat, getNextElemSat, getPrevElemSat, head', init', last', range, satIndex, switchElements, tail', toArray', (!!!), (..)) as ArrayUtils
 import App.Utils.FunctorUtils (mapp, (<$$>)) as FunctorUtils
 import App.Utils.CharUtils (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.NumberUtils (dec, inc, neg, pos) as NumberUtils

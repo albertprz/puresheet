@@ -3,17 +3,13 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.Components.Table.Cell (nextCell, nextColumnCell, nextRowCell, prevCell, prevColumnCell, prevRowCell)
-import App.Components.Table.HandlerHelpers (arrowMove, prevent, selectCell, toKeyboardEvent, withPrevent)
-import App.Components.Table.Models (Action(..), State)
-import App.Utils.ArrayUtils (switchElements)
-import App.Utils.DomUtils (elemsInViewport, selectAllElements, selectAllVisibleElements)
+import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, prevent, selectCell, withPrevent)
+import App.Components.Table.Models (Action(..), Key(..), State)
 import Data.Map as Map
-import Effect.Console (log)
 import Halogen as H
-import Web.DOM.Element (id)
-import Web.DOM.ParentNode (QuerySelector(..))
-import Web.HTML.HTMLElement (toElement)
+import Web.HTML.HTMLElement (focus)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
+import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
   :: forall slots o m
@@ -40,44 +36,51 @@ handleAction (ClickCell cell ev) = do
 
 handleAction (DoubleClickCell cell ev) = do
   withPrevent ev $ selectCell (\_ _ _ -> Just cell)
-  handleAction $ KeyPress "Enter" $ toKeyboardEvent ev
+  { selectedCell, activeInput } <- H.modify \st -> st
+    { activeInput = not st.activeInput }
+  actOnCell selectedCell focus $ whenMonoid activeInput $ Just "input"
 
-handleAction (KeyPress "Tab" ev) =
+handleAction (KeyPress ArrowLeft ev) =
+  arrowMove ev prevColumnCell
+
+handleAction (KeyPress ArrowRight ev) =
+  arrowMove ev nextColumnCell
+
+handleAction (KeyPress ArrowUp ev) =
+  arrowMove ev prevRowCell
+
+handleAction (KeyPress ArrowDown ev) =
+  arrowMove ev nextRowCell
+
+handleAction (KeyPress Enter ev) = withPrevent ev $ do
+  { selectedCell, activeInput } <- H.modify \st -> st
+    { activeInput = not st.activeInput }
+  actOnCell selectedCell focus $ whenMonoid activeInput $ Just "input"
+
+handleAction (KeyPress Tab ev) =
   withPrevent ev $ selectCell selectFn
   where
   selectFn
     | KeyboardEvent.shiftKey ev = prevCell
     | otherwise = nextCell
 
-handleAction (KeyPress "ArrowLeft" ev) =
-  arrowMove ev prevColumnCell
+handleAction (KeyPress Space ev) = withPrevent ev $ do
+  { selectedCell } <- H.modify \st -> st
+    { activeInput = true }
+  actOnCell selectedCell focus $ Just "input"
 
-handleAction (KeyPress "ArrowRight" ev) =
-  arrowMove ev nextColumnCell
-
-handleAction (KeyPress "ArrowUp" ev) =
-  arrowMove ev prevRowCell
-
-handleAction (KeyPress "ArrowDown" ev) =
-  arrowMove ev nextRowCell
-
-handleAction (KeyPress "Space" ev) =
-  prevent ev
-
-handleAction (KeyPress "Enter" _) = do
-  active <- H.gets \st -> st.activeInput
-  H.modify_ \st -> st
-    { activeInput = not active }
--- cell <- H.gets \st -> st.selectedCell
--- actOnCell cell focus $ whenMonoid (not active) $ Just "input"
-
-handleAction (KeyPress _ _) = liftEffect $ do
-  visibleElems <- selectAllVisibleElements $ QuerySelector "th.column-header"
-  -- pure unit
-  traverse_ (log <=< id) visibleElems
+handleAction (KeyPress (OtherKey _) _) =
+  pure unit
 
 handleAction (InputKeyPress _ _) =
   pure unit
+
+handleAction (WheelScroll ev)
+  | neg $ deltaX ev = arrowMove ev prevColumnCell
+  | pos $ deltaX ev = arrowMove ev nextColumnCell
+  | neg $ deltaY ev = arrowMove ev prevRowCell
+  | pos $ deltaY ev = arrowMove ev nextRowCell
+  | otherwise = pure unit
 
 handleAction (DragHeader startHeader) =
   H.modify_ \st -> st

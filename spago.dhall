@@ -4,7 +4,6 @@
   , "arrays"
   , "bifunctors"
   , "colors"
-  , "console"
   , "dom-indexed"
   , "effect"
   , "foldable-traversable"

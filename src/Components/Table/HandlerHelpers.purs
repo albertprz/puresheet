@@ -4,19 +4,19 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, Column, Row, parseColumn, parseRow, showCell)
-import App.Components.Table.Models (Action, State, CellMove)
-import App.Utils.DomUtils (selectAllVisibleElements)
+import App.Components.Table.Models (Action, CellMove, Key(..), State)
+import App.Utils.DomUtils (selectAllVisibleElements, selectElement)
 import App.Utils.NumberUtils (coalesce)
 import Data.Array as Array
 import Halogen as H
-import Halogen.Aff as HA
 import Unsafe.Coerce (unsafeCoerce)
 import Web.DOM (Element)
 import Web.DOM.Element (id, scrollHeight, scrollWidth)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (Event, preventDefault)
-import Web.HTML (HTMLElement, window)
+import Web.HTML (HTMLElement, Window, window)
 import Web.HTML.Event.DragEvent (DragEvent)
+import Web.HTML.HTMLElement (focus)
 import Web.HTML.Window (scrollBy)
 import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.InputEvent (InputEvent)
@@ -46,7 +46,6 @@ selectCell cellFn = do
   visibleCols <- selectAllVisibleElements $ QuerySelector "th.column-header"
   visibleRows <- selectAllVisibleElements $ QuerySelector "th.row-header"
   goToCell visibleCols visibleRows selectedCell
-  pure unit
 
 goToCell :: forall m. MonadEffect m => Array Element -> Array Element -> Cell -> m Unit
 goToCell visibleCols visibleRows cell = liftEffect $ do
@@ -55,31 +54,55 @@ goToCell visibleCols visibleRows cell = liftEffect $ do
   goToCellHelper cols rows cell visibleCols visibleRows
 
 goToCellHelper :: Array Column -> Array Row -> Cell -> Array Element -> Array Element -> Effect Unit
-goToCellHelper cols rows { column, row } visibleCols visibleRows
+goToCellHelper cols rows cell@{ column, row } visibleCols visibleRows
   | last' cols == Just column = do
       width <- traverse scrollWidth $ head' visibleCols
-      scrollBy ((round $ coalesce $ width) + 1) 0 =<< window
+      scrollByX (coalesce width + 1.0) =<< window
   | head' cols == Just column = do
       width <- traverse scrollWidth $ last' visibleCols
-      scrollBy (-((round $ coalesce $ width) + 1)) 0 =<< window
-  | last' rows == Just row = do
+      scrollByX (-(coalesce width + 1.0)) =<< window
+  | (last' =<< (init' rows)) == Just row = do
       height <- traverse scrollHeight $ head' visibleRows
-      scrollBy 0 ((round $ coalesce $ height) + 1) =<< window
-  | head' rows == Just row = do
+      scrollByY (coalesce height + 0.5) =<< window
+  | (head' =<< (tail' rows)) == Just row = do
       height <- traverse scrollHeight $ last' visibleRows
-      scrollBy 0 (-((round $ coalesce $ height) + 1)) =<< window
+      scrollByY (-(coalesce height + 0.5)) =<< window
+  | not (elem row rows && elem column cols) =
+      actOnCell cell focus Nothing
   | otherwise = pure unit
 
-actOnCell :: forall m. MonadAff m => Cell -> (HTMLElement -> Effect Unit) -> Maybe String -> m Unit
+actOnCell :: forall m. MonadEffect m => Cell -> (HTMLElement -> Effect Unit) -> Maybe String -> m Unit
 actOnCell cell action subElem = do
-  element <- liftAff $ HA.selectElement $ QuerySelector $ "td#" <> showCell cell <> foldMap (" " <> _) subElem
-  liftEffect $ fromMaybe (pure unit) (action <$> element)
+  element <- selectElement $ QuerySelector $ "td#"
+    <> showCell cell
+    <> foldMap (" " <> _) subElem
+  liftEffect $ traverse_ action element
+
 
 withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
 
 prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
 prevent ev = liftEffect (preventDefault $ toEvent ev)
+
+scrollByX :: Number -> Window -> Effect Unit
+scrollByX x = scrollBy' x 0.0
+
+scrollByY :: Number -> Window -> Effect Unit
+scrollByY = scrollBy' 0.0
+
+scrollBy' :: Number -> Number -> Window -> Effect Unit
+scrollBy' x y = scrollBy (unsafeCoerce x) (unsafeCoerce y)
+
+parseKey :: String -> Key
+parseKey "ArrowLeft" = ArrowLeft
+parseKey "ArrowRight" = ArrowRight
+parseKey "ArrowUp" = ArrowUp
+parseKey "ArrowDown" = ArrowDown
+parseKey "Enter" = Enter
+parseKey "Tab" = Tab
+parseKey "Space" = Space
+parseKey str = OtherKey str
 
 class IsEvent :: forall k. k -> Constraint
 class IsEvent a
@@ -93,6 +116,3 @@ instance IsEvent WheelEvent
 
 toEvent :: forall a. IsEvent a => a -> Event
 toEvent = unsafeCoerce
-
-toKeyboardEvent :: forall a. IsEvent a => a -> KeyboardEvent
-toKeyboardEvent = unsafeCoerce

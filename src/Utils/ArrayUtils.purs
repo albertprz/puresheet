@@ -3,19 +3,25 @@ module App.Utils.ArrayUtils where
 import Prelude
 
 import App.Utils.NumberUtils (dec, inc)
-import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, toArray, updateAtIndices, (!!))
 import Data.Array as Array
+import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, toArray, updateAtIndices, (!!))
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
 import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Tuple.Nested ((/\))
 
+head' :: forall a. Array a -> Maybe a
+head' = Array.head
+
+tail' :: forall a. Array a -> Maybe (Array a)
+tail' = Array.tail
+
 last' :: forall a. Array a -> Maybe a
 last' = Array.last
 
-head' :: forall a. Array a -> Maybe a
-head' = Array.head
+init' :: forall a. Array a -> Maybe (Array a)
+init' = Array.init
 
 toArray' :: forall a. Maybe (NonEmptyArray a) -> Array a
 toArray' = maybe [] toArray

@@ -7,6 +7,7 @@ import App.Components.Table.Cell (Cell, CellValue, Column, Row)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
+import Web.UIEvent.WheelEvent (WheelEvent)
 
 type State =
   { selectedCell :: Cell
@@ -22,10 +23,30 @@ data Action
   | WriteCell Cell CellValue
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
-  | KeyPress String KeyboardEvent
-  | InputKeyPress String KeyboardEvent
+  | KeyPress Key KeyboardEvent
+  | InputKeyPress Key KeyboardEvent
+  | WheelScroll WheelEvent
   | DragHeader Column
   | DropHeader Column
   | DragOverHeader DragEvent
 
-type CellMove = NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+-- type CellMove = NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
+
+data CellMove
+  = NextRow
+  | PrevRow
+  | NextColumn
+  | PrevColumn
+  | NextCell
+  | PrevCell
+  | OtherCell Cell
+
+data Key
+  = ArrowLeft
+  | ArrowRight
+  | ArrowUp
+  | ArrowDown
+  | Enter
+  | Tab
+  | Space
+  | OtherKey String

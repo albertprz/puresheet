@@ -5,16 +5,6 @@ import Prim hiding (Row)
 
 import Data.Int as Int
 
-newtype Column = Column Char
-
-newtype Row = Row Int
-
-type Cell = { column :: Column, row :: Row }
-
-data CellValue
-  = StringVal String
-  | IntVal Int
-
 nextCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
 nextCell = getCell inc
 
@@ -64,11 +54,19 @@ getRowCell :: (Int -> Int) -> NonEmptyArray Column -> NonEmptyArray Row -> Cell 
 getRowCell f _ rows { column, row } =
   (\row' -> { column, row: row' }) <$> getElemSat f rows row
 
+newtype Column = Column Char
 derive newtype instance eqColumn :: Eq Column
 derive newtype instance ordColumn :: Ord Column
 
+newtype Row = Row Int
 derive newtype instance eqRow :: Eq Row
 derive newtype instance ordRow :: Ord Row
+
+type Cell = { column :: Column, row :: Row }
+
+data CellValue
+  = StringVal String
+  | IntVal Int
 
 instance Show Column where
   show (Column x) = fromCharArray [ x ]
