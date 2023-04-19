@@ -4,6 +4,7 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellValue, Column, Row)
+import Web.Event.Event (Event)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
@@ -26,11 +27,10 @@ data Action
   | KeyPress Key KeyboardEvent
   | InputKeyPress Key KeyboardEvent
   | WheelScroll WheelEvent
+  | Scroll Event
   | DragHeader Column
   | DropHeader Column
   | DragOverHeader DragEvent
-
--- type CellMove = NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
 
 data CellMove
   = NextRow

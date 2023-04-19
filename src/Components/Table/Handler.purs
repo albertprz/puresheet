@@ -5,6 +5,7 @@ import FatPrelude
 import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, prevent, selectCell, withPrevent)
 import App.Components.Table.Models (Action(..), CellMove(..), Key(..), State)
 import Data.Map as Map
+import Effect.Class.Console (log)
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
@@ -17,8 +18,8 @@ handleAction
   -> H.HalogenM State Action slots o m Unit
 
 handleAction Initialize = do
-  cell <- H.gets \st -> st.selectedCell
-  selectCell (OtherCell cell)
+  { selectedCell } <- H.get
+  actOnCell selectedCell focus Nothing
 
 handleAction (WriteCell cell value) =
   H.modify_ \st -> st
@@ -27,8 +28,7 @@ handleAction (WriteCell cell value) =
     }
 
 handleAction (ClickCell cell ev) = do
-  selectedCell <- H.gets \st -> st.selectedCell
-
+  { selectedCell } <- H.get
   arrowMove ev (OtherCell cell)
   when (cell /= selectedCell) $ H.modify_ \st -> st
     { activeInput = false }
@@ -80,6 +80,9 @@ handleAction (WheelScroll ev)
   | neg $ deltaY ev = arrowMove ev PrevRow
   | pos $ deltaY ev = arrowMove ev NextRow
   | otherwise = pure unit
+
+handleAction (Scroll ev) =
+  log "Scrolling.."
 
 handleAction (DragHeader startHeader) =
   H.modify_ \st -> st

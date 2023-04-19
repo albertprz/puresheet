@@ -39,6 +39,8 @@ tableCss = do
     borderWidth := px 0
     borderColor := grey
     color := darkGrey
+    marginRight := px 500
+    display := inlineTable
 
   table &. strippedTable |> tbody |> tr &: nthChild odd |> td ? Rule.do
     backgroundColor := lighterGrey

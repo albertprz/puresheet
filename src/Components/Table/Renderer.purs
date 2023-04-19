@@ -3,7 +3,7 @@ module App.Components.Table.Renderer where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.Table (columnHeader, cornerHeader, rowHeader, selectedCell, selectedHeader, strippedTable, tableCell)
+import App.CSS.Table (columnHeader, cornerHeader, rowHeader, selectedCell, selectedHeader, tableCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Row, parseCellValue, showCell)
 import App.Components.Table.HandlerHelpers (parseKey)
 import App.Components.Table.Models (Action(..), State)
@@ -18,8 +18,7 @@ import Web.UIEvent.KeyboardEvent as KeyboardEvent
 render :: forall cs m. State -> H.ComponentHTML Action cs m
 render { selectedCell, activeInput, tableData, columns, rows } =
   HH.table
-    [ HP.class_ strippedTable
-    , HP.style "border-spacing: 0"
+    [ HP.style "border-spacing: 0"
     , HE.onKeyDown \ev -> KeyPress (parseKey $ KeyboardEvent.code ev) ev
     , HE.onWheel WheelScroll
     ]

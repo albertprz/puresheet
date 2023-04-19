@@ -5,24 +5,6 @@ import Prim hiding (Row)
 
 import Data.Int as Int
 
-nextCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-nextCell = getCell inc
-
-prevCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-prevCell = getCell dec
-
-nextColumnCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-nextColumnCell = getColumnCell inc
-
-prevColumnCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-prevColumnCell = getColumnCell dec
-
-nextRowCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-nextRowCell = getRowCell inc
-
-prevRowCell :: NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-prevRowCell = getRowCell dec
-
 showCell :: Cell -> String
 showCell { column, row } = show column <> show row
 

@@ -7,6 +7,7 @@ import App.CSS.Table as Table
 
 css :: CSS
 css = do
+
   Table.css
 
   body ? Rule.do

@@ -3,7 +3,7 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, Column, Row, nextCell, nextColumnCell, nextRowCell, parseColumn, parseRow, prevCell, prevColumnCell, prevRowCell, showCell)
+import App.Components.Table.Cell (Cell, Column, Row, getCell, getColumnCell, getRowCell, parseColumn, parseRow, showCell)
 import App.Components.Table.Models (Action, CellMove(..), Key(..), State)
 import App.Utils.DomUtils (selectAllVisibleElements, selectElement)
 import App.Utils.NumberUtils (coalesce)
@@ -38,37 +38,44 @@ arrowMove ev move = withPrevent ev $ do
 
 selectCell :: forall slots o m. MonadAff m => CellMove -> H.HalogenM State Action slots o m Unit
 selectCell move = do
-  { selectedCell } <- H.modify \st -> st
+  origin <- H.gets \st -> st.selectedCell
+  { selectedCell, columns } <- H.modify \st -> st
     { activeInput = false
     , selectedCell = fromMaybe st.selectedCell
         $ (interpretCellMove move) st.columns st.rows st.selectedCell
     }
   visibleCols <- selectAllVisibleElements $ QuerySelector "th.column-header"
   visibleRows <- selectAllVisibleElements $ QuerySelector "th.row-header"
-  goToCell visibleCols visibleRows selectedCell
+  goToCell visibleCols visibleRows columns origin selectedCell
 
-goToCell :: forall m. MonadEffect m => Array Element -> Array Element -> Cell -> m Unit
-goToCell visibleCols visibleRows cell = liftEffect $ do
+goToCell :: forall m. MonadEffect m => Array Element -> Array Element -> NonEmptyArray Column -> Cell -> Cell -> m Unit
+goToCell visibleCols visibleRows allColumns origin target = liftEffect $ do
   cols <- Array.catMaybes <$> traverse ((parseColumn <$> _) <<< id) visibleCols
   rows <- Array.catMaybes <$> traverse ((parseRow <$> _) <<< id) visibleRows
-  goToCellHelper cols rows cell visibleCols visibleRows
+  goToCellHelper cols rows allColumns origin target visibleCols visibleRows
 
-goToCellHelper :: Array Column -> Array Row -> Cell -> Array Element -> Array Element -> Effect Unit
-goToCellHelper cols rows cell@{ column, row } visibleCols visibleRows
-  | last' cols == Just column = do
+goToCellHelper :: Array Column -> Array Row -> NonEmptyArray Column -> Cell -> Cell -> Array Element -> Array Element -> Effect Unit
+goToCellHelper cols rows allColumns origin { column, row } visibleCols visibleRows
+
+  | last' cols == Just column && last allColumns /= origin.column = do
       width <- traverse scrollWidth $ head' visibleCols
       scrollByX (coalesce width + 1.0) =<< window
-  | head' cols == Just column = do
+
+  | head' cols == Just column && head allColumns /= origin.column = do
       width <- traverse scrollWidth $ last' visibleCols
       scrollByX (-(coalesce width + 1.0)) =<< window
-  | (last' =<< (init' rows)) == Just row = do
+
+  | (last' $ rows) == Just row = do
       height <- traverse scrollHeight $ head' visibleRows
       scrollByY (coalesce height + 0.5) =<< window
-  | (head' =<< (tail' rows)) == Just row = do
+
+  | (head' $ rows) == Just row = do
       height <- traverse scrollHeight $ last' visibleRows
       scrollByY (-(coalesce height + 0.5)) =<< window
+
   | not (elem row rows && elem column cols) =
-      actOnCell cell focus Nothing
+      actOnCell { column, row } focus Nothing
+
   | otherwise = pure unit
 
 actOnCell :: forall m. MonadEffect m => Cell -> (HTMLElement -> Effect Unit) -> Maybe String -> m Unit
@@ -80,12 +87,12 @@ actOnCell cell action subElem = do
 
 interpretCellMove :: CellMove -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
 interpretCellMove move = case move of
-  NextRow -> nextRowCell
-  PrevRow -> prevRowCell
-  NextColumn -> nextColumnCell
-  PrevColumn -> prevColumnCell
-  NextCell -> nextCell
-  PrevCell -> prevCell
+  NextRow -> getRowCell inc
+  PrevRow -> getRowCell dec
+  NextColumn -> getColumnCell inc
+  PrevColumn -> getColumnCell dec
+  NextCell -> getCell inc
+  PrevCell -> getCell dec
   OtherCell cell -> \_ _ _ -> Just cell
 
 withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
