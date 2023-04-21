@@ -13,3 +13,4 @@ css = do
   body ? Rule.do
     margin := px 0
     padding := px 0
+    overflow := hidden

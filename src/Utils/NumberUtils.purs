@@ -4,17 +4,22 @@ import Prelude
 
 import Data.Maybe (Maybe, fromMaybe)
 
-inc :: Int -> Int
-inc = (_ + 1)
+inc :: forall a. Semiring a => a -> a
+inc = (_ + one)
 
-dec :: Int -> Int
-dec = (_ - 1)
+dec :: forall a. Ring a => a -> a
+dec = (_ - one)
 
-pos :: Number -> Boolean
-pos = (_ > 0.0)
+pos :: forall a. Ord a => Semiring a => a -> Boolean
+pos = (_ > zero)
 
-neg :: Number -> Boolean
-neg = (_ < 0.0)
+neg :: forall a. Ord a => Semiring a => a -> Boolean
+neg = (_ < zero)
 
-coalesce :: Maybe Number -> Number
-coalesce = fromMaybe 0.0
+abs :: forall a. Ring a => Ord a => a -> a
+abs x
+  | pos x = x
+  | otherwise = negate x
+
+coalesce :: forall a. Semiring a => Maybe a -> a
+coalesce = fromMaybe zero

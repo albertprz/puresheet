@@ -33,8 +33,8 @@ getColumnCell f columns _ { column, row } =
   (\column' -> { column: column', row }) <$> getElemSat f columns column
 
 getRowCell :: (Int -> Int) -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell
-getRowCell f _ rows { column, row } =
-  (\row' -> { column, row: row' }) <$> getElemSat f rows row
+getRowCell f _ _ { column, row: Row (rowNum) } =
+  Just { column, row: Row $ max one $ f rowNum }
 
 newtype Column = Column Char
 
