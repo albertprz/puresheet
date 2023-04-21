@@ -68,7 +68,7 @@ adjustRows :: forall m. MonadState State m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
   | currentRow + 1 > maxRow = H.modify_ \st -> st
-      { rows = Row <$> (currentRow - rowRange + 1)  .. (currentRow + 1) }
+      { rows = Row <$> (currentRow - rowRange + 1) .. (currentRow + 1) }
 
   | currentRow < minRow = H.modify_ \st -> st
       { rows = Row <$> currentRow .. (currentRow + rowRange) }
@@ -81,7 +81,7 @@ initialize = do
   let Row (firstRow) = head rows
   visibleRows <- parseElems parseRow =<< getVisibleRows
   H.modify_ \st -> st
-      { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
+    { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
   actOnCell selectedCell focus Nothing
 
 parseElems :: forall m a. MonadEffect m => (String -> Maybe a) -> Array Element -> m (Array a)

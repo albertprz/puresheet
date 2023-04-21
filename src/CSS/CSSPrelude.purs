@@ -12,4 +12,4 @@ import Data.Tuple.Nested ((/\)) as Tuple.Nested
 import Halogen (AttrName(..), ClassName(..), Component, ComponentHTML, ElemName(..), PropName(..), RefLabel(..))
 import Tecton hiding ((&.), style)
 import Tecton.Halogen (style, styleSheet, (&.))
-import App.CSS.Common (black, darkGrey, grey, lightGrey, lighterGrey) as Common
+import App.CSS.Common (black, darkGrey, green, grey, hex, lightGreen, lightGrey, lighterGrey, red, white) as Common

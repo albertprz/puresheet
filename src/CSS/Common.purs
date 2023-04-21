@@ -11,6 +11,9 @@ hex = fromMaybe black <<< fromHexString
 black :: Color
 black = Color.black
 
+white :: Color
+white = Color.white
+
 darkGrey :: Color
 darkGrey = hex "#526066"
 

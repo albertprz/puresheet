@@ -1,4 +1,4 @@
-{ name = "halogen-app"
+{ name = "puresheet"
 , dependencies =
   [ "aff"
   , "arrays"

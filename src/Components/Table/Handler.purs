@@ -2,8 +2,7 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Row(..), parseRow)
-import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, getVisibleRows, initialize, parseElems, prevent, selectCell, withPrevent)
+import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, initialize, prevent, selectCell, withPrevent)
 import App.Components.Table.Models (Action(..), CellMove(..), Key(..), State)
 import Data.Map as Map
 import Halogen as H

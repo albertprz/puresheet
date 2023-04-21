@@ -2,7 +2,6 @@ module App.CSS.Table where
 
 import CSSPrelude
 
-import App.CSS.Common (green, lightGreen)
 import Tecton.Rule as Rule
 
 strippedTable :: ClassName
@@ -51,32 +50,30 @@ tableCss = do
 cellCss :: CSS
 cellCss = do
 
-  th /\ td ? Rule.do
+  td /\ th ? Rule.do
     borderStyle := solid
-    borderWidth := px 0 ~ px 0 ~ px 1 ~ px 1
     borderColor := inherit
-    textAlign := center
+    borderWidth := px 0 ~ px 0 ~ px 1 ~ px 1
     padding := em 0.5 ~ em 1
-    overflow := visible
+    textAlign := center
 
   th ? Rule.do
-    backgroundColor := lightGrey
+    backgroundColor := lighterGrey
     color := black
 
+  td &: lastChild /\ th &: lastChild ? Rule.do
+    borderRightWidth := px 1
+
   td |> input ? Rule.do
+    backgroundColor := white
+    borderWidth := px 0
     textAlign := center
 
   td &. selectedCell ? Rule.do
-    outlineColor := green
     outlineStyle := solid
+    outlineColor := green
     outlineWidth := px 3
     outlineOffset := px (-3)
-
-  tbody |> tr &: lastChild |> td ? Rule.do
-    borderBottomWidth := px 0
-
-  td &: firstChild ? Rule.do
-    borderLeftWidth := px 0
 
   th &. selectedHeader ? Rule.do
     backgroundColor := lightGreen
@@ -91,5 +88,5 @@ cellCss = do
 
   th &. cornerHeader ? Rule.do
     position := sticky
-    left := px 0
     top := px 0
+    left := px 0
