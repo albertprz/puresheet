@@ -99,6 +99,14 @@ isCellInSelection (CellsSelection origin target) { column, row } =
   inRange origin.row target.row row &&
     inRange origin.column target.column column
 
+getSelectionTargetCell :: MultiSelection -> Maybe Cell
+getSelectionTargetCell (CellsSelection _ target) = Just target
+getSelectionTargetCell _ = Nothing
+
+getCellFromMove :: CellMove -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Cell
+getCellFromMove move columns rows cell =
+  fromMaybe cell $ (interpretCellMove move) columns rows cell
+
 interpretCellMove :: CellMove -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
 interpretCellMove move = case move of
   NextRow -> getRowCell inc

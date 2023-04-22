@@ -23,6 +23,9 @@ module FatPrelude
   , module CodeUnits
   , module AffClass
   , module EffClass
+  , module MonadState
+  , module Console
+  , module PSCISupport
   ) where
 
 import Prelude
@@ -49,5 +52,8 @@ import Effect (Effect, forE, foreachE, untilE, whileE)
 import Effect.Aff (Aff, attempt, bracket, cancelWith, catchError, delay, error, fiberCanceler, finally, forkAff, launchAff, launchAff_, message, never, nonCanceler, parallel, runAff, runAff_, sequential, supervise, throwError, try) as Aff
 import Effect.Aff.Class (class MonadAff, liftAff) as AffClass
 import Effect.Class (class MonadEffect, liftEffect) as EffClass
+import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
+import Effect.Class.Console hiding (error) as Console
 import Prim hiding (Row) as Prim
 import Type.Prelude (Proxy(..))
+import PSCI.Support (class Eval) as PSCISupport

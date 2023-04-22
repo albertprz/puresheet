@@ -3,12 +3,10 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), interpretCellMove, parseColumn, parseRow, showCell)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), getCellFromMove, getSelectionTargetCell, parseColumn, parseRow, showCell)
 import App.Components.Table.Models (KeyCode(..), State)
 import App.Utils.DomUtils (selectAllVisibleElements, selectElement)
-import Control.Monad.State (class MonadState)
 import Data.Array as Array
-import Halogen as H
 import Unsafe.Coerce (unsafeCoerce)
 import Web.DOM (Element)
 import Web.DOM.Element (id, scrollWidth)
@@ -20,23 +18,34 @@ import Web.HTML.HTMLElement (focus)
 import Web.HTML.Window (scrollBy)
 import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.InputEvent (InputEvent)
-import Web.UIEvent.KeyboardEvent (KeyboardEvent)
+import Web.UIEvent.KeyboardEvent (KeyboardEvent, shiftKey)
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.WheelEvent (WheelEvent)
 
-arrowMove :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> CellMove -> m Unit
-arrowMove ev move = withPrevent ev $ do
-  active <- H.gets \st -> st.activeInput
+cellArrowMove :: forall m. MonadEffect m => MonadState State m => KeyboardEvent -> CellMove -> m Unit
+cellArrowMove ev move = withPrevent ev
+  if (shiftKey ev) then
+    modify_ \st -> st
+      { multiSelection = CellsSelection st.selectedCell
+          $ getCellFromMove move st.columns st.rows
+          $ fromMaybe st.selectedCell
+          $ getSelectionTargetCell st.multiSelection
+      }
+  else
+    cellMove ev move
+
+cellMove :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> CellMove -> m Unit
+cellMove ev move = withPrevent ev do
+  active <- gets \st -> st.activeInput
   when (not active) $ selectCell move
 
 selectCell :: forall m. MonadEffect m => MonadState State m => CellMove -> m Unit
 selectCell move = do
-  originCell <- H.gets \st -> st.selectedCell
-  { selectedCell, columns, rows } <- H.modify \st -> st
+  originCell <- gets \st -> st.selectedCell
+  { selectedCell, columns, rows } <- modify \st -> st
     { activeInput = false
     , multiSelection = NoSelection
-    , selectedCell = fromMaybe st.selectedCell
-        $ (interpretCellMove move) st.columns st.rows st.selectedCell
+    , selectedCell = getCellFromMove move st.columns st.rows st.selectedCell
     }
   visibleCols <- getVisibleCols
   visibleRows <- getVisibleRows
@@ -68,20 +77,20 @@ goToCellHelper cols rows allColumns origin { column, row } visibleCols
 adjustRows :: forall m. MonadState State m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
-  | currentRow + 1 > maxRow = H.modify_ \st -> st
+  | currentRow + 1 > maxRow = modify_ \st -> st
       { rows = Row <$> (currentRow - rowRange + 1) .. (currentRow + 1) }
 
-  | currentRow < minRow = H.modify_ \st -> st
+  | currentRow < minRow = modify_ \st -> st
       { rows = Row <$> currentRow .. (currentRow + rowRange) }
 
   | otherwise = pure unit
 
 initialize :: forall m. MonadState State m => MonadEffect m => m Unit
 initialize = do
-  { selectedCell, rows } <- H.get
+  { selectedCell, rows } <- get
   let Row (firstRow) = head rows
   visibleRows <- parseElems parseRow =<< getVisibleRows
-  H.modify_ \st -> st
+  modify_ \st -> st
     { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
   actOnCell selectedCell focus Nothing
 
@@ -116,15 +125,19 @@ scrollByY = scrollBy' 0.0
 scrollBy' :: Number -> Number -> Window -> Effect Unit
 scrollBy' x y = scrollBy (unsafeCoerce x) (unsafeCoerce y)
 
-parseKey :: String -> KeyCode
-parseKey "ArrowLeft" = ArrowLeft
-parseKey "ArrowRight" = ArrowRight
-parseKey "ArrowUp" = ArrowUp
-parseKey "ArrowDown" = ArrowDown
-parseKey "Enter" = Enter
-parseKey "Tab" = Tab
-parseKey "Space" = Space
-parseKey str = OtherKey str
+parseKeyCode :: String -> KeyCode
+parseKeyCode "ArrowLeft" = ArrowLeft
+parseKeyCode "ArrowRight" = ArrowRight
+parseKeyCode "ArrowUp" = ArrowUp
+parseKeyCode "ArrowDown" = ArrowDown
+parseKeyCode "Enter" = Enter
+parseKeyCode "Tab" = Tab
+parseKeyCode "Space" = Space
+parseKeyCode "Delete" = Delete
+parseKeyCode "Backspace" = Delete
+parseKeyCode "ShiftLeft" = Shift
+parseKeyCode "ShiftRight" = Shift
+parseKeyCode str = OtherKey str
 
 class IsEvent :: forall k. k -> Constraint
 class IsEvent a

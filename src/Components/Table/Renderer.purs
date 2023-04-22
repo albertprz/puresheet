@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.CSS.Table (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, cornerHeader, inSelection, rowHeader, selectedCell, selectedHeader, tableCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, MultiSelection, Row, isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
-import App.Components.Table.HandlerHelpers (parseKey)
+import App.Components.Table.HandlerHelpers (parseKeyCode)
 import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), State)
 import CSSPrelude (ClassName)
 import DOM.HTML.Indexed.AutocompleteType (AutocompleteType(..))
@@ -20,7 +20,8 @@ render :: forall cs m. State -> H.ComponentHTML Action cs m
 render { selectedCell, activeInput, tableData, columns, rows, multiSelection } =
   HH.table
     [ HP.style "border-spacing: 0"
-    , HE.onKeyDown \ev -> KeyPress (parseKey $ KeyboardEvent.code ev) ev
+    , HE.onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
+    , HE.onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
     , HE.onWheel WheelScroll
     ]
     [ HH.thead_
@@ -99,7 +100,7 @@ renderBodyCell selected selection active cell value =
         , HP.value $ foldMap show value
         , HP.style "cursor: cell"
         , HE.onValueChange $ WriteCell cell <<< parseCellValue
-        , HE.onKeyDown \ev -> InputKeyPress (parseKey $ KeyboardEvent.code ev) ev
+        , HE.onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
         ]
     ]
 

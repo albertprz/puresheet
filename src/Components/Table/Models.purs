@@ -26,6 +26,7 @@ data Action
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
   | KeyPress KeyCode KeyboardEvent
+  | KeyRelease KeyCode KeyboardEvent
   | InputKeyPress KeyCode KeyboardEvent
   | WheelScroll WheelEvent
   | ClickHeader Header
@@ -50,4 +51,6 @@ data KeyCode
   | Enter
   | Tab
   | Space
+  | Delete
+  | Shift
   | OtherKey String
