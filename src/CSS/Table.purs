@@ -10,6 +10,21 @@ strippedTable = ClassName "stripped-table"
 selectedCell :: ClassName
 selectedCell = ClassName "selected-cell"
 
+inSelection :: ClassName
+inSelection = ClassName "in-selection"
+
+aboveSelection :: ClassName
+aboveSelection = ClassName "above-selection"
+
+belowSelection :: ClassName
+belowSelection = ClassName "below-selection"
+
+atLeftSelection :: ClassName
+atLeftSelection = ClassName "at-left-selection"
+
+atRightSelection :: ClassName
+atRightSelection = ClassName "at-right-selection"
+
 tableCell :: ClassName
 tableCell = ClassName "table-cell"
 
@@ -57,17 +72,32 @@ cellCss = do
     padding := em 0.5 ~ em 1
     textAlign := center
 
-  th ? Rule.do
-    backgroundColor := lighterGrey
-    color := black
-
   td &: lastChild /\ th &: lastChild ? Rule.do
     borderRightWidth := px 1
 
   td |> input ? Rule.do
-    backgroundColor := white
+    backgroundColor := inherit
     borderWidth := px 0
     textAlign := center
+
+  td &. inSelection ? Rule.do
+    backgroundColor := lighterGreen
+
+  td &. aboveSelection ? Rule.do
+    borderBottomColor := green
+
+  td &. belowSelection ? Rule.do
+    borderBottomColor := green
+
+  td &. atLeftSelection ? Rule.do
+    borderLeftColor := green
+
+  td &. atRightSelection ? Rule.do
+    borderLeftColor := green
+
+  th ? Rule.do
+    backgroundColor := lighterGrey
+    color := black
 
   td &. selectedCell ? Rule.do
     outlineStyle := solid
@@ -78,6 +108,12 @@ cellCss = do
   th &. selectedHeader ? Rule.do
     backgroundColor := lightGreen
 
+  th &. cornerHeader ? Rule.do
+    position := sticky
+    top := px 0
+    left := px 0
+    zIndex := 10
+
   th &. columnHeader ? Rule.do
     position := sticky
     top := px 0
@@ -86,7 +122,3 @@ cellCss = do
     position := sticky
     left := px 0
 
-  th &. cornerHeader ? Rule.do
-    position := sticky
-    top := px 0
-    left := px 0

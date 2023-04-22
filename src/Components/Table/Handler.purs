@@ -2,8 +2,9 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
+import App.Components.Table.Cell (CellMove(..), MultiSelection(..), SelectionState(..))
 import App.Components.Table.HandlerHelpers (actOnCell, arrowMove, initialize, prevent, selectCell, withPrevent)
-import App.Components.Table.Models (Action(..), CellMove(..), Key(..), State)
+import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), KeyCode(..), State)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
@@ -79,16 +80,45 @@ handleAction (WheelScroll ev)
   | pos $ deltaY ev = arrowMove ev NextRow
   | otherwise = pure unit
 
-handleAction (DragHeader startHeader) =
+handleAction (ClickHeader CornerHeader) =
+  H.modify_ \st -> st
+    { multiSelection = AllSelection }
+
+handleAction (ClickHeader (ColumnHeader col)) = do
+  selectCell (OtherColumn col)
+  H.modify_ \st -> st
+    { multiSelection = ColumnSelection $ pure col }
+
+handleAction (ClickHeader (RowHeader row)) = do
+  selectCell (OtherRow row)
+  H.modify_ \st -> st
+    { multiSelection = RowSelection $ pure row }
+
+handleAction (DragCell Start startCell ev) = withPrevent ev do
+  selectCell (OtherCell startCell)
+  H.modify_ \st -> st
+    { selectionState = InProgressSelection }
+
+handleAction (DragCell End _ _) =
+  H.modify_ \st -> st
+    { selectionState = FinishedSelection }
+
+handleAction (DragCell Over overCell _) = do
+  { selectedCell, selectionState } <- H.get
+  when (selectedCell /= overCell && selectionState == InProgressSelection)
+    $ H.modify_ \st -> st
+        { multiSelection = CellsSelection selectedCell overCell }
+
+handleAction (DragHeader Start startHeader _) =
   H.modify_ \st -> st
     { draggedHeader = Just startHeader }
 
-handleAction (DropHeader endHeader) =
+handleAction (DragHeader End endHeader _) =
   H.modify_ \st -> st
     { columns = maybe st.columns (\col -> switchElements col endHeader st.columns) st.draggedHeader
     , draggedHeader = Nothing
     }
 
-handleAction (DragOverHeader ev) =
+handleAction (DragHeader Over _ ev) =
   prevent ev
 

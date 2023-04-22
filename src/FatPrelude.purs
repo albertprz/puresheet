@@ -27,10 +27,10 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.ArrayUtils (class Range, getElemSat, getNextElemSat, getPrevElemSat, head', init', last', range, satIndex, switchElements, tail', toArray', (!!!), (..)) as ArrayUtils
+import App.Utils.ArrayUtils (class Range, getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', last', range, satIndex, switchElements, tail', toArray', (!!!), (..)) as ArrayUtils
 import App.Utils.CharUtils (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.FunctorUtils (mapp, (<$$>)) as FunctorUtils
-import App.Utils.MonoidUtils (whenMonoid) as MonoidUtils
+import App.Utils.MonoidUtils (whenMonoid, whenMonoidAppend, (<>!)) as MonoidUtils
 import App.Utils.NumberUtils (abs, coalesce, dec, inc, neg, pos) as NumberUtils
 import Data.Array.NonEmpty hiding ((..), range, all, any, elem, notElem, find, findMap, foldM, intercalate, length, scanl, scanr) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor

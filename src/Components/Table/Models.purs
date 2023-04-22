@@ -3,7 +3,7 @@ module App.Components.Table.Models where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellValue, Column, Row)
+import App.Components.Table.Cell (Cell, CellValue, Column, MultiSelection, Row, SelectionState)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
@@ -15,6 +15,8 @@ type State =
   , tableData :: Map Cell CellValue
   , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
+  , multiSelection :: MultiSelection
+  , selectionState :: SelectionState
   , draggedHeader :: Maybe Column
   }
 
@@ -23,23 +25,24 @@ data Action
   | WriteCell Cell CellValue
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
-  | KeyPress Key KeyboardEvent
-  | InputKeyPress Key KeyboardEvent
+  | KeyPress KeyCode KeyboardEvent
+  | InputKeyPress KeyCode KeyboardEvent
   | WheelScroll WheelEvent
-  | DragHeader Column
-  | DropHeader Column
-  | DragOverHeader DragEvent
+  | ClickHeader Header
+  | DragHeader EventTransition Column DragEvent
+  | DragCell EventTransition Cell MouseEvent
 
-data CellMove
-  = NextRow
-  | PrevRow
-  | NextColumn
-  | PrevColumn
-  | NextCell
-  | PrevCell
-  | OtherCell Cell
+data EventTransition
+  = Start
+  | Over
+  | End
 
-data Key
+data Header
+  = CornerHeader
+  | ColumnHeader Column
+  | RowHeader Row
+
+data KeyCode
   = ArrowLeft
   | ArrowRight
   | ArrowUp

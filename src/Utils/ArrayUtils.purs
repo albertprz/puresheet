@@ -52,6 +52,10 @@ satIndex seq idx = fromMaybe bound (seq !! idx)
     | idx < 0 = head seq
     | otherwise = last seq
 
+inRange :: forall a. Ord a => a -> a -> a -> Boolean
+inRange x y value = between x y value ||
+  between y x value
+
 infixr 8 range as ..
 
 class Range a where
@@ -62,4 +66,3 @@ instance Range Char where
 
 instance Range Int where
   range = NonEmptyArray.range
-

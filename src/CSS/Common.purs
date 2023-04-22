@@ -33,4 +33,7 @@ green :: Color
 green = hex "#009933"
 
 lightGreen :: Color
-lightGreen = hex "#33ff33"
+lightGreen = hex "#4dff4d"
+
+lighterGreen :: Color
+lighterGreen = hex "#ccffcc"

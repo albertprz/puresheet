@@ -3,8 +3,8 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, Column, Row(..), getCell, getColumnCell, getRowCell, parseColumn, parseRow, showCell)
-import App.Components.Table.Models (CellMove(..), Key(..), State)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), interpretCellMove, parseColumn, parseRow, showCell)
+import App.Components.Table.Models (KeyCode(..), State)
 import App.Utils.DomUtils (selectAllVisibleElements, selectElement)
 import Control.Monad.State (class MonadState)
 import Data.Array as Array
@@ -34,6 +34,7 @@ selectCell move = do
   originCell <- H.gets \st -> st.selectedCell
   { selectedCell, columns, rows } <- H.modify \st -> st
     { activeInput = false
+    , multiSelection = NoSelection
     , selectedCell = fromMaybe st.selectedCell
         $ (interpretCellMove move) st.columns st.rows st.selectedCell
     }
@@ -100,16 +101,6 @@ actOnCell cell action subElem = do
     <> foldMap (" " <> _) subElem
   liftEffect $ traverse_ action element
 
-interpretCellMove :: CellMove -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
-interpretCellMove move = case move of
-  NextRow -> getRowCell inc
-  PrevRow -> getRowCell dec
-  NextColumn -> getColumnCell inc
-  PrevColumn -> getColumnCell dec
-  NextCell -> getCell inc
-  PrevCell -> getCell dec
-  OtherCell cell -> \_ _ _ -> Just cell
-
 withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
 
@@ -125,7 +116,7 @@ scrollByY = scrollBy' 0.0
 scrollBy' :: Number -> Number -> Window -> Effect Unit
 scrollBy' x y = scrollBy (unsafeCoerce x) (unsafeCoerce y)
 
-parseKey :: String -> Key
+parseKey :: String -> KeyCode
 parseKey "ArrowLeft" = ArrowLeft
 parseKey "ArrowRight" = ArrowRight
 parseKey "ArrowUp" = ArrowUp
