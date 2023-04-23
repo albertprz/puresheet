@@ -3,7 +3,7 @@ module App.Components.Table where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..), SelectionState(..))
+import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..))
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), State)
 import App.Components.Table.Renderer (render)
@@ -29,7 +29,7 @@ initialState = const
       ]
   , columns: Column <$> 'A' .. 'Z'
   , rows: Row <$> 1 .. 100
-  , draggedHeader: Nothing
   , multiSelection: NoSelection
-  , selectionState: FinishedSelection
+  , selectionInProgress: false
+  , draggedHeader: Nothing
   }

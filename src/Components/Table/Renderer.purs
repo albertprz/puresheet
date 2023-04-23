@@ -5,35 +5,32 @@ import Prim hiding (Row)
 
 import App.CSS.Table (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, cornerHeader, inSelection, rowHeader, selectedCell, selectedHeader, tableCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, MultiSelection, Row, isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
-import App.Components.Table.HandlerHelpers (parseKeyCode)
 import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), State)
-import CSSPrelude (ClassName)
-import DOM.HTML.Indexed.AutocompleteType (AutocompleteType(..))
+import App.Utils.DomUtils (parseKeyCode)
 import Data.Map as Map
-import Halogen as H
-import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.HTML.Properties as HP
+import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
+import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
+import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, disabled, draggable, id, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
-render :: forall cs m. State -> H.ComponentHTML Action cs m
+render :: forall cs m. State -> ComponentHTML Action cs m
 render { selectedCell, activeInput, tableData, columns, rows, multiSelection } =
-  HH.table
-    [ HP.style "border-spacing: 0"
-    , HE.onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
-    , HE.onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
-    , HE.onWheel WheelScroll
+  table
+    [ style "border-spacing: 0"
+    , onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
+    , onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
+    , onWheel WheelScroll
     ]
-    [ HH.thead_
-        [ HH.tr_
+    [ thead_
+        [ tr_
             $ toArray
             $ renderHeaderCorner
             : (renderColumnHeader selectedCell multiSelection <$> columns)
         ]
-    , HH.tbody_ $ toArray $
+    , tbody_ $ toArray $
         do
           row <- rows
-          pure $ HH.tr_
+          pure $ tr_
             $ toArray
             $ renderRowHeader selectedCell multiSelection row
             :
@@ -45,77 +42,81 @@ render { selectedCell, activeInput, tableData, columns, rows, multiSelection } =
                 pure $ renderBodyCell selectedCell multiSelection activeInput cell cellValue
     ]
 
-renderRowHeader :: forall i. Cell -> MultiSelection -> Row -> HH.HTML i Action
+renderRowHeader :: forall i. Cell -> MultiSelection -> Row -> HTML i Action
 renderRowHeader selected selection row =
-  HH.th
-    [ HP.id $ show row
-    , HP.classes $ [ rowHeader ]
-        <>! isRowSelected selected selection row
+  th
+    [ id $ show row
+    , tabIndex 0
+    , classes $ [ rowHeader ]
+        <>? isRowSelected selected selection row
         /\ selectedHeader
-    , HE.onClick $ const $ ClickHeader $ RowHeader row
+    , onClick $ ClickHeader $ RowHeader row
     ]
-    [ HH.text $ show row ]
+    [ text $ show row ]
 
-renderColumnHeader :: forall i. Cell -> MultiSelection -> Column -> HH.HTML i Action
+renderColumnHeader :: forall i. Cell -> MultiSelection -> Column -> HTML i Action
 renderColumnHeader selected selection column =
-  HH.th
-    [ HP.id $ show column
-    , HP.classes $ [ columnHeader ]
-        <>! isColumnSelected selected selection column
+  th
+    [ id $ show column
+    , tabIndex 0
+    , classes $ [ columnHeader ]
+        <>? isColumnSelected selected selection column
         /\ selectedHeader
-    , HP.draggable true
-    , HP.style "cursor: grab"
-    , HE.onDragStart $ DragHeader Start column
-    , HE.onDrop $ DragHeader End column
-    , HE.onDragOver $ DragHeader Over column
-    , HE.onClick $ const $ ClickHeader $ ColumnHeader column
+    , draggable true
+    , style "cursor: grab"
+    , onDragStart $ DragHeader Start column
+    , onDrop $ DragHeader End column
+    , onDragOver $ DragHeader Over column
+    , onClick $ ClickHeader $ ColumnHeader column
     ]
-    [ HH.text $ show column ]
+    [ text $ show column ]
 
-renderHeaderCorner :: forall i. HH.HTML i Action
+renderHeaderCorner :: forall i. HTML i Action
 renderHeaderCorner =
-  HH.th
-    [ HP.class_ cornerHeader
-    , HE.onClick $ const $ ClickHeader CornerHeader
+  th
+    [ class_ cornerHeader
+    , tabIndex 0
+    , onClick $ ClickHeader CornerHeader
     ]
-    [ HH.text mempty ]
+    [ text mempty ]
 
-renderBodyCell :: forall i. Cell -> MultiSelection -> Boolean -> Cell -> Maybe CellValue -> HH.HTML i Action
-renderBodyCell selected selection active cell value =
-  HH.td
-    [ HP.id $ showCell cell
-    , HP.tabIndex 0
-    , HP.style "cursor: cell"
-    , HP.classes $ bodyCellSelectionClasses selected selection cell
-    , HE.onClick $ ClickCell cell
-    , HE.onDoubleClick $ DoubleClickCell cell
-    , HE.onMouseDown $ DragCell Start cell
-    , HE.onMouseUp $ DragCell End cell
-    , HE.onMouseOver $ DragCell Over cell
+renderBodyCell :: forall i. Cell -> MultiSelection -> Boolean -> Cell -> Maybe CellValue -> HTML i Action
+renderBodyCell selected selection active cell cellValue =
+  td
+    [ id $ showCell cell
+    , tabIndex 0
+    , style "cursor: cell"
+    , classes $ bodyCellSelectionClasses selected selection cell
+    , onClick $ ClickCell cell
+    , onDoubleClick $ DoubleClickCell cell
+    , onMouseDown $ DragCell Start cell
+    , onMouseUp $ DragCell End cell
+    , onMouseOver $ DragCell Over cell
     ]
-    [ HH.input
-        [ HP.type_ HP.InputText
-        , HP.autocomplete AutocompleteOff
-        , HP.disabled $ not $ cell == selected && active
-        , HP.value $ foldMap show value
-        , HP.style "cursor: cell"
-        , HE.onValueChange $ WriteCell cell <<< parseCellValue
-        , HE.onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
+    [ input
+        [ type_ InputText
+        , tabIndex 0
+        , autocomplete AutocompleteOff
+        , disabled $ not $ cell == selected && active
+        , value $ foldMap show cellValue
+        , style "cursor: cell"
+        , onValueChange $ WriteCell cell <<< parseCellValue
+        , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
         ]
     ]
 
 bodyCellSelectionClasses :: Cell -> MultiSelection -> Cell -> Array ClassName
 bodyCellSelectionClasses selected selection cell =
   [ tableCell ]
-    <>! (selected == cell)
+    <>? (selected == cell)
     /\ selectedCell
-    <>! isCellInSelection selection cell
+    <>? isCellInSelection selection cell
     /\ inSelection
-    <>! isCellAboveSelection selection cell
+    <>? isCellAboveSelection selection cell
     /\ aboveSelection
-    <>! isCellBelowSelection selection cell
+    <>? isCellBelowSelection selection cell
     /\ belowSelection
-    <>! isCellAtLeftSelection selection cell
+    <>? isCellAtLeftSelection selection cell
     /\ atLeftSelection
-    <>! isCellAtRightSelection selection cell
+    <>? isCellAtRightSelection selection cell
     /\ atRightSelection

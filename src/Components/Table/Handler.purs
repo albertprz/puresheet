@@ -2,14 +2,13 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellMove(..), MultiSelection(..), SelectionState(..))
-import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, initialize, prevent, selectCell, withPrevent)
-import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), KeyCode(..), State)
+import App.Components.Table.Cell (CellMove(..), MultiSelection(..))
+import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, initialize, selectAllCells, selectCell)
+import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), State)
+import App.Utils.DomUtils (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
-import Web.UIEvent.KeyboardEvent as KeyboardEvent
-import Web.UIEvent.MouseEvent (shiftKey)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
@@ -59,7 +58,7 @@ handleAction (KeyPress Tab ev) =
   withPrevent ev $ selectCell move
   where
   move
-    | KeyboardEvent.shiftKey ev = PrevCell
+    | shiftKey ev = PrevCell
     | otherwise = NextCell
 
 handleAction (KeyPress Space ev) = withPrevent ev do
@@ -71,13 +70,28 @@ handleAction (KeyPress Delete ev) = withPrevent ev $
     { tableData = Map.delete st.selectedCell st.tableData }
 
 handleAction (KeyPress Shift ev) = withPrevent ev $
-  modify_ _ { selectionState = InProgressSelection }
+  modify_ _ { selectionInProgress = true }
 
-handleAction (KeyPress (OtherKey _) _) =
+handleAction (KeyPress (CharKeyCode 'A') ev)
+  | ctrlKey ev = selectAllCells ev
+
+handleAction (KeyPress (CharKeyCode 'C') ev)
+  | ctrlKey ev = copyCells ev
+
+handleAction (KeyPress (CharKeyCode 'V') ev)
+  | ctrlKey ev = pure unit
+
+handleAction (KeyPress (CharKeyCode 'X') ev)
+  | ctrlKey ev = pure unit
+
+handleAction (KeyPress (CharKeyCode _) _) =
+  pure unit
+
+handleAction (KeyPress (OtherKeyCode _) _) =
   pure unit
 
 handleAction (KeyRelease Shift ev) = withPrevent ev $
-  modify_ _ { selectionState = FinishedSelection }
+  modify_ _ { selectionInProgress = false }
 
 handleAction (KeyRelease _ _) =
   pure unit
@@ -92,28 +106,28 @@ handleAction (WheelScroll ev)
   | pos $ deltaY ev = cellMove ev NextRow
   | otherwise = pure unit
 
-handleAction (ClickHeader CornerHeader) =
-  modify_ _ { multiSelection = AllSelection }
+handleAction (ClickHeader CornerHeader ev) =
+  selectAllCells ev
 
-handleAction (ClickHeader (ColumnHeader col)) = do
+handleAction (ClickHeader (ColumnHeader col) _) = do
   selectCell (OtherColumn col)
   modify_ _ { multiSelection = ColumnSelection $ pure col }
 
-handleAction (ClickHeader (RowHeader row)) = do
+handleAction (ClickHeader (RowHeader row) _) = do
   selectCell (OtherRow row)
   modify_ _ { multiSelection = RowSelection $ pure row }
 
-handleAction (DragCell Start startCell ev) = withPrevent ev do
+handleAction (DragCell Start startCell _) = do
   selectCell (OtherCell startCell)
-  modify_ _ { selectionState = InProgressSelection }
+  modify_ _ { selectionInProgress = true }
 
 handleAction (DragCell End _ ev) =
   when (not $ shiftKey ev) $
-    modify_ _ { selectionState = FinishedSelection }
+    modify_ _ { selectionInProgress = false }
 
 handleAction (DragCell Over overCell _) = do
-  { selectedCell, selectionState } <- H.get
-  when (selectedCell /= overCell && selectionState == InProgressSelection)
+  { selectedCell, selectionInProgress } <- H.get
+  when (selectedCell /= overCell && selectionInProgress)
     $ modify_ _ { multiSelection = CellsSelection selectedCell overCell }
 
 handleAction (DragHeader Start startHeader _) =
@@ -127,4 +141,3 @@ handleAction (DragHeader End endHeader _) =
 
 handleAction (DragHeader Over _ ev) =
   prevent ev
-

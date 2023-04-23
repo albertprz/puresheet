@@ -4,6 +4,8 @@ import FatPrelude
 import Prim hiding (Row)
 
 import Data.Int as Int
+import Data.Map as Map
+import Data.Tuple (Tuple)
 
 showCell :: Cell -> String
 showCell { column, row } = show column <> show row
@@ -15,6 +17,10 @@ parseColumn elemId = case toCharArray elemId of
 
 parseRow :: String -> Maybe Row
 parseRow elemId = Row <$> fromString elemId
+
+showCellValue :: CellValue -> String
+showCellValue (StringVal x) = x
+showCellValue (IntVal x) = show x
 
 parseCellValue :: String -> CellValue
 parseCellValue str =
@@ -108,7 +114,7 @@ getCellFromMove move columns rows cell =
   fromMaybe cell $ (interpretCellMove move) columns rows cell
 
 interpretCellMove :: CellMove -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
-interpretCellMove move = case move of
+interpretCellMove = case _ of
   NextRow -> getRowCell inc
   PrevRow -> getRowCell dec
   NextColumn -> getColumnCell inc
@@ -118,6 +124,38 @@ interpretCellMove move = case move of
   OtherColumn column -> \_ _ cell -> Just $ cell { column = column }
   OtherRow row -> \_ _ cell -> Just $ cell { row = row }
   OtherCell cell -> \_ _ _ -> Just cell
+
+serializeSelectionValues :: MultiSelection -> Cell -> NonEmptyArray Column -> NonEmptyArray Row -> Map Cell CellValue -> String
+serializeSelectionValues selection selectedCell columns rows tableData =
+  intercalate "\n"
+    $ intercalate "\t"
+    <$> (foldMap showCellValue <<< (_ `Map.lookup` tableData))
+    <$$> (getTargetCells selection selectedCell columns rows)
+
+getTargetCells :: MultiSelection -> Cell -> NonEmptyArray Column -> NonEmptyArray Row -> (NonEmptyArray (NonEmptyArray Cell))
+getTargetCells selection selectedCell columns rows =
+  fromMaybe (singleton $ singleton selectedCell) $ getSelectionCells selection columns rows
+
+getSelectionCells :: MultiSelection -> NonEmptyArray Column -> NonEmptyArray Row -> Maybe (NonEmptyArray (NonEmptyArray Cell))
+getSelectionCells selection columns rows = do
+  columnBounds /\ rowBounds <- getSelectionBounds selection columns rows
+  pure do
+    row <- rowBounds
+    pure do
+      column <- columnBounds
+      pure $ { column, row }
+
+getSelectionBounds :: MultiSelection -> NonEmptyArray Column -> NonEmptyArray Row -> Maybe (Tuple (NonEmptyArray Column) (NonEmptyArray Row))
+getSelectionBounds NoSelection _ _ = Nothing
+getSelectionBounds AllSelection columns rows =
+  Just $ columns /\ rows
+getSelectionBounds (ColumnSelection columns) _ rows =
+  Just $ columns /\ rows
+getSelectionBounds (RowSelection rows) columns _ =
+  Just $ columns /\ rows
+getSelectionBounds (CellsSelection { column: Column column, row: Row row } { column: Column column', row: Row row' }) _ _ =
+  Just $ (Column <$> sort (column .. column')) /\
+    (Row <$> sort (row .. row'))
 
 newtype Column = Column Char
 
@@ -147,15 +185,10 @@ data MultiSelection
   | AllSelection
   | NoSelection
 
-data SelectionState
-  = InProgressSelection
-  | FinishedSelection
-
 derive newtype instance Eq Column
 derive newtype instance Ord Column
 derive newtype instance Eq Row
 derive newtype instance Ord Row
-derive instance Eq SelectionState
 
 instance Show Column where
   show (Column x) = fromCharArray [ x ]

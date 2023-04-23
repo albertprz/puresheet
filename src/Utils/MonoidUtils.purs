@@ -8,7 +8,7 @@ import Data.Tuple.Nested ((/\))
 whenMonoid :: forall m. Monoid m => Boolean -> m -> m
 whenMonoid cond m = if cond then m else mempty
 
-infixl 5 whenMonoidAppend as <>!
+infixl 5 whenMonoidAppend as <>?
 
 whenMonoidAppend
   :: forall f a

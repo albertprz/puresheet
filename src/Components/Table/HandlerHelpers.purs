@@ -3,24 +3,18 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), getCellFromMove, getSelectionTargetCell, parseColumn, parseRow, showCell)
-import App.Components.Table.Models (KeyCode(..), State)
-import App.Utils.DomUtils (selectAllVisibleElements, selectElement)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), getCellFromMove, getSelectionTargetCell, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Models (State)
+import App.Utils.DomUtils (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
-import Unsafe.Coerce (unsafeCoerce)
+import Web.Clipboard (clipboard, writeText)
 import Web.DOM (Element)
 import Web.DOM.Element (id, scrollWidth)
 import Web.DOM.ParentNode (QuerySelector(..))
-import Web.Event.Event (Event, preventDefault)
-import Web.HTML (HTMLElement, Window, window)
-import Web.HTML.Event.DragEvent (DragEvent)
+import Web.HTML (HTMLElement, window)
 import Web.HTML.HTMLElement (focus)
-import Web.HTML.Window (scrollBy)
-import Web.UIEvent.FocusEvent (FocusEvent)
-import Web.UIEvent.InputEvent (InputEvent)
-import Web.UIEvent.KeyboardEvent (KeyboardEvent, shiftKey)
-import Web.UIEvent.MouseEvent (MouseEvent)
-import Web.UIEvent.WheelEvent (WheelEvent)
+import Web.HTML.Window (navigator)
+import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
 cellArrowMove :: forall m. MonadEffect m => MonadState State m => KeyboardEvent -> CellMove -> m Unit
 cellArrowMove ev move = withPrevent ev
@@ -38,6 +32,16 @@ cellMove :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a ->
 cellMove ev move = withPrevent ev do
   active <- gets \st -> st.activeInput
   when (not active) $ selectCell move
+
+selectAllCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
+selectAllCells ev = withPrevent ev $
+  modify_ _ { multiSelection = AllSelection }
+
+copyCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
+copyCells ev = withPrevent ev do
+  clip <- liftEffect $ clipboard =<< navigator =<< window
+  cellContents <- gets \st -> serializeSelectionValues st.multiSelection st.selectedCell st.columns st.rows st.tableData
+  liftEffect $ void $ writeText cellContents clip
 
 selectCell :: forall m. MonadEffect m => MonadState State m => CellMove -> m Unit
 selectCell move = do
@@ -109,45 +113,3 @@ actOnCell cell action subElem = do
     <> showCell cell
     <> foldMap (" " <> _) subElem
   liftEffect $ traverse_ action element
-
-withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
-withPrevent ev next = prevent ev *> next
-
-prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
-prevent ev = liftEffect (preventDefault $ toEvent ev)
-
-scrollByX :: Number -> Window -> Effect Unit
-scrollByX x = scrollBy' x 0.0
-
-scrollByY :: Number -> Window -> Effect Unit
-scrollByY = scrollBy' 0.0
-
-scrollBy' :: Number -> Number -> Window -> Effect Unit
-scrollBy' x y = scrollBy (unsafeCoerce x) (unsafeCoerce y)
-
-parseKeyCode :: String -> KeyCode
-parseKeyCode "ArrowLeft" = ArrowLeft
-parseKeyCode "ArrowRight" = ArrowRight
-parseKeyCode "ArrowUp" = ArrowUp
-parseKeyCode "ArrowDown" = ArrowDown
-parseKeyCode "Enter" = Enter
-parseKeyCode "Tab" = Tab
-parseKeyCode "Space" = Space
-parseKeyCode "Delete" = Delete
-parseKeyCode "Backspace" = Delete
-parseKeyCode "ShiftLeft" = Shift
-parseKeyCode "ShiftRight" = Shift
-parseKeyCode str = OtherKey str
-
-class IsEvent :: forall k. k -> Constraint
-class IsEvent a
-
-instance IsEvent MouseEvent
-instance IsEvent KeyboardEvent
-instance IsEvent FocusEvent
-instance IsEvent InputEvent
-instance IsEvent DragEvent
-instance IsEvent WheelEvent
-
-toEvent :: forall a. IsEvent a => a -> Event
-toEvent = unsafeCoerce
