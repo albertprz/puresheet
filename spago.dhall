@@ -25,6 +25,7 @@
   , "web-events"
   , "web-html"
   , "web-uievents"
+  , "js-promise-aff"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

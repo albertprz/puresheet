@@ -3,11 +3,13 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), getCellFromMove, getSelectionTargetCell, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), deserializeSelectionValues, getCellFromMove, getSelectionTargetCell, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
 import App.Components.Table.Models (State)
 import App.Utils.DomUtils (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
-import Web.Clipboard (clipboard, writeText)
+import Data.Map as Map
+import Promise.Aff as Promise
+import Web.Clipboard (Clipboard, clipboard, readText, writeText)
 import Web.DOM (Element)
 import Web.DOM.Element (id, scrollWidth)
 import Web.DOM.ParentNode (QuerySelector(..))
@@ -37,11 +39,23 @@ selectAllCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a =
 selectAllCells ev = withPrevent ev $
   modify_ _ { multiSelection = AllSelection }
 
-copyCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
+copyCells :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
 copyCells ev = withPrevent ev do
-  clip <- liftEffect $ clipboard =<< navigator =<< window
   cellContents <- gets \st -> serializeSelectionValues st.multiSelection st.selectedCell st.columns st.rows st.tableData
-  liftEffect $ void $ writeText cellContents clip
+  liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
+
+pasteCells :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
+pasteCells ev = withPrevent ev do
+  clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
+  modify_ \st -> st { tableData = Map.union (deserializeSelectionValues st.selectedCell st.columns st.rows clipContents) st.tableData }
+
+deleteCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
+deleteCells ev = withPrevent ev $
+  modify_ \st -> st
+    { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells st.multiSelection st.selectedCell st.columns st.rows }
+
+getClipboard :: forall m. MonadEffect m => m Clipboard
+getClipboard = liftEffect $ clipboard =<< navigator =<< window
 
 selectCell :: forall m. MonadEffect m => MonadState State m => CellMove -> m Unit
 selectCell move = do

@@ -3,6 +3,7 @@ module App.Components.Table.Cell where
 import FatPrelude
 import Prim hiding (Row)
 
+import Data.Array as Array
 import Data.Int as Int
 import Data.Map as Map
 import Data.Tuple (Tuple)
@@ -132,6 +133,16 @@ serializeSelectionValues selection selectedCell columns rows tableData =
     <$> (foldMap showCellValue <<< (_ `Map.lookup` tableData))
     <$$> (getTargetCells selection selectedCell columns rows)
 
+deserializeSelectionValues :: Cell -> NonEmptyArray Column -> NonEmptyArray Row -> String -> Map Cell CellValue
+deserializeSelectionValues selectedCell columns _ str = Map.fromFoldable
+  do
+    rowValues /\ row <- Array.zip values $ toArray (selectedCell.row .. Row 10000)
+    value /\ column <- Array.zip rowValues $ toArray (selectedCell.column .. last columns)
+    pure $ { row, column } /\ parseCellValue value
+  where
+  values = split (Pattern "\t") <$>
+    split (Pattern "\n") str
+
 getTargetCells :: MultiSelection -> Cell -> NonEmptyArray Column -> NonEmptyArray Row -> (NonEmptyArray (NonEmptyArray Cell))
 getTargetCells selection selectedCell columns rows =
   fromMaybe (singleton $ singleton selectedCell) $ getSelectionCells selection columns rows
@@ -153,9 +164,13 @@ getSelectionBounds (ColumnSelection columns) _ rows =
   Just $ columns /\ rows
 getSelectionBounds (RowSelection rows) columns _ =
   Just $ columns /\ rows
-getSelectionBounds (CellsSelection { column: Column column, row: Row row } { column: Column column', row: Row row' }) _ _ =
-  Just $ (Column <$> sort (column .. column')) /\
-    (Row <$> sort (row .. row'))
+getSelectionBounds
+  ( CellsSelection { column: column, row: row }
+      { column: column', row: row' }
+  )
+  _
+  _ =
+  Just $ sort (column .. column') /\ sort (row .. row')
 
 newtype Column = Column Char
 
@@ -199,3 +214,9 @@ instance Show Row where
 instance Show CellValue where
   show (StringVal str) = str
   show (IntVal int) = show int
+
+instance Range Column where
+  range (Column c1) (Column c2) = Column <$> c1 .. c2
+
+instance Range Row where
+  range (Row r1) (Row r2) = Row <$> r1 .. r2

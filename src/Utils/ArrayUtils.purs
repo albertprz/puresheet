@@ -4,7 +4,7 @@ import Prelude
 
 import App.Utils.NumberUtils (dec, inc)
 import Data.Array as Array
-import Data.Array.NonEmpty (findIndex, head, last, mapMaybe, toArray, updateAtIndices, (!!))
+import Data.Array.NonEmpty (findIndex, head, last, length, mapMaybe, toArray, updateAtIndices, (!!))
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
@@ -22,6 +22,18 @@ last' = Array.last
 
 init' :: forall a. Array a -> Maybe (Array a)
 init' = Array.init
+
+take' :: forall a. Int -> Array a -> Array a
+take' = Array.take
+
+takeEnd' :: forall a. Int -> Array a -> Array a
+takeEnd' = Array.takeEnd
+
+drop' :: forall a. Int -> Array a -> Array a
+drop' = Array.drop
+
+dropEnd' :: forall a. Int -> Array a -> Array a
+dropEnd' = Array.dropEnd
 
 toArray' :: forall a. Maybe (NonEmptyArray a) -> Array a
 toArray' = maybe [] toArray
@@ -55,6 +67,9 @@ satIndex seq idx = fromMaybe bound (seq !! idx)
 inRange :: forall a. Ord a => a -> a -> a -> Boolean
 inRange x y value = between x y value ||
   between y x value
+
+distance :: forall a. Range a => a -> a -> Int
+distance x y = length $ x .. y
 
 infixr 8 range as ..
 

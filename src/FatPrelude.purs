@@ -20,6 +20,8 @@ module FatPrelude
   , module Unit
   , module Function
   , module Char
+  , module String
+  , module StringPattern
   , module Int
   , module CodeUnits
   , module AffClass
@@ -31,7 +33,7 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.ArrayUtils (class Range, getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', last', range, satIndex, switchElements, tail', toArray', (!!!), (..)) as ArrayUtils
+import App.Utils.ArrayUtils (class Range, distance, drop', dropEnd', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', last', range, satIndex, switchElements, tail', take', takeEnd', toArray', (!!!), (..)) as ArrayUtils
 import App.Utils.CharUtils (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.FunctorUtils (mapp, (<$$>)) as FunctorUtils
 import App.Utils.MonoidUtils (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
@@ -40,6 +42,8 @@ import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), eval
 import Data.Array.NonEmpty hiding ((..), range, all, any, elem, notElem, find, findMap, foldM, intercalate, length, scanl, scanr) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor
 import Data.Char (fromCharCode, toCharCode) as Char
+import Data.String.Common hiding (null) as String
+import Data.String.Pattern (Pattern(..), Replacement(..)) as StringPattern
 import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldMapDefaultL, foldMapDefaultR, foldl, foldlDefault, foldr, foldrDefault, for_, indexl, indexr, intercalate, length, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, oneOf, oneOfMap, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
 import Data.Function (applyFlipped, applyN, compose, const, flip, identity, on, (#), ($), (<<<), (>>>)) as Function
 import Data.Int (Parity(..), Radix, base36, binary, ceil, decimal, even, floor, fromNumber, fromString, fromStringAs, hexadecimal, octal, odd, parity, pow, quot, radix, rem, round, toNumber, toStringAs, trunc) as Int

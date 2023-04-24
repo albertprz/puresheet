@@ -3,7 +3,7 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.Components.Table.Cell (CellMove(..), MultiSelection(..))
-import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, initialize, selectAllCells, selectCell)
+import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), State)
 import App.Utils.DomUtils (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
 import Data.Map as Map
@@ -65,9 +65,8 @@ handleAction (KeyPress Space ev) = withPrevent ev do
   { selectedCell } <- modify _ { activeInput = true }
   actOnCell selectedCell focus $ Just "input"
 
-handleAction (KeyPress Delete ev) = withPrevent ev $
-  modify_ \st -> st
-    { tableData = Map.delete st.selectedCell st.tableData }
+handleAction (KeyPress Delete ev) =
+  deleteCells ev
 
 handleAction (KeyPress Shift ev) = withPrevent ev $
   modify_ _ { selectionInProgress = true }
@@ -79,10 +78,10 @@ handleAction (KeyPress (CharKeyCode 'C') ev)
   | ctrlKey ev = copyCells ev
 
 handleAction (KeyPress (CharKeyCode 'V') ev)
-  | ctrlKey ev = pure unit
+  | ctrlKey ev = pasteCells ev
 
 handleAction (KeyPress (CharKeyCode 'X') ev)
-  | ctrlKey ev = pure unit
+  | ctrlKey ev = copyCells ev *> deleteCells ev
 
 handleAction (KeyPress (CharKeyCode _) _) =
   pure unit
