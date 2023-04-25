@@ -4,7 +4,7 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Utils.DomUtils (KeyCode)
-import App.Components.Table.Cell (Cell, CellValue, Column, MultiSelection, Row)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
@@ -18,7 +18,7 @@ type State =
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
   , selectionInProgress :: Boolean
-  , draggedHeader :: Maybe Column
+  , draggedHeader :: Maybe Header
   }
 
 data Action
@@ -31,16 +31,11 @@ data Action
   | KeyRelease KeyCode KeyboardEvent
   | InputKeyPress KeyCode KeyboardEvent
   | WheelScroll WheelEvent
-  | DragHeader EventTransition Column DragEvent
+  | DragHeader EventTransition Header DragEvent
   | DragCell EventTransition Cell MouseEvent
 
 data EventTransition
   = Start
   | Over
   | End
-
-data Header
-  = CornerHeader
-  | ColumnHeader Column
-  | RowHeader Row
 

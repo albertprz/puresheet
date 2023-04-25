@@ -6,6 +6,7 @@ import Prim hiding (Row)
 import Data.Array as Array
 import Data.Int as Int
 import Data.Map as Map
+import Data.Set as Set
 import Data.Tuple (Tuple)
 
 showCell :: Cell -> String
@@ -126,30 +127,29 @@ interpretCellMove = case _ of
   OtherRow row -> \_ _ cell -> Just $ cell { row = row }
   OtherCell cell -> \_ _ _ -> Just cell
 
-serializeSelectionValues :: MultiSelection -> Cell -> NonEmptyArray Column -> NonEmptyArray Row -> Map Cell CellValue -> String
-serializeSelectionValues selection selectedCell columns rows tableData =
-  intercalate "\n"
-    $ intercalate "\t"
+serializeSelectionValues :: MultiSelection -> Cell -> NonEmptyArray Column -> Map Cell CellValue -> String
+serializeSelectionValues selection selectedCell columns tableData =
+  intercalate newline
+    $ intercalate tab
     <$> (foldMap showCellValue <<< (_ `Map.lookup` tableData))
-    <$$> (getTargetCells selection selectedCell columns rows)
+    <$$> (getTargetCells selection selectedCell columns)
 
-deserializeSelectionValues :: Cell -> NonEmptyArray Column -> NonEmptyArray Row -> String -> Map Cell CellValue
-deserializeSelectionValues selectedCell columns _ str = Map.fromFoldable
+deserializeSelectionValues :: Cell -> NonEmptyArray Column -> String -> Map Cell CellValue
+deserializeSelectionValues selectedCell columns str = Map.fromFoldable
   do
-    rowValues /\ row <- Array.zip values $ toArray (selectedCell.row .. Row 10000)
+    rowValues /\ row <- Array.zip values $ toArray (selectedCell.row .. maxRow)
     value /\ column <- Array.zip rowValues $ toArray (selectedCell.column .. last columns)
     pure $ { row, column } /\ parseCellValue value
   where
-  values = split (Pattern "\t") <$>
-    split (Pattern "\n") str
+  values = split (Pattern tab) <$> split (Pattern newline) str
 
-getTargetCells :: MultiSelection -> Cell -> NonEmptyArray Column -> NonEmptyArray Row -> (NonEmptyArray (NonEmptyArray Cell))
-getTargetCells selection selectedCell columns rows =
-  fromMaybe (singleton $ singleton selectedCell) $ getSelectionCells selection columns rows
+getTargetCells :: MultiSelection -> Cell -> NonEmptyArray Column -> (NonEmptyArray (NonEmptyArray Cell))
+getTargetCells selection selectedCell columns =
+  fromMaybe (singleton $ singleton selectedCell) $ getSelectionCells selection columns
 
-getSelectionCells :: MultiSelection -> NonEmptyArray Column -> NonEmptyArray Row -> Maybe (NonEmptyArray (NonEmptyArray Cell))
-getSelectionCells selection columns rows = do
-  columnBounds /\ rowBounds <- getSelectionBounds selection columns rows
+getSelectionCells :: MultiSelection -> NonEmptyArray Column -> Maybe (NonEmptyArray (NonEmptyArray Cell))
+getSelectionCells selection columns = do
+  columnBounds /\ rowBounds <- getSelectionBounds selection columns maxRowBounds
   pure do
     row <- rowBounds
     pure do
@@ -161,9 +161,9 @@ getSelectionBounds NoSelection _ _ = Nothing
 getSelectionBounds AllSelection columns rows =
   Just $ columns /\ rows
 getSelectionBounds (ColumnSelection columns) _ rows =
-  Just $ columns /\ rows
+  Just $ sort columns /\ rows
 getSelectionBounds (RowSelection rows) columns _ =
-  Just $ columns /\ rows
+  Just $ columns /\ sort rows
 getSelectionBounds
   ( CellsSelection { column: column, row: row }
       { column: column', row: row' }
@@ -171,6 +171,51 @@ getSelectionBounds
   _
   _ =
   Just $ sort (column .. column') /\ sort (row .. row')
+
+getColumnHeader :: Header -> Maybe Column
+getColumnHeader (ColumnHeader header) = Just header
+getColumnHeader _ = Nothing
+
+getRowHeader :: Header -> Maybe Row
+getRowHeader (RowHeader header) = Just header
+getRowHeader _ = Nothing
+
+firstRow :: Row
+firstRow = Row 1
+
+maxRow :: Row
+maxRow = Row 1_000
+
+maxRowBounds :: NonEmptyArray Row
+maxRowBounds = firstRow .. maxRow
+
+swapTableMapColumn :: forall v. Column -> Column -> Map Cell v -> Map Cell v
+swapTableMapColumn origin target tableDict =
+  foldl (flip swapMapKey) tableDict keysToSwap
+  where
+  keysToSwap = Set.map (\row -> { column: origin, row } /\ { column: target, row })
+    $ Set.map (\cell -> cell.row)
+    $ Set.filter
+        (\cell -> cell.column == origin || cell.column == target)
+        (Map.keys tableDict)
+
+swapTableMapRow :: forall v. Row -> Row -> Map Cell v -> Map Cell v
+swapTableMapRow origin target tableDict =
+  foldl (flip swapMapKey) tableDict keysToSwap
+  where
+  keysToSwap = Set.map (\column -> { column, row: origin } /\ { column, row: target })
+    $ Set.map (\cell -> cell.column)
+    $ Set.filter
+        (\cell -> cell.row == origin || cell.row == target)
+        (Map.keys tableDict)
+
+swapMapKey :: forall k v. Ord k => Tuple k k -> Map k v -> Map k v
+swapMapKey (k1 /\ k2) dict =
+  Map.alter (const v2) k1 $
+    Map.alter (const v1) k2 dict
+  where
+  v1 = Map.lookup k1 dict
+  v2 = Map.lookup k2 dict
 
 newtype Column = Column Char
 
@@ -199,6 +244,11 @@ data MultiSelection
   | CellsSelection Cell Cell
   | AllSelection
   | NoSelection
+
+data Header
+  = CornerHeader
+  | ColumnHeader Column
+  | RowHeader Row
 
 derive newtype instance Eq Column
 derive newtype instance Ord Column

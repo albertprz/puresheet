@@ -4,8 +4,8 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.CSS.Table (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, cornerHeader, inSelection, rowHeader, selectedCell, selectedHeader, tableCell)
-import App.Components.Table.Cell (Cell, CellValue, Column, MultiSelection, Row, isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
-import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), State)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
+import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.DomUtils (parseKeyCode)
 import Data.Map as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
@@ -50,7 +50,12 @@ renderRowHeader selected selection row =
     , classes $ [ rowHeader ]
         <>? isRowSelected selected selection row
         /\ selectedHeader
+    , draggable true
+    , style "cursor: grab"
     , onClick $ ClickHeader $ RowHeader row
+    , onDragStart $ DragHeader Start $ RowHeader row
+    , onDrop $ DragHeader End $ RowHeader row
+    , onDragOver $ DragHeader Over $ RowHeader row
     ]
     [ text $ show row ]
 
@@ -64,10 +69,10 @@ renderColumnHeader selected selection column =
         /\ selectedHeader
     , draggable true
     , style "cursor: grab"
-    , onDragStart $ DragHeader Start column
-    , onDrop $ DragHeader End column
-    , onDragOver $ DragHeader Over column
     , onClick $ ClickHeader $ ColumnHeader column
+    , onDragStart $ DragHeader Start $ ColumnHeader column
+    , onDrop $ DragHeader End $ ColumnHeader column
+    , onDragOver $ DragHeader Over $ ColumnHeader column
     ]
     [ text $ show column ]
 

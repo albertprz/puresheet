@@ -3,6 +3,7 @@ module FatPrelude
   , module MonoidUtils
   , module ArrayUtils
   , module CharUtils
+  , module StringUtils
   , module NumberUtils
   , module FunctorUtils
   , module Foldable
@@ -35,6 +36,7 @@ import Prelude
 
 import App.Utils.ArrayUtils (class Range, distance, drop', dropEnd', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', last', range, satIndex, switchElements, tail', take', takeEnd', toArray', (!!!), (..)) as ArrayUtils
 import App.Utils.CharUtils (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
+import App.Utils.StringUtils (newline, tab) as StringUtils
 import App.Utils.FunctorUtils (mapp, (<$$>)) as FunctorUtils
 import App.Utils.MonoidUtils (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
 import App.Utils.NumberUtils (abs, coalesce, dec, inc, neg, pos) as NumberUtils

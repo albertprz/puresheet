@@ -41,18 +41,18 @@ selectAllCells ev = withPrevent ev $
 
 copyCells :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
 copyCells ev = withPrevent ev do
-  cellContents <- gets \st -> serializeSelectionValues st.multiSelection st.selectedCell st.columns st.rows st.tableData
+  cellContents <- gets \st -> serializeSelectionValues st.multiSelection st.selectedCell st.columns st.tableData
   liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
 
 pasteCells :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
 pasteCells ev = withPrevent ev do
   clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
-  modify_ \st -> st { tableData = Map.union (deserializeSelectionValues st.selectedCell st.columns st.rows clipContents) st.tableData }
+  modify_ \st -> st { tableData = Map.union (deserializeSelectionValues st.selectedCell st.columns clipContents) st.tableData }
 
 deleteCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
 deleteCells ev = withPrevent ev $
   modify_ \st -> st
-    { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells st.multiSelection st.selectedCell st.columns st.rows }
+    { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells st.multiSelection st.selectedCell st.columns }
 
 getClipboard :: forall m. MonadEffect m => m Clipboard
 getClipboard = liftEffect $ clipboard =<< navigator =<< window

@@ -2,9 +2,9 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellMove(..), MultiSelection(..))
+import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
-import App.Components.Table.Models (Action(..), EventTransition(..), Header(..), State)
+import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.DomUtils (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
 import Data.Map as Map
 import Halogen as H
@@ -129,14 +129,23 @@ handleAction (DragCell Over overCell _) = do
   when (selectedCell /= overCell && selectionInProgress)
     $ modify_ _ { multiSelection = CellsSelection selectedCell overCell }
 
-handleAction (DragHeader Start startHeader _) =
-  modify_ _ { draggedHeader = Just startHeader }
+handleAction (DragHeader Start header _) =
+  modify_ _ { draggedHeader = Just header }
 
-handleAction (DragHeader End endHeader _) =
+handleAction (DragHeader End (ColumnHeader newColumn) _) =
   modify_ \st -> st
-    { columns = maybe st.columns (\col -> switchElements col endHeader st.columns) st.draggedHeader
+    { tableData = maybe st.tableData (\col -> swapTableMapColumn col newColumn st.tableData) (st.draggedHeader >>= getColumnHeader)
+    , draggedHeader = Nothing
+    }
+
+handleAction (DragHeader End (RowHeader newRow) _) =
+  modify_ \st -> st
+    { tableData = maybe st.tableData (\row -> swapTableMapRow row newRow st.tableData) (st.draggedHeader >>= getRowHeader)
     , draggedHeader = Nothing
     }
 
 handleAction (DragHeader Over _ ev) =
   prevent ev
+
+handleAction (DragHeader _ _ _) =
+  pure unit
