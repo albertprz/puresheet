@@ -245,6 +245,11 @@ data MultiSelection
   | AllSelection
   | NoSelection
 
+data SelectionState
+  = InProgressSelection
+  | NotStartedSelection
+  | CopySelection
+
 data Header
   = CornerHeader
   | ColumnHeader Column
@@ -254,6 +259,7 @@ derive newtype instance Eq Column
 derive newtype instance Ord Column
 derive newtype instance Eq Row
 derive newtype instance Ord Row
+derive instance Eq SelectionState
 
 instance Show Column where
   show (Column x) = fromCharArray [ x ]

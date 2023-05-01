@@ -3,7 +3,7 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), deserializeSelectionValues, getCellFromMove, getSelectionTargetCell, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), deserializeSelectionValues, getCellFromMove, getSelectionTargetCell, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
 import App.Components.Table.Models (State)
 import App.Utils.DomUtils (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
@@ -42,6 +42,7 @@ selectAllCells ev = withPrevent ev $
 copyCells :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
 copyCells ev = withPrevent ev do
   cellContents <- gets \st -> serializeSelectionValues st.multiSelection st.selectedCell st.columns st.tableData
+  modify_ _ { selectionState = CopySelection }
   liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
 
 pasteCells :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit

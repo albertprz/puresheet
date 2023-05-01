@@ -3,8 +3,8 @@ module App.Components.Table.Renderer where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.Table (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, cornerHeader, inSelection, rowHeader, selectedCell, selectedHeader, tableCell)
-import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
+import App.CSS.Table (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedCell, selectedHeader, tableCell)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.DomUtils (parseKeyCode)
 import Data.Map as Map
@@ -14,9 +14,10 @@ import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplet
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 render :: forall cs m. State -> ComponentHTML Action cs m
-render { selectedCell, activeInput, tableData, columns, rows, multiSelection } =
+render { selectedCell, activeInput, tableData, columns, rows, multiSelection, selectionState } =
   table
-    [ style "border-spacing: 0"
+    [ classes $ whenMonoid (selectionState == CopySelection) [ copySelection ]
+    , style "border-spacing: 0"
     , onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
     , onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
     , onWheel WheelScroll

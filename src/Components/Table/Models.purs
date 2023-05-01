@@ -3,8 +3,8 @@ module App.Components.Table.Models where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
 import App.Utils.DomUtils (KeyCode)
-import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
@@ -17,7 +17,7 @@ type State =
   , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
-  , selectionInProgress :: Boolean
+  , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
   }
 

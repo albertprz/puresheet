@@ -2,43 +2,9 @@ module App.CSS.Table where
 
 import CSSPrelude
 
+import Data.Tuple (Tuple)
+import Tecton.Internal (Extensible, Selector)
 import Tecton.Rule as Rule
-
-strippedTable :: ClassName
-strippedTable = ClassName "stripped-table"
-
-selectedCell :: ClassName
-selectedCell = ClassName "selected-cell"
-
-inSelection :: ClassName
-inSelection = ClassName "in-selection"
-
-aboveSelection :: ClassName
-aboveSelection = ClassName "above-selection"
-
-belowSelection :: ClassName
-belowSelection = ClassName "below-selection"
-
-atLeftSelection :: ClassName
-atLeftSelection = ClassName "at-left-selection"
-
-atRightSelection :: ClassName
-atRightSelection = ClassName "at-right-selection"
-
-tableCell :: ClassName
-tableCell = ClassName "table-cell"
-
-columnHeader :: ClassName
-columnHeader = ClassName "column-header"
-
-selectedHeader :: ClassName
-selectedHeader = ClassName "selected-header"
-
-rowHeader :: ClassName
-rowHeader = ClassName "row-header"
-
-cornerHeader :: ClassName
-cornerHeader = ClassName "corner-header"
 
 css :: CSS
 css = do
@@ -83,17 +49,17 @@ cellCss = do
   td &. inSelection ? Rule.do
     backgroundColor := lighterGreen
 
-  td &. aboveSelection ? Rule.do
+  td &. aboveSelection /\ td &. belowSelection ? Rule.do
     borderBottomColor := green
 
-  td &. belowSelection ? Rule.do
-    borderBottomColor := green
+  table &. copySelection |* td &. aboveSelection /\ table &. copySelection |* td &. belowSelection ? Rule.do
+    borderBottomStyle := dashed
 
-  td &. atLeftSelection ? Rule.do
+  td &. atLeftSelection /\ td &. atRightSelection ? Rule.do
     borderLeftColor := green
 
-  td &. atRightSelection ? Rule.do
-    borderLeftColor := green
+  table &. copySelection |* td &. atLeftSelection /\ table &. copySelection |* td &. atRightSelection ? Rule.do
+    borderLeftStyle := dashed
 
   th ? Rule.do
     backgroundColor := lighterGrey
@@ -122,3 +88,41 @@ cellCss = do
     position := sticky
     left := px 0
 
+strippedTable :: ClassName
+strippedTable = ClassName "stripped-table"
+
+selectedCell :: ClassName
+selectedCell = ClassName "selected-cell"
+
+inSelection :: ClassName
+inSelection = ClassName "in-selection"
+
+copySelection :: ClassName
+copySelection = ClassName "copy-selection"
+
+aboveSelection :: ClassName
+aboveSelection = ClassName "above-selection"
+
+belowSelection :: ClassName
+belowSelection = ClassName "below-selection"
+
+atLeftSelection :: ClassName
+atLeftSelection = ClassName "at-left-selection"
+
+atRightSelection :: ClassName
+atRightSelection = ClassName "at-right-selection"
+
+tableCell :: ClassName
+tableCell = ClassName "table-cell"
+
+columnHeader :: ClassName
+columnHeader = ClassName "column-header"
+
+selectedHeader :: ClassName
+selectedHeader = ClassName "selected-header"
+
+rowHeader :: ClassName
+rowHeader = ClassName "row-header"
+
+cornerHeader :: ClassName
+cornerHeader = ClassName "corner-header"

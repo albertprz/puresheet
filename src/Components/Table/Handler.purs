@@ -2,7 +2,7 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
+import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.DomUtils (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
@@ -69,7 +69,7 @@ handleAction (KeyPress Delete ev) =
   deleteCells ev
 
 handleAction (KeyPress Shift ev) = withPrevent ev $
-  modify_ _ { selectionInProgress = true }
+  modify_ _ { selectionState = InProgressSelection }
 
 handleAction (KeyPress (CharKeyCode 'A') ev)
   | ctrlKey ev = selectAllCells ev
@@ -90,7 +90,7 @@ handleAction (KeyPress (OtherKeyCode _) _) =
   pure unit
 
 handleAction (KeyRelease Shift ev) = withPrevent ev $
-  modify_ _ { selectionInProgress = false }
+  modify_ _ { selectionState = NotStartedSelection }
 
 handleAction (KeyRelease _ _) =
   pure unit
@@ -118,15 +118,15 @@ handleAction (ClickHeader (RowHeader row) _) = do
 
 handleAction (DragCell Start startCell _) = do
   selectCell (OtherCell startCell)
-  modify_ _ { selectionInProgress = true }
+  modify_ _ { selectionState = InProgressSelection }
 
 handleAction (DragCell End _ ev) =
   when (not $ shiftKey ev) $
-    modify_ _ { selectionInProgress = false }
+    modify_ _ { selectionState = NotStartedSelection }
 
 handleAction (DragCell Over overCell _) = do
-  { selectedCell, selectionInProgress } <- H.get
-  when (selectedCell /= overCell && selectionInProgress)
+  { selectedCell, selectionState } <- H.get
+  when (selectedCell /= overCell && selectionState == InProgressSelection)
     $ modify_ _ { multiSelection = CellsSelection selectedCell overCell }
 
 handleAction (DragHeader Start header _) =
