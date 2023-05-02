@@ -3,7 +3,7 @@ module App.Components.Table.Renderer where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.Table (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedCell, selectedHeader, tableCell)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.DomUtils (parseKeyCode)
@@ -54,6 +54,9 @@ renderRowHeader selected selection row =
     , draggable true
     , style "cursor: grab"
     , onClick $ ClickHeader $ RowHeader row
+    , onMouseDown $ HoverHeader Start $ RowHeader row
+    , onMouseUp $ HoverHeader End $ RowHeader row
+    , onMouseOver $ HoverHeader Over $ RowHeader row
     , onDragStart $ DragHeader Start $ RowHeader row
     , onDrop $ DragHeader End $ RowHeader row
     , onDragOver $ DragHeader Over $ RowHeader row
@@ -71,6 +74,9 @@ renderColumnHeader selected selection column =
     , draggable true
     , style "cursor: grab"
     , onClick $ ClickHeader $ ColumnHeader column
+    , onMouseDown $ HoverHeader Start $ ColumnHeader column
+    , onMouseUp $ HoverHeader End $ ColumnHeader column
+    , onMouseOver $ HoverHeader Over $ ColumnHeader column
     , onDragStart $ DragHeader Start $ ColumnHeader column
     , onDrop $ DragHeader End $ ColumnHeader column
     , onDragOver $ DragHeader Over $ ColumnHeader column
@@ -95,9 +101,9 @@ renderBodyCell selected selection active cell cellValue =
     , classes $ bodyCellSelectionClasses selected selection cell
     , onClick $ ClickCell cell
     , onDoubleClick $ DoubleClickCell cell
-    , onMouseDown $ DragCell Start cell
-    , onMouseUp $ DragCell End cell
-    , onMouseOver $ DragCell Over cell
+    , onMouseDown $ HoverCell Start cell
+    , onMouseUp $ HoverCell End cell
+    , onMouseOver $ HoverCell Over cell
     ]
     [ input
         [ type_ InputText
@@ -113,9 +119,9 @@ renderBodyCell selected selection active cell cellValue =
 
 bodyCellSelectionClasses :: Cell -> MultiSelection -> Cell -> Array ClassName
 bodyCellSelectionClasses selected selection cell =
-  [ tableCell ]
+  [ sheetCell ]
     <>? (selected == cell)
-    /\ selectedCell
+    /\ selectedSheetCell
     <>? isCellInSelection selection cell
     /\ inSelection
     <>? isCellAboveSelection selection cell

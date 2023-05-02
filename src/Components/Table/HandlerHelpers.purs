@@ -3,7 +3,7 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), deserializeSelectionValues, getCellFromMove, getSelectionTargetCell, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
 import App.Components.Table.Models (State)
 import App.Utils.DomUtils (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
@@ -19,20 +19,19 @@ import Web.HTML.Window (navigator)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
 cellArrowMove :: forall m. MonadEffect m => MonadState State m => KeyboardEvent -> CellMove -> m Unit
-cellArrowMove ev move = withPrevent ev
+cellArrowMove ev move = withPrevent ev $
   if (shiftKey ev) then
     modify_ \st -> st
-      { multiSelection = CellsSelection st.selectedCell
-          $ getCellFromMove move st.columns st.rows
-          $ fromMaybe st.selectedCell
-          $ getSelectionTargetCell st.multiSelection
+      { multiSelection = computeNextSelection st.multiSelection st.selectedCell move
+          st.columns
+          st.rows
       }
   else
     cellMove ev move
 
 cellMove :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> CellMove -> m Unit
 cellMove ev move = withPrevent ev do
-  active <- gets \st -> st.activeInput
+  active <- gets _.activeInput
   when (not active) $ selectCell move
 
 selectAllCells :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
@@ -60,7 +59,7 @@ getClipboard = liftEffect $ clipboard =<< navigator =<< window
 
 selectCell :: forall m. MonadEffect m => MonadState State m => CellMove -> m Unit
 selectCell move = do
-  originCell <- gets \st -> st.selectedCell
+  originCell <- gets _.selectedCell
   { selectedCell, columns, rows } <- modify \st -> st
     { activeInput = false
     , multiSelection = NoSelection
@@ -96,10 +95,10 @@ goToCellHelper cols rows allColumns origin { column, row } visibleCols
 adjustRows :: forall m. MonadState State m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
-  | currentRow + 1 > maxRow = modify_ \st -> st
+  | currentRow + 1 > maxRow = modify_ _
       { rows = Row <$> (currentRow - rowRange + 1) .. (currentRow + 1) }
 
-  | currentRow < minRow = modify_ \st -> st
+  | currentRow < minRow = modify_ _
       { rows = Row <$> currentRow .. (currentRow + rowRange) }
 
   | otherwise = pure unit
@@ -109,7 +108,7 @@ initialize = do
   { selectedCell, rows } <- get
   let Row (firstRow) = head rows
   visibleRows <- parseElems parseRow =<< getVisibleRows
-  modify_ \st -> st
+  modify_ _
     { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
   actOnCell selectedCell focus Nothing
 

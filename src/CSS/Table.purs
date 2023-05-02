@@ -2,8 +2,6 @@ module App.CSS.Table where
 
 import CSSPrelude
 
-import Data.Tuple (Tuple)
-import Tecton.Internal (Extensible, Selector)
 import Tecton.Rule as Rule
 
 css :: CSS
@@ -22,7 +20,7 @@ tableCss = do
     marginRight := px 500
     display := inlineTable
 
-  table &. strippedTable |> tbody |> tr &: nthChild odd |> td ? Rule.do
+  table &. strippedSheet |> tbody |> tr &: nthChild odd |> td ? Rule.do
     backgroundColor := lighterGrey
 
   universal &: focus ? Rule.do
@@ -65,7 +63,7 @@ cellCss = do
     backgroundColor := lighterGrey
     color := black
 
-  td &. selectedCell ? Rule.do
+  td &. selectedSheetCell ? Rule.do
     outlineStyle := solid
     outlineColor := green
     outlineWidth := px 3
@@ -88,41 +86,3 @@ cellCss = do
     position := sticky
     left := px 0
 
-strippedTable :: ClassName
-strippedTable = ClassName "stripped-table"
-
-selectedCell :: ClassName
-selectedCell = ClassName "selected-cell"
-
-inSelection :: ClassName
-inSelection = ClassName "in-selection"
-
-copySelection :: ClassName
-copySelection = ClassName "copy-selection"
-
-aboveSelection :: ClassName
-aboveSelection = ClassName "above-selection"
-
-belowSelection :: ClassName
-belowSelection = ClassName "below-selection"
-
-atLeftSelection :: ClassName
-atLeftSelection = ClassName "at-left-selection"
-
-atRightSelection :: ClassName
-atRightSelection = ClassName "at-right-selection"
-
-tableCell :: ClassName
-tableCell = ClassName "table-cell"
-
-columnHeader :: ClassName
-columnHeader = ClassName "column-header"
-
-selectedHeader :: ClassName
-selectedHeader = ClassName "selected-header"
-
-rowHeader :: ClassName
-rowHeader = ClassName "row-header"
-
-cornerHeader :: ClassName
-cornerHeader = ClassName "corner-header"

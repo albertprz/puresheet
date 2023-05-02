@@ -110,24 +110,68 @@ handleAction (ClickHeader CornerHeader ev) =
 
 handleAction (ClickHeader (ColumnHeader col) _) = do
   selectCell (OtherColumn col)
-  modify_ _ { multiSelection = ColumnSelection $ pure col }
+  modify_ _
+    { multiSelection = ColumnsSelection col col
+    , selectionState = NotStartedSelection
+    }
 
 handleAction (ClickHeader (RowHeader row) _) = do
   selectCell (OtherRow row)
-  modify_ _ { multiSelection = RowSelection $ pure row }
+  modify_ _
+    { multiSelection = RowsSelection row row
+    , selectionState = NotStartedSelection
+    }
 
-handleAction (DragCell Start startCell _) = do
+handleAction (HoverCell Start startCell _) = do
   selectCell (OtherCell startCell)
   modify_ _ { selectionState = InProgressSelection }
 
-handleAction (DragCell End _ ev) =
+handleAction (HoverCell End _ ev) =
   when (not $ shiftKey ev) $
     modify_ _ { selectionState = NotStartedSelection }
 
-handleAction (DragCell Over overCell _) = do
-  { selectedCell, selectionState } <- H.get
-  when (selectedCell /= overCell && selectionState == InProgressSelection)
-    $ modify_ _ { multiSelection = CellsSelection selectedCell overCell }
+handleAction (HoverCell Over overCell _) = do
+  { selectionState, multiSelection, selectedCell } <- get
+  when (selectionState == InProgressSelection) $
+    case multiSelection of
+      NoSelection ->
+        modify_ _ { multiSelection = CellsSelection overCell overCell }
+      CellsSelection _ _ ->
+        modify_ _ { multiSelection = CellsSelection selectedCell overCell }
+      RowsSelection origin _ ->
+        modify_ _ { multiSelection = RowsSelection origin overCell.row }
+      ColumnsSelection origin _ ->
+        modify_ _ { multiSelection = ColumnsSelection origin overCell.column }
+      _ -> pure unit
+
+handleAction (HoverHeader Start _ _) =
+  modify_ _ { selectionState = InProgressSelection }
+
+handleAction (HoverHeader End _ ev) =
+  when (not $ shiftKey ev) $
+    modify_ _ { selectionState = NotStartedSelection }
+
+handleAction (HoverHeader Over (RowHeader overRow) _) = do
+  { selectionState, multiSelection } <- get
+  when (selectionState == InProgressSelection) $
+    case multiSelection of
+      NoSelection ->
+        modify_ _ { multiSelection = RowsSelection overRow overRow }
+      RowsSelection origin _ ->
+        modify_ _ { multiSelection = RowsSelection origin overRow }
+      _ -> pure unit
+
+handleAction (HoverHeader Over (ColumnHeader overColumn) _) = do
+  { selectionState, multiSelection } <- get
+  when (selectionState == InProgressSelection) $
+    case multiSelection of
+      NoSelection ->
+        modify_ _ { multiSelection = ColumnsSelection overColumn overColumn }
+      ColumnsSelection origin _ ->
+        modify_ _ { multiSelection = ColumnsSelection origin overColumn }
+      _ -> pure unit
+
+handleAction (HoverHeader Over CornerHeader _) = pure unit
 
 handleAction (DragHeader Start header _) =
   modify_ _ { draggedHeader = Just header }

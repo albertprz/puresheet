@@ -31,8 +31,9 @@ data Action
   | KeyRelease KeyCode KeyboardEvent
   | InputKeyPress KeyCode KeyboardEvent
   | WheelScroll WheelEvent
+  | HoverCell EventTransition Cell MouseEvent
+  | HoverHeader EventTransition Header MouseEvent
   | DragHeader EventTransition Header DragEvent
-  | DragCell EventTransition Cell MouseEvent
 
 data EventTransition
   = Start

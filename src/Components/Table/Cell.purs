@@ -44,21 +44,33 @@ getRowCell :: (Int -> Int) -> NonEmptyArray Column -> NonEmptyArray Row -> Cell 
 getRowCell f _ _ { column, row: Row (rowNum) } =
   Just { column, row: Row $ max one $ f rowNum }
 
-nextColumn :: Cell -> Cell
-nextColumn { column: Column col, row } =
-  { column: Column $ nextChar col, row }
+nextColumnCell :: Cell -> Cell
+nextColumnCell { column, row } =
+  { column: nextColumn column, row }
 
-prevColumn :: Cell -> Cell
-prevColumn { column: Column col, row } =
-  { column: Column $ prevChar col, row }
+prevColumnCell :: Cell -> Cell
+prevColumnCell { column, row } =
+  { column: prevColumn column, row }
 
-nextRow :: Cell -> Cell
-nextRow { column, row: Row row } =
-  { column, row: Row $ inc row }
+nextRowCell :: Cell -> Cell
+nextRowCell { column, row } =
+  { column, row: nextRow row }
 
-prevRow :: Cell -> Cell
-prevRow { column, row: Row row } =
-  { column, row: Row $ dec row }
+prevRowCell :: Cell -> Cell
+prevRowCell { column, row } =
+  { column, row: prevRow row }
+
+nextColumn :: Column -> Column
+nextColumn (Column column) = Column $ nextChar column
+
+prevColumn :: Column -> Column
+prevColumn (Column column) = Column $ prevChar column
+
+nextRow :: Row -> Row
+nextRow (Row row) = Row $ inc row
+
+prevRow :: Row -> Row
+prevRow (Row row) = Row $ dec row
 
 isColumnSelected :: Cell -> MultiSelection -> Column -> Boolean
 isColumnSelected selectedCell multiSelection column =
@@ -71,49 +83,62 @@ isRowSelected selectedCell multiSelection row =
     isRowInSelection multiSelection row
 
 isCellAtRightSelection :: MultiSelection -> Cell -> Boolean
-isCellAtRightSelection selection cell = (not $ isCellInSelection selection cell) && (isCellInSelection selection $ prevColumn cell)
+isCellAtRightSelection selection cell = (not $ isCellInSelection selection cell) && (isCellInSelection selection $ prevColumnCell cell)
 
 isCellAboveSelection :: MultiSelection -> Cell -> Boolean
-isCellAboveSelection selection cell = (not $ isCellInSelection selection cell) && (isCellInSelection selection $ nextRow cell)
+isCellAboveSelection selection cell = (not $ isCellInSelection selection cell) && (isCellInSelection selection $ nextRowCell cell)
 
 isCellAtLeftSelection :: MultiSelection -> Cell -> Boolean
-isCellAtLeftSelection selection cell = (isCellInSelection selection cell) && (not $ isCellInSelection selection $ prevColumn cell)
+isCellAtLeftSelection selection cell = (isCellInSelection selection cell) && (not $ isCellInSelection selection $ prevColumnCell cell)
 
 isCellBelowSelection :: MultiSelection -> Cell -> Boolean
-isCellBelowSelection selection cell = (isCellInSelection selection cell) && (not $ isCellInSelection selection $ nextRow cell)
+isCellBelowSelection selection cell = (isCellInSelection selection cell) && (not $ isCellInSelection selection $ nextRowCell cell)
 
 isColumnInSelection :: MultiSelection -> Column -> Boolean
 isColumnInSelection NoSelection _ = false
 isColumnInSelection AllSelection _ = true
-isColumnInSelection (RowSelection _) _ = true
-isColumnInSelection (ColumnSelection columns) col = elem col columns
+isColumnInSelection (RowsSelection _ _) _ = true
+isColumnInSelection (ColumnsSelection origin target) col =
+  elem col (origin .. target)
 isColumnInSelection (CellsSelection origin target) col =
   inRange origin.column target.column col
 
 isRowInSelection :: MultiSelection -> Row -> Boolean
 isRowInSelection NoSelection _ = false
 isRowInSelection AllSelection _ = true
-isRowInSelection (ColumnSelection _) _ = true
-isRowInSelection (RowSelection rows) row = elem row rows
+isRowInSelection (ColumnsSelection _ _) _ = true
+isRowInSelection (RowsSelection origin target) row =
+  elem row (origin .. target)
 isRowInSelection (CellsSelection origin target) row =
   inRange origin.row target.row row
 
 isCellInSelection :: MultiSelection -> Cell -> Boolean
 isCellInSelection NoSelection _ = false
 isCellInSelection AllSelection _ = true
-isCellInSelection (ColumnSelection cols) cell = elem cell.column cols
-isCellInSelection (RowSelection rows) cell = elem cell.row rows
+isCellInSelection (ColumnsSelection origin target) cell =
+  elem cell.column (origin .. target)
+isCellInSelection (RowsSelection origin target) cell =
+  elem cell.row (origin .. target)
 isCellInSelection (CellsSelection origin target) { column, row } =
   inRange origin.row target.row row &&
     inRange origin.column target.column column
 
-getSelectionTargetCell :: MultiSelection -> Maybe Cell
-getSelectionTargetCell (CellsSelection _ target) = Just target
-getSelectionTargetCell _ = Nothing
-
 getCellFromMove :: CellMove -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Cell
 getCellFromMove move columns rows cell =
   fromMaybe cell $ (interpretCellMove move) columns rows cell
+
+computeNextSelection :: MultiSelection -> Cell -> CellMove -> NonEmptyArray Column -> NonEmptyArray Row -> MultiSelection
+computeNextSelection (CellsSelection origin target) _ move columns rows =
+  CellsSelection origin
+    $ getCellFromMove move columns rows target
+computeNextSelection (ColumnsSelection origin target) _ move columns _ =
+  ColumnsSelection origin (fromMaybe origin $ interpretColumnMove move columns target)
+computeNextSelection (RowsSelection origin target) _ move _ rows =
+  RowsSelection origin (fromMaybe origin $ interpretRowMove move rows target)
+computeNextSelection NoSelection selectedCell move columns rows =
+  CellsSelection selectedCell
+    $ getCellFromMove move columns rows selectedCell
+computeNextSelection AllSelection _ _ _ _ = AllSelection
 
 interpretCellMove :: CellMove -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
 interpretCellMove = case _ of
@@ -126,6 +151,18 @@ interpretCellMove = case _ of
   OtherColumn column -> \_ _ cell -> Just $ cell { column = column }
   OtherRow row -> \_ _ cell -> Just $ cell { row = row }
   OtherCell cell -> \_ _ _ -> Just cell
+
+interpretColumnMove :: CellMove -> NonEmptyArray Column -> Column -> Maybe Column
+interpretColumnMove = case _ of
+  NextColumn -> getElemSat inc
+  PrevColumn -> getElemSat dec
+  _ -> \_ _ -> Nothing
+
+interpretRowMove :: CellMove -> NonEmptyArray Row -> Row -> Maybe Row
+interpretRowMove = case _ of
+  NextRow -> getElemSat inc
+  PrevRow -> getElemSat dec
+  _ -> \_ _ -> Nothing
 
 serializeSelectionValues :: MultiSelection -> Cell -> NonEmptyArray Column -> Map Cell CellValue -> String
 serializeSelectionValues selection selectedCell columns tableData =
@@ -156,14 +193,29 @@ getSelectionCells selection columns = do
       column <- columnBounds
       pure $ { column, row }
 
+isCellsSelection :: MultiSelection -> Boolean
+isCellsSelection (CellsSelection _ _) = true
+isCellsSelection NoSelection = true
+isCellsSelection _ = false
+
+isColumnsSelection :: MultiSelection -> Boolean
+isColumnsSelection (ColumnsSelection _ _) = true
+isColumnsSelection NoSelection = true
+isColumnsSelection _ = false
+
+isRowsSelection :: MultiSelection -> Boolean
+isRowsSelection (RowsSelection _ _) = true
+isRowsSelection NoSelection = true
+isRowsSelection _ = false
+
 getSelectionBounds :: MultiSelection -> NonEmptyArray Column -> NonEmptyArray Row -> Maybe (Tuple (NonEmptyArray Column) (NonEmptyArray Row))
 getSelectionBounds NoSelection _ _ = Nothing
 getSelectionBounds AllSelection columns rows =
   Just $ columns /\ rows
-getSelectionBounds (ColumnSelection columns) _ rows =
-  Just $ sort columns /\ rows
-getSelectionBounds (RowSelection rows) columns _ =
-  Just $ columns /\ sort rows
+getSelectionBounds (ColumnsSelection origin target) _ rows =
+  Just $ sort (origin .. target) /\ rows
+getSelectionBounds (RowsSelection origin target) columns _ =
+  Just $ columns /\ sort (origin .. target)
 getSelectionBounds
   ( CellsSelection { column: column, row: row }
       { column: column', row: row' }
@@ -239,8 +291,8 @@ data CellMove
   | OtherRow Row
 
 data MultiSelection
-  = RowSelection (NonEmptyArray Row)
-  | ColumnSelection (NonEmptyArray Column)
+  = RowsSelection Row Row
+  | ColumnsSelection Column Column
   | CellsSelection Cell Cell
   | AllSelection
   | NoSelection
