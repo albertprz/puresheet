@@ -3,18 +3,94 @@ module App.Components.Table.Renderer where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
-import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
+import App.CSS.ClassNames
+  ( aboveSelection
+  , atLeftSelection
+  , atRightSelection
+  , belowSelection
+  , columnHeader
+  , copySelection
+  , cornerHeader
+  , inSelection
+  , rowHeader
+  , selectedHeader
+  , selectedSheetCell
+  , sheetCell
+  )
+import App.Components.Table.Cell
+  ( Cell
+  , CellValue
+  , Column
+  , Header(..)
+  , MultiSelection
+  , Row
+  , SelectionState(..)
+  , isCellAboveSelection
+  , isCellAtLeftSelection
+  , isCellAtRightSelection
+  , isCellBelowSelection
+  , isCellInSelection
+  , isColumnSelected
+  , isRowSelected
+  , parseCellValue
+  , showCell
+  )
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.Dom (parseKeyCode)
 import Data.Map as Map
-import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
-import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
-import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, disabled, draggable, id, style, tabIndex, type_, value)
+import Halogen.HTML
+  ( ClassName
+  , ComponentHTML
+  , HTML
+  , input
+  , table
+  , tbody_
+  , td
+  , text
+  , th
+  , thead_
+  , tr_
+  )
+import Halogen.HTML.Events
+  ( onClick
+  , onDoubleClick
+  , onDragOver
+  , onDragStart
+  , onDrop
+  , onKeyDown
+  , onKeyUp
+  , onMouseDown
+  , onMouseOver
+  , onMouseUp
+  , onValueChange
+  , onWheel
+  )
+import Halogen.HTML.Properties
+  ( AutocompleteType(..)
+  , InputType(..)
+  , autocomplete
+  , class_
+  , classes
+  , disabled
+  , draggable
+  , id
+  , style
+  , tabIndex
+  , type_
+  , value
+  )
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 render :: forall cs m. State -> ComponentHTML Action cs m
-render { selectedCell, activeInput, tableData, columns, rows, multiSelection, selectionState } =
+render
+  { selectedCell
+  , activeInput
+  , tableData
+  , columns
+  , rows
+  , multiSelection
+  , selectionState
+  } =
   table
     [ classes $ whenMonoid (selectionState == CopySelection) [ copySelection ]
     , style "border-spacing: 0"
@@ -40,7 +116,9 @@ render { selectedCell, activeInput, tableData, columns, rows, multiSelection, se
                 let
                   cell = { column, row }
                   cellValue = Map.lookup cell tableData
-                pure $ renderBodyCell selectedCell multiSelection activeInput cell cellValue
+                pure $ renderBodyCell selectedCell multiSelection activeInput
+                  cell
+                  cellValue
     ]
 
 renderRowHeader :: forall i. Cell -> MultiSelection -> Row -> HTML i Action
@@ -62,7 +140,8 @@ renderRowHeader selected selection row =
     ]
     [ text $ show row ]
 
-renderColumnHeader :: forall i. Cell -> MultiSelection -> Column -> HTML i Action
+renderColumnHeader
+  :: forall i. Cell -> MultiSelection -> Column -> HTML i Action
 renderColumnHeader selected selection column =
   th
     [ id $ show column
@@ -90,7 +169,14 @@ renderHeaderCorner =
     ]
     [ text mempty ]
 
-renderBodyCell :: forall i. Cell -> MultiSelection -> Boolean -> Cell -> Maybe CellValue -> HTML i Action
+renderBodyCell
+  :: forall i
+   . Cell
+  -> MultiSelection
+  -> Boolean
+  -> Cell
+  -> Maybe CellValue
+  -> HTML i Action
 renderBodyCell selected selection active cell cellValue =
   td
     [ id $ showCell cell
@@ -109,7 +195,8 @@ renderBodyCell selected selection active cell cellValue =
         , disabled $ not $ cell == selected && active
         , value $ foldMap show cellValue
         , onValueChange $ WriteCell cell <<< parseCellValue
-        , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
+        , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev)
+            ev
         ]
     ]
 

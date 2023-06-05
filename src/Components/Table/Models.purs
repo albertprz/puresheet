@@ -3,7 +3,15 @@ module App.Components.Table.Models where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
+import App.Components.Table.Cell
+  ( Cell
+  , CellValue
+  , Column
+  , Header
+  , MultiSelection
+  , Row
+  , SelectionState
+  )
 import App.Utils.Dom (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)

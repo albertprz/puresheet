@@ -1,5 +1,6 @@
 .*
 !.gitignore
+!.tidyrc.json
 !.github
 
 output

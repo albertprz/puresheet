@@ -3,7 +3,13 @@ module App.Components.Table where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..), SelectionState(..))
+import App.Components.Table.Cell
+  ( CellValue(..)
+  , Column(..)
+  , MultiSelection(..)
+  , Row(..)
+  , SelectionState(..)
+  )
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), State)
 import App.Components.Table.Renderer (render)

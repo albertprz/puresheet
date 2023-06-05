@@ -2,8 +2,27 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
+import App.Components.Table.Cell
+  ( CellMove(..)
+  , Header(..)
+  , MultiSelection(..)
+  , SelectionState(..)
+  , getColumnHeader
+  , getRowHeader
+  , swapTableMapColumn
+  , swapTableMapRow
+  )
+import App.Components.Table.HandlerHelpers
+  ( actOnCell
+  , cellArrowMove
+  , cellMove
+  , copyCells
+  , deleteCells
+  , initialize
+  , pasteCells
+  , selectAllCells
+  , selectCell
+  )
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
 import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
 import Data.Map as Map
@@ -178,13 +197,17 @@ handleAction (DragHeader Start header _) =
 
 handleAction (DragHeader End (ColumnHeader newColumn) _) =
   modify_ \st -> st
-    { tableData = maybe st.tableData (\col -> swapTableMapColumn col newColumn st.tableData) (st.draggedHeader >>= getColumnHeader)
+    { tableData = maybe st.tableData
+        (\col -> swapTableMapColumn col newColumn st.tableData)
+        (st.draggedHeader >>= getColumnHeader)
     , draggedHeader = Nothing
     }
 
 handleAction (DragHeader End (RowHeader newRow) _) =
   modify_ \st -> st
-    { tableData = maybe st.tableData (\row -> swapTableMapRow row newRow st.tableData) (st.draggedHeader >>= getRowHeader)
+    { tableData = maybe st.tableData
+        (\row -> swapTableMapRow row newRow st.tableData)
+        (st.draggedHeader >>= getRowHeader)
     , draggedHeader = Nothing
     }
 

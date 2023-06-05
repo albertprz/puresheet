@@ -1,9 +1,9 @@
 module App.CSS.MainPage where
 
 import CSSPrelude
-import Tecton.Rule as Rule
 
 import App.CSS.Table as Table
+import Tecton.Rule as Rule
 
 css :: CSS
 css = do

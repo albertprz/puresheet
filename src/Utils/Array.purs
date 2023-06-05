@@ -4,7 +4,16 @@ import Prelude
 
 import App.Utils.Number (dec, inc)
 import Data.Array as Array
-import Data.Array.NonEmpty (findIndex, head, last, length, mapMaybe, toArray, updateAtIndices, (!!))
+import Data.Array.NonEmpty
+  ( findIndex
+  , head
+  , last
+  , length
+  , mapMaybe
+  , toArray
+  , updateAtIndices
+  , (!!)
+  )
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
@@ -77,7 +86,8 @@ class Range a where
   range :: a -> a -> NonEmptyArray a
 
 instance Range Char where
-  range c1 c2 = NonEmptyArray $ mapMaybe fromCharCode $ range (toCharCode c1) (toCharCode c2)
+  range c1 c2 = NonEmptyArray $ mapMaybe fromCharCode $ range (toCharCode c1)
+    (toCharCode c2)
 
 instance Range Int where
   range = NonEmptyArray.range

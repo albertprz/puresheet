@@ -24,35 +24,48 @@ import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent as MouseEvent
 import Web.UIEvent.WheelEvent (WheelEvent)
 
-selectAllVisibleElements :: forall m. MonadEffect m => QuerySelector -> m (Array Element)
+selectAllVisibleElements
+  :: forall m. MonadEffect m => QuerySelector -> m (Array Element)
 selectAllVisibleElements query = liftEffect $ do
   elems <- selectAllElements query
   visibleElems <- sequence $ elemsInViewport <$> (toElement <$$> elems)
   pure $ fold visibleElems
 
-selectAllElements :: forall m. MonadEffect m => QuerySelector -> m (Maybe (NonEmptyArray HTMLElement))
+selectAllElements
+  :: forall m
+   . MonadEffect m
+  => QuerySelector
+  -> m (Maybe (NonEmptyArray HTMLElement))
 selectAllElements query = liftEffect $ do
   nodes <- querySelectorHelper querySelectorAll query
   elems <- NodeList.toArray nodes
   pure $ (traverse HTMLElement.fromNode) =<< fromArray elems
 
-selectElement :: forall m. MonadEffect m => QuerySelector -> m (Maybe HTMLElement)
+selectElement
+  :: forall m. MonadEffect m => QuerySelector -> m (Maybe HTMLElement)
 selectElement query = liftEffect $ do
   maybeElem <- querySelectorHelper querySelector query
   pure $ HTMLElement.fromElement =<< maybeElem
 
-querySelectorHelper :: forall a. (QuerySelector -> ParentNode -> Effect a) -> QuerySelector -> Effect a
-querySelectorHelper function query = (function query <<< HTMLDocument.toParentNode <=< Window.document)
-  =<< window
+querySelectorHelper
+  :: forall a
+   . (QuerySelector -> ParentNode -> Effect a)
+  -> QuerySelector
+  -> Effect a
+querySelectorHelper function query =
+  (function query <<< HTMLDocument.toParentNode <=< Window.document)
+    =<< window
 
-elemsInViewport :: forall m. MonadEffect m => NonEmptyArray Element -> m (Array Element)
+elemsInViewport
+  :: forall m. MonadEffect m => NonEmptyArray Element -> m (Array Element)
 elemsInViewport elems = liftEffect $ do
   w <- window
   wHeight <- Height <<< toNumber <$> innerHeight w
   wWidth <- Width <<< toNumber <$> innerWidth w
   filterA (isInViewport wHeight wWidth) elems
 
-isInViewport :: forall m. MonadEffect m => Height -> Width -> Element -> m Boolean
+isInViewport
+  :: forall m. MonadEffect m => Height -> Width -> Element -> m Boolean
 isInViewport (Height wHeight) (Width wWidth) element =
   liftEffect $ do
     rect <- getBoundingClientRect element
