@@ -1,4 +1,4 @@
-module App.Utils.MonoidUtils where
+module App.Utils.Monoid where
 
 import Prelude
 

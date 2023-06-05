@@ -1,4 +1,4 @@
-module App.Utils.DomUtils where
+module App.Utils.Dom where
 
 import FatPrelude
 

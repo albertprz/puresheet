@@ -6,7 +6,7 @@ import Prim hiding (Row)
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
-import App.Utils.DomUtils (parseKeyCode)
+import App.Utils.Dom (parseKeyCode)
 import Data.Map as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
@@ -52,7 +52,6 @@ renderRowHeader selected selection row =
         <>? isRowSelected selected selection row
         /\ selectedHeader
     , draggable true
-    , style "cursor: grab"
     , onClick $ ClickHeader $ RowHeader row
     , onMouseDown $ HoverHeader Start $ RowHeader row
     , onMouseUp $ HoverHeader End $ RowHeader row
@@ -72,7 +71,6 @@ renderColumnHeader selected selection column =
         <>? isColumnSelected selected selection column
         /\ selectedHeader
     , draggable true
-    , style "cursor: grab"
     , onClick $ ClickHeader $ ColumnHeader column
     , onMouseDown $ HoverHeader Start $ ColumnHeader column
     , onMouseUp $ HoverHeader End $ ColumnHeader column
@@ -97,7 +95,6 @@ renderBodyCell selected selection active cell cellValue =
   td
     [ id $ showCell cell
     , tabIndex 0
-    , style "cursor: cell"
     , classes $ bodyCellSelectionClasses selected selection cell
     , onClick $ ClickCell cell
     , onDoubleClick $ DoubleClickCell cell
@@ -111,7 +108,6 @@ renderBodyCell selected selection active cell cellValue =
         , autocomplete AutocompleteOff
         , disabled $ not $ cell == selected && active
         , value $ foldMap show cellValue
-        , style "cursor: cell"
         , onValueChange $ WriteCell cell <<< parseCellValue
         , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
         ]

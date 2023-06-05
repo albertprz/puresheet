@@ -1,8 +1,8 @@
-module App.Utils.ArrayUtils where
+module App.Utils.Array where
 
 import Prelude
 
-import App.Utils.NumberUtils (dec, inc)
+import App.Utils.Number (dec, inc)
 import Data.Array as Array
 import Data.Array.NonEmpty (findIndex, head, last, length, mapMaybe, toArray, updateAtIndices, (!!))
 import Data.Array.NonEmpty as NonEmptyArray

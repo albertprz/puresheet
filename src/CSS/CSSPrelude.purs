@@ -4,7 +4,6 @@ module CSSPrelude
   , module Tuple.Nested
   , module Tecton
   , module Halogen
-  , module Tecton.Halogen
   , module Tecton.Internal
   , module Common
   , module ClassNames
@@ -14,8 +13,7 @@ import Prelude (class Applicative, class Apply, class Bind, class BooleanAlgebra
 import Data.Tuple (Tuple) as Tuple
 import Data.Tuple.Nested ((/\)) as Tuple.Nested
 import Halogen (AttrName(..), ClassName(..), Component, ComponentHTML, ElemName(..), PropName(..), RefLabel(..))
-import Tecton hiding ((&.), style)
+import Tecton
 import Tecton.Internal (Extensible, Selector)
-import Tecton.Halogen (style, styleSheet, (&.))
 import App.CSS.Common (black, darkGrey, green, grey, hex, lightGreen, lightGrey, lighterGreen, lighterGrey, red, white) as Common
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheet, sheetCell, strippedSheet) as ClassNames

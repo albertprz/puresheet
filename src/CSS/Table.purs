@@ -39,10 +39,14 @@ cellCss = do
   td &: lastChild /\ th &: lastChild ? Rule.do
     borderRightWidth := px 1
 
+  td ? Rule.do
+    cursor := cell
+
   td |> input ? Rule.do
     backgroundColor := inherit
     borderWidth := px 0
     textAlign := center
+    cursor := cell
 
   td &. inSelection ? Rule.do
     backgroundColor := lighterGreen
@@ -50,24 +54,25 @@ cellCss = do
   td &. aboveSelection /\ td &. belowSelection ? Rule.do
     borderBottomColor := green
 
-  table &. copySelection |* td &. aboveSelection /\ table &. copySelection |* td &. belowSelection ? Rule.do
-    borderBottomStyle := dashed
-
   td &. atLeftSelection /\ td &. atRightSelection ? Rule.do
     borderLeftColor := green
 
+  table &. copySelection |* td &. aboveSelection /\ table &. copySelection |* td &. belowSelection ? Rule.do
+    borderBottomStyle := dashed
+
   table &. copySelection |* td &. atLeftSelection /\ table &. copySelection |* td &. atRightSelection ? Rule.do
     borderLeftStyle := dashed
-
-  th ? Rule.do
-    backgroundColor := lighterGrey
-    color := black
 
   td &. selectedSheetCell ? Rule.do
     outlineStyle := solid
     outlineColor := green
     outlineWidth := px 3
     outlineOffset := px (-3)
+
+  th ? Rule.do
+    backgroundColor := lighterGrey
+    color := black
+    cursor := grab
 
   th &. selectedHeader ? Rule.do
     backgroundColor := lightGreen

@@ -34,12 +34,12 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.ArrayUtils (class Range, distance, drop', dropEnd', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', last', range, satIndex, switchElements, tail', take', takeEnd', toArray', (!!!), (..)) as ArrayUtils
-import App.Utils.CharUtils (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
-import App.Utils.StringUtils (newline, tab) as StringUtils
-import App.Utils.FunctorUtils (mapp, (<$$>)) as FunctorUtils
-import App.Utils.MonoidUtils (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
-import App.Utils.NumberUtils (abs, coalesce, dec, inc, neg, pos) as NumberUtils
+import App.Utils.Array (class Range, distance, drop', dropEnd', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', last', range, satIndex, switchElements, tail', take', takeEnd', toArray', (!!!), (..)) as ArrayUtils
+import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
+import App.Utils.String (newline, tab) as StringUtils
+import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
+import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
+import App.Utils.Number (abs, coalesce, dec, inc, neg, pos) as NumberUtils
 import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
 import Data.Array.NonEmpty hiding ((..), range, all, any, elem, notElem, find, findMap, foldM, intercalate, length, scanl, scanr) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor

@@ -3,12 +3,14 @@
   [ "aff"
   , "arrays"
   , "bifunctors"
+  , "bookhound"
   , "colors"
   , "console"
   , "effect"
   , "foldable-traversable"
   , "halogen"
   , "integers"
+  , "js-promise-aff"
   , "maybe"
   , "ordered-collections"
   , "prelude"
@@ -25,7 +27,6 @@
   , "web-events"
   , "web-html"
   , "web-uievents"
-  , "js-promise-aff"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

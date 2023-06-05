@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), EventTransition(..), State)
-import App.Utils.DomUtils (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
+import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)

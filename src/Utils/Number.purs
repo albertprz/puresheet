@@ -1,4 +1,4 @@
-module App.Utils.NumberUtils where
+module App.Utils.Number where
 
 import Prelude
 
@@ -23,3 +23,4 @@ abs x
 
 coalesce :: forall a. Semiring a => Maybe a -> a
 coalesce = fromMaybe zero
+

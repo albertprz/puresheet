@@ -1,15 +1,15 @@
 {
   "private": true,
-  "devDependencies": {
-    "parcel": "2.7.0",
-    "purescript": "^0.15.4",
-    "spago": "^0.20.9"
-  },
   "scripts": {
-    "build": "spago build -u '--stash --censor-codes=MissingTypeDeclaration,WildcardInferredType,ImplicitImport' && purs-tidy format-in-place ./src/",
-    "test": "spago test",
+    "build": "purs-tidy format-in-place ./src/ && purs-tidy format-in-place ./test/ && spago build",
+    "test": "spago -x test.dhall test",
     "serve": "parcel dev/index.html --open",
-    "build-ci": "spago build",
+    "build-ci": "spago -x test.dhall build",
     "build-prod": "rm -rf prod && mkdir -p prod && cp dev/index.html prod/ && spago bundle-app --to prod/index.js && parcel build prod/index.html"
+  },
+  "devDependencies": {
+    "purescript": "^0.15.8",
+    "spago": "^0.20.9",
+    "parcel": "2.7.0"
   }
 }

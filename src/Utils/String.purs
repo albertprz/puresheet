@@ -1,4 +1,4 @@
-module App.Utils.StringUtils where
+module App.Utils.String where
 
 newline :: String
 newline = "\n"

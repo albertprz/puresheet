@@ -1,4 +1,4 @@
-module App.Utils.FunctorUtils where
+module App.Utils.Functor where
 
 import Prelude
 
