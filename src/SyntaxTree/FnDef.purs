@@ -36,10 +36,8 @@ data FnBody
       { body :: FnBody
       , fnBindings :: Array FnDef
       }
-  | IfExpr
-      { cond :: FnBody
-      , ifBranch :: FnBody
-      , elseBranch :: FnBody
+  | MultiWayIfExpr
+      { whenExprs :: Array GuardedFnBody
       }
   | DoExpr
       { steps :: Array DoStep }
@@ -47,15 +45,16 @@ data FnBody
       { matchee :: FnBody
       , cases :: Array CaseBinding
       }
-  | LambdaCaseExpr
-      { cases :: Array CaseBinding }
   | RecordCreate
-      { ctor :: FnBody
+      { ctor :: QCtor
       , namedFields :: Array (Var /\ FnBody)
       }
   | RecordUpdate
       { var :: FnBody
       , namedFields :: Array (Var /\ FnBody)
+      }
+  | ColumnsUpdate
+      { fields :: Array (Var /\ FnBody)
       }
   | ListRange FnBody (Maybe FnBody)
   | Tuple (Array FnBody)
@@ -70,21 +69,30 @@ data FnVar
   | Var' QVar
   | Ctor' QCtor
 
-data FnOp = VarOp' QVarOp | CtorOp' QCtorOp
+data FnOp
+  = VarOp' QVarOp
+  | CtorOp' QCtorOp
 
 data DoStep
   = DoBinding (Array Var) FnBody
-  | LetBinding (Array FnDef)
+  | LetBinding FnDef
   | Body FnBody
 
 data CaseBinding = CaseBinding Pattern MaybeGuardedFnBody
 
-data MaybeGuardedFnBody = Guarded (Array GuardedFnBody) | Standard FnBody
+data MaybeGuardedFnBody
+  = Guarded (Array GuardedFnBody)
+  | Standard FnBody
 
-data GuardedFnBody = GuardedFnBody { guard :: Guard, body :: FnBody }
+data GuardedFnBody = GuardedFnBody
+  { guard :: Guard
+  , body :: FnBody
+  }
 
-data Guard = Guard (Array PatternGuard) | Otherwise
+data Guard
+  = Guard (Array PatternGuard)
+  | Otherwise
 
-data PatternGuard = PatternGuard Pattern FnBody | SimpleGuard FnBody
-
-data Associativity = LAssoc | RAssoc
+data PatternGuard
+  = PatternGuard Pattern FnBody
+  | SimpleGuard FnBody

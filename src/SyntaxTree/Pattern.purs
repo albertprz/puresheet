@@ -17,12 +17,7 @@ data Pattern
       { ctor :: QCtor
       , namedFields :: Array (Var /\ Maybe Pattern)
       }
-  | WildcardRecordPattern
-      { ctor :: QCtor
-      , namedFields :: Array (Var /\ Maybe Pattern)
-      }
   | AliasedPattern Var Pattern
-  | TypeAnnotation Pattern Type
   | ListPattern (Array Pattern)
   | TuplePattern (Array Pattern)
   | VarPattern Var

@@ -1,6 +1,9 @@
 module App.SyntaxTree.Common where
 
 import FatPrelude
+import Prim hiding (Row)
+
+import App.Components.Table.Cell (Cell, Column, Row)
 
 newtype Var = Var String
 
@@ -28,6 +31,9 @@ data Literal
   | FloatLit String
   | CharLit Char
   | StringLit String
+  | ColumnLit Column
+  | RowLit Row
+  | CellLit Cell
 
 derive instance Eq Literal
 
@@ -46,5 +52,3 @@ derive instance Eq QVarOp
 data QCtorOp = QCtorOp (Maybe Module) CtorOp
 
 derive instance Eq QCtorOp
-
-x = if true then 2 else 4
