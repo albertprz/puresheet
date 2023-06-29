@@ -6,6 +6,7 @@
   , "bookhound"
   , "colors"
   , "console"
+  , "control"
   , "effect"
   , "foldable-traversable"
   , "halogen"

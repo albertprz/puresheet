@@ -1,9 +1,9 @@
-module App.SyntaxTree.Common where
+module App.SyntaxTrees.Common where
 
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, Column, Row)
+import App.Components.Table.Cell (Cell)
 
 newtype Var = Var String
 
@@ -31,8 +31,6 @@ data Literal
   | FloatLit String
   | CharLit Char
   | StringLit String
-  | ColumnLit Column
-  | RowLit Row
   | CellLit Cell
 
 derive instance Eq Literal

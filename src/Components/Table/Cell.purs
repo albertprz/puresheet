@@ -8,7 +8,6 @@ import Data.Int as Int
 import Data.Map as Map
 import Data.Set as Set
 import Data.String.Pattern (Pattern(..))
-import Data.Tuple (Tuple)
 
 showCell :: Cell -> String
 showCell { column, row } = show column <> show row
@@ -320,6 +319,9 @@ swapMapKey (k1 /\ k2) dict =
   where
   v1 = Map.lookup k1 dict
   v2 = Map.lookup k2 dict
+
+buildCell :: Column -> Row -> Cell
+buildCell column row = { column, row }
 
 newtype Column = Column Char
 

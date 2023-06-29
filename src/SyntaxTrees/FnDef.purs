@@ -1,9 +1,9 @@
-module App.SyntaxTree.FnDef where
+module App.SyntaxTrees.FnDef where
 
 import FatPrelude
 
-import App.SyntaxTree.Common (Literal, QCtor, QCtorOp, QVar, QVarOp, Var)
-import App.SyntaxTree.Pattern (Pattern)
+import App.SyntaxTrees.Common (Literal, QCtor, QCtorOp, QVar, QVarOp, Var)
+import App.SyntaxTrees.Pattern (Pattern)
 
 data FnDef = FnDef
   { names :: Array Var
@@ -45,6 +45,9 @@ data FnBody
       { matchee :: FnBody
       , cases :: Array CaseBinding
       }
+  | LambdaCaseExpr
+      { cases :: Array CaseBinding
+      }
   | RecordCreate
       { ctor :: QCtor
       , namedFields :: Array (Var /\ FnBody)
@@ -53,10 +56,7 @@ data FnBody
       { var :: FnBody
       , namedFields :: Array (Var /\ FnBody)
       }
-  | ColumnsUpdate
-      { fields :: Array (Var /\ FnBody)
-      }
-  | ListRange FnBody (Maybe FnBody)
+  | ListRange Literal Literal
   | Tuple (Array FnBody)
   | List (Array FnBody)
   | FnVar' FnVar
