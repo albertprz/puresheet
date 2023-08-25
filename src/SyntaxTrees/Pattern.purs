@@ -3,6 +3,8 @@ module App.SyntaxTrees.Pattern where
 import FatPrelude
 
 import App.SyntaxTrees.Common (Literal, QCtor, QCtorOp, Var)
+import Data.Generic.Rep (class Generic)
+import Data.Show.Generic (genericShow)
 
 data Pattern
   = CtorPattern
@@ -19,10 +21,14 @@ data Pattern
       }
   | AliasedPattern Var Pattern
   | ListPattern (Array Pattern)
-  | TuplePattern (Array Pattern)
   | VarPattern Var
   | LitPattern Literal
   | Wildcard
+
+derive instance Generic Pattern _
+
+instance Show Pattern where
+  show x = genericShow x
 
 ctorPattern :: QCtor -> Array Pattern -> Pattern
 ctorPattern ctor fields = CtorPattern { ctor, fields }

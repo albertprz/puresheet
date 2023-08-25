@@ -57,7 +57,6 @@ data FnBody
       , namedFields :: Array (Var /\ FnBody)
       }
   | ListRange Literal Literal
-  | Tuple (Array FnBody)
   | List (Array FnBody)
   | FnVar' FnVar
   | FnOp' FnOp
