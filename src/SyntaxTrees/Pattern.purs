@@ -7,18 +7,9 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
 data Pattern
-  = CtorPattern
-      { ctor :: QCtor
-      , fields :: Array Pattern
-      }
-  | InfixCtorPattern
-      { ctorOp :: QCtorOp
-      , fields :: Array Pattern
-      }
-  | RecordPattern
-      { ctor :: QCtor
-      , namedFields :: Array (Var /\ Maybe Pattern)
-      }
+  = CtorPattern QCtor (Array Pattern)
+  | InfixCtorPattern QCtorOp (Array Pattern)
+  | RecordPattern QCtor (Array (Var /\ Maybe Pattern))
   | AliasedPattern Var Pattern
   | ListPattern (Array Pattern)
   | VarPattern Var
@@ -29,12 +20,3 @@ derive instance Generic Pattern _
 
 instance Show Pattern where
   show x = genericShow x
-
-ctorPattern :: QCtor -> Array Pattern -> Pattern
-ctorPattern ctor fields = CtorPattern { ctor, fields }
-
-infixCtorPattern :: QCtorOp -> Array Pattern -> Pattern
-infixCtorPattern ctorOp fields = InfixCtorPattern { ctorOp, fields }
-
-recordPattern :: QCtor -> Array (Var /\ Maybe Pattern) -> Pattern
-recordPattern ctor namedFields = RecordPattern { ctor, namedFields }

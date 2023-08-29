@@ -5,58 +5,20 @@ import FatPrelude
 import App.SyntaxTrees.Common (Literal, QCtor, QCtorOp, QVar, QVarOp, Var)
 import App.SyntaxTrees.Pattern (Pattern)
 
-data FnDef = FnDef
-  { names :: Array Var
-  , args :: Array Pattern
-  , body :: MaybeGuardedFnBody
-  }
+data FnDef = FnDef (Array Var) (Array Pattern) MaybeGuardedFnBody
 
 data FnBody
-  = FnApply
-      { fn :: FnBody
-      , args :: Array FnBody
-      }
-  | InfixFnApply
-      { fnOps :: Array FnOp
-      , args :: Array FnBody
-      }
-  | LeftOpSection
-      { fnOp :: FnOp
-      , arg :: FnBody
-      }
-  | RightOpSection
-      { arg :: FnBody
-      , fnOp :: FnOp
-      }
-  | LambdaExpr
-      { patterns :: Array Pattern
-      , body :: FnBody
-      }
-  | WhereExpr
-      { body :: FnBody
-      , fnBindings :: Array FnDef
-      }
-  | MultiWayIfExpr
-      { whenExprs :: Array GuardedFnBody
-      }
-  | DoExpr
-      { steps :: Array DoStep }
-  | CaseOfExpr
-      { matchee :: FnBody
-      , cases :: Array CaseBinding
-      }
-  | LambdaCaseExpr
-      { cases :: Array CaseBinding
-      }
-  | RecordCreate
-      { ctor :: QCtor
-      , namedFields :: Array (Var /\ FnBody)
-      }
-  | RecordUpdate
-      { var :: FnBody
-      , namedFields :: Array (Var /\ FnBody)
-      }
-  | ListRange Literal Literal
+  = FnApply FnBody (Array FnBody)
+  | InfixFnApply (Array FnOp) (Array FnBody)
+  | LeftOpSection FnOp FnBody
+  | RightOpSection FnBody FnOp
+  | Bindings FnBody (Array FnDef)
+  | MultiWayIfExpr (Array GuardedFnBody)
+  | DoExpr (Array DoStep)
+  | SwitchExpr FnBody (Array CaseBinding)
+  | RecordCreate QCtor (Array (Var /\ FnBody))
+  | RecordUpdate FnBody (Array (Var /\ FnBody))
+  | ListRange FnBody (Maybe FnBody)
   | List (Array FnBody)
   | FnVar' FnVar
   | FnOp' FnOp
@@ -83,10 +45,7 @@ data MaybeGuardedFnBody
   = Guarded (Array GuardedFnBody)
   | Standard FnBody
 
-data GuardedFnBody = GuardedFnBody
-  { guard :: Guard
-  , body :: FnBody
-  }
+data GuardedFnBody = GuardedFnBody Guard FnBody
 
 data Guard
   = Guard (Array PatternGuard)
@@ -95,3 +54,4 @@ data Guard
 data PatternGuard
   = PatternGuard Pattern FnBody
   | SimpleGuard FnBody
+

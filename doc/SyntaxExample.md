@@ -2,33 +2,29 @@
 
 ```haskell
 
-sum :: Number a => [a] -> a 
+sum :: {Number (a)} :: [a] -> a 
 sum (myList) = myList |reduce> (0, '+)
 
-product :: Number (a) => [a] -> a
+product :: {Number (a)} :: [a] -> a
 product (myList) = myList |reduce> (1, '*)
 
 findEvens :: [Int] -> [Int]
-findEvens = isEven <filter| _
+findEvens = _ |filter> isEven 
 
-sumOptions :: Number (a) => Option (a) -> Option (a) -> Option (a)
+sumOptions :: {Number (a)} :: Option (a) -> Option (a) -> Option (a)
 sumOptions (opt1, opt2) = result
-  where
-    result = opt1 |map> '+ |apply> opt2
+  where {
+    | result = opt1 |map> '+ |apply> opt2
+}
 
 
 greeting :: Person -> String
 greeting (person) =
-  case person of
+  switch (person) {
     | Professor (_)                         => "Hello Professor"
     | Student (name) ? isUnknownName (name) => "Nice to meet you, " ++ name
-    | Student (name)                        => "Hey, " ++ name"
-
-head :: [a] -> Option (a)
-head =
-  case 
-    | [x, _] = Some (x)
-    | _      = None
+    | Student (name)                        => "Hey, " ++ name
+}
 
 head :: [a] -> Option (a)
 head ([x, _]) = Some (x)
@@ -37,17 +33,12 @@ head _        = None
 
 addLookup :: Map (String, Int) -> String -> String -> Int
 addLookup (env, key1, key2) = 
-   case 
+   case {
      ? Just (val1) <- lookup (env, key1)
      , Just (val2) <- lookup (env, key2)
        = val1 + val2
+}
 
-
-addLookup :: Map (String, Int) -> String -> String -> Int
-addLookup (env, key1, key2)
-  ? Just (val1) <- lookup (env, key1)
-  , Just (val2) <- lookup (env, key2)
-    = val1 + val2
 
 -- Cell formula
 A1 - B1 * C1

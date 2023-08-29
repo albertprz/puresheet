@@ -17,6 +17,9 @@ wrap beg end x = whenMonoid (not $ String.null x) $ beg <> x <> end
 wrapBoth :: String -> String -> String
 wrapBoth x = wrap x x
 
+wrapCurly :: String -> String
+wrapCurly = wrap "{" "}"
+
 wrapQuotes :: String -> String
 wrapQuotes = wrapBoth "'"
 
