@@ -2,10 +2,10 @@ module App.Parsers.Pattern where
 
 import FatPrelude
 
-import App.Parsers.Common (literal, qCtor, qCtorOp, token, var)
+import App.Parsers.Common (argListOf, literal, qCtor, qCtorOp, token, var)
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators (anySepBy, is, sepByOp, someSepBy, (<|>), (|?))
+import Bookhound.ParserCombinators (anySepBy, is, sepByOp, (<|>), (|?))
 import Bookhound.Parsers.Char (comma, underscore)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens)
@@ -46,5 +46,3 @@ pattern' = pattern''
   complexPattern = defer \_ -> ctor' <|> infixCtor
   pattern'' = defer \_ -> alias <|> infixCtor <|> ctor' <|> ctorElem
 
-argListOf :: forall a. Parser a -> Parser (Array a)
-argListOf = withinParens <<< someSepBy comma

@@ -2,14 +2,14 @@ module App.Parsers.FnDef where
 
 import FatPrelude
 
-import App.Parsers.Common (literal, nonTokenQVar, qCtor, qCtorOp, qVar, qVarOp, token, var)
+import App.Parsers.Common (argListOf, literal, nonTokenQVar, qCtor, qCtorOp, qVar, qVarOp, token, var)
 import App.Parsers.Pattern (pattern')
 import App.SyntaxTrees.FnDef (CaseBinding(..), DoStep(..), FnBody(..), FnDef(..), FnOp(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.FatPrelude (maybeToArray)
 import Bookhound.Parser (Parser, withError)
 import Bookhound.ParserCombinators (is, someSepBy, (<|>), (|*), (|+), (|?))
-import Bookhound.Parsers.Char (closeParens, comma, dot, openParens)
-import Bookhound.Parsers.Collections (collOf, listOf, tupleOf)
+import Bookhound.Parsers.Char (comma, dot, quote, underscore)
+import Bookhound.Parsers.Collections (listOf, tupleOf)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
 import Data.Array as Array
@@ -24,7 +24,7 @@ fnDef = defer \_ -> withError "Function definition"
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
   where
-  fnApply = defer \_ -> FnApply <$> delimitedForm <*> csvOf openForm
+  fnApply = defer \_ -> FnApply <$> delimitedForm <*> argListOf delimitedForm
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps fnOp infixArgForm
   leftOpSection = defer \_ -> uncurry LeftOpSection <$> withinParens
     ((/\) <$> fnOp <*> openForm)
@@ -37,7 +37,7 @@ fnBody = whereExpr <|> openForm
   multiWayIfExpr = defer \_ -> MultiWayIfExpr <$>
     (is "if" *> (withinContext $ guardedFnBody $ is "->"))
   doExpr = defer \_ -> DoExpr <$> (is "do" *> withinContext doStep)
-  caseOfExpr = defer \_ -> SwitchExpr <$> (is "switch" *> withinParens openForm)
+  switchExpr = defer \_ -> SwitchExpr <$> (is "switch" *> withinParens openForm)
     <*>
       withinContext caseBinding
   listRange = defer \_ -> withinSquareBrackets $ ListRange
@@ -45,8 +45,9 @@ fnBody = whereExpr <|> openForm
     <*> (|?) openForm
   list = defer \_ -> List <$> listOf openForm
   fnOp = defer \_ -> CtorOp' <$> qCtorOp <|> VarOp' <$> qVarOp
-  fnOp' = defer \_ -> FnOp' <$> withinParens fnOp
-  fnVar = defer \_ -> FnVar' <<< Selector <$> withinParens (dot *> var)
+  fnOp' = defer \_ -> FnOp' <$> (quote *> fnOp)
+  fnVar = defer \_ -> FnVar' <<< Selector
+    <$> withinParens (underscore *> dot *> var)
     <|> FnVar'
     <$> (Selection <$> nonTokenQVar <* dot <*> someSepBy dot var)
     <|> FnVar'
@@ -68,18 +69,19 @@ fnBody = whereExpr <|> openForm
   delimitedForm = defer \_ -> singleForm <|> withinParens complexForm <|>
     withinParens
       singleForm
-  singleForm = defer \_ -> fnOp' <|> fnVar <|> literal' <|> listRange
+  singleForm = defer \_ -> fnApply <|> fnOp' <|> fnVar <|> literal'
+    <|> listRange
     <|> list
     <|>
       opSection
   complexForm = defer \_ -> infixFnApply <|> complexInfixForm
-  complexInfixForm = defer \_ -> fnApply
-    <|> multiWayIfExpr
-    <|> doExpr
-    <|> caseOfExpr
-    <|> withinParens infixFnApply
-    <|> recordCreate
-    <|> recordUpdate
+  complexInfixForm = defer \_ ->
+    multiWayIfExpr
+      <|> doExpr
+      <|> switchExpr
+      <|> withinParens infixFnApply
+      <|> recordCreate
+      <|> recordUpdate
 
 doStep :: Parser DoStep
 doStep = defer \_ -> DoBinding <$> (tupleOf var <|> pure <$> var) <* is "<-"
@@ -104,9 +106,9 @@ guardedFnBody sep = GuardedFnBody <$> guard <* sep <*>
   fnBody
 
 guard :: Parser Guard
-guard = defer \_ -> Otherwise <$ (is "|" *> token (is "otherwise")) <|> Guard
+guard = defer \_ -> Otherwise <$ (is "?" *> token (is "otherwise")) <|> Guard
   <$>
-    (is "|" *> someSepBy comma patternGuard)
+    (is "?" *> someSepBy comma patternGuard)
 
 patternGuard :: Parser PatternGuard
 patternGuard = defer \_ -> PatternGuard <$> (pattern' <* is "<-") <*> fnBody
@@ -114,18 +116,11 @@ patternGuard = defer \_ -> PatternGuard <$> (pattern' <* is "<-") <*> fnBody
   <$> fnBody
 
 statements :: forall a. Parser a -> Parser (Array a)
-statements parser = defer \_ -> fold <$> someSepBy (is ";")
+statements parser = defer \_ -> fold <$> someSepBy (is "|")
   (maybeToArray <$> (|?) parser)
 
 withinContext :: forall a. Parser a -> Parser (Array a)
 withinContext = withinCurlyBrackets <<< statements
-
-withinContextTupled
-  :: forall a1 a2. Parser a1 -> Parser a2 -> Parser (Array a1 /\ Array a2)
-withinContextTupled p1 p2 = withinCurlyBrackets $ (/\) <$> statements p1 <*>
-  statements p2
-
-csvOf = collOf openParens closeParens comma
 
 sepByOps :: forall a b. Parser a -> Parser b -> Parser (Array a /\ Array b)
 sepByOps sep p = do

@@ -33,7 +33,7 @@ head _        = None
 
 addLookup :: Map (String, Int) -> String -> String -> Int
 addLookup (env, key1, key2) = 
-   case {
+   if {
      ? Just (val1) <- lookup (env, key1)
      , Just (val2) <- lookup (env, key2)
        = val1 + val2

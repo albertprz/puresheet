@@ -6,7 +6,7 @@ import App.Components.Table.Cell (Column(..), Row(..), buildCell)
 import App.SyntaxTrees.Common (Ctor(..), CtorOp(..), Literal(..), Module(..), QCtor(..), QCtorOp(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, dot, lower, newLine, quote, underscore, upper)
+import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)
 import Bookhound.Parsers.Number (double, int, posInt)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
@@ -51,6 +51,9 @@ varOp = VarOp <$> notReserved
 ctorOp :: Parser CtorOp
 ctorOp = CtorOp <$> notReserved
   (wrapBackQuotes <$> withinBackQuotes (ident upper) <|> operator colon)
+
+argListOf :: forall a. Parser a -> Parser (Array a)
+argListOf = withinParens <<< someSepBy comma
 
 module' :: Parser Module
 module' = Module <$> someSepBy dot (ident upper)
