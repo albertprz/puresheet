@@ -2,7 +2,6 @@ module App.Utils.Dom where
 
 import FatPrelude
 
-import Data.Array as Array
 import Data.String.CodePoints as String
 import Unsafe.Coerce (unsafeCoerce)
 import Web.DOM (Element, ParentNode)

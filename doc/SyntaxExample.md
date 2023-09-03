@@ -2,19 +2,19 @@
 
 ```haskell
 
-sum :: {Number (a)} :: [a] -> a 
+sum :: [Int] -> Int
 sum (myList) = myList |reduce> (0, '+)
 
-product :: {Number (a)} :: [a] -> a
+product :: [Int] -> Int
 product (myList) = myList |reduce> (1, '*)
 
 findEvens :: [Int] -> [Int]
 findEvens = _ |filter> isEven 
 
-sumOptions :: {Number (a)} :: Option (a) -> Option (a) -> Option (a)
-sumOptions (opt1, opt2) = result
+divOptions :: Option (Float) -> Option (Float) -> Option (Float)
+divOptions (opt1, opt2) = result
   where {
-    | result = opt1 |map> '+ |apply> opt2
+    | result = opt1 |map> '/ |apply> opt2
 }
 
 
@@ -27,8 +27,8 @@ greeting (person) =
 }
 
 head :: [a] -> Option (a)
-head ([x, _]) = Some (x)
-head _        = None
+head ([x, ...]) = Some (x)
+head _          = None
 
 
 addLookup :: Map (String, Int) -> String -> String -> Int
@@ -37,6 +37,7 @@ addLookup (env, key1, key2) =
      ? Just (val1) <- lookup (env, key1)
      , Just (val2) <- lookup (env, key2)
        = val1 + val2
+     ? else = 0
 }
 
 

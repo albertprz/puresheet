@@ -3,9 +3,6 @@ module App.SyntaxTrees.Common where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell)
-import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits as CodeUnits
 
 newtype Var = Var String

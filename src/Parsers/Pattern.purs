@@ -5,7 +5,7 @@ import FatPrelude
 import App.Parsers.Common (argListOf, ctor, literal, token, var)
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators (anySepBy, is, sepByOp, (<|>), (|?))
+import Bookhound.ParserCombinators (anySepBy, is, (<|>), (|?))
 import Bookhound.Parsers.Char (comma, underscore)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens)
