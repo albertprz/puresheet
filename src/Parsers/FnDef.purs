@@ -2,14 +2,16 @@ module App.Parsers.FnDef where
 
 import FatPrelude
 
-import App.Parsers.Common (argListOf, literal, nonTokenQVar, qCtor, qCtorOp, qVar, qVarOp, token, var)
+import App.Components.Table.Cell (Column(..), Row(..), buildCell)
+import App.Parsers.Common (argListOf, ctor, literal, token, var, varOp)
 import App.Parsers.Pattern (pattern')
-import App.SyntaxTrees.FnDef (CaseBinding(..), DoStep(..), FnBody(..), FnDef(..), FnOp(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
+import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.FatPrelude (maybeToArray)
 import Bookhound.Parser (Parser, withError)
 import Bookhound.ParserCombinators (is, someSepBy, (<|>), (|*), (|+), (|?))
-import Bookhound.Parsers.Char (comma, dot, quote, underscore)
+import Bookhound.Parsers.Char (comma, dot, quote, upper)
 import Bookhound.Parsers.Collections (listOf, tupleOf)
+import Bookhound.Parsers.Number (posInt)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
 import Data.Array as Array
@@ -25,39 +27,37 @@ fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
   where
   fnApply = defer \_ -> FnApply <$> delimitedForm <*> argListOf delimitedForm
-  infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps fnOp infixArgForm
+  infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps varOp
+    infixArgForm
   leftOpSection = defer \_ -> uncurry LeftOpSection <$> withinParens
-    ((/\) <$> fnOp <*> openForm)
+    ((/\) <$> varOp <*> openForm)
   rightOpSection = defer \_ -> uncurry RightOpSection <$> withinParens
-    ((/\) <$> openForm <*> fnOp)
+    ((/\) <$> openForm <*> varOp)
   opSection = defer \_ -> leftOpSection <|> rightOpSection
   whereExpr = defer \_ -> Bindings <$> openForm
     <* is "where"
     <*> withinContext fnDef
   multiWayIfExpr = defer \_ -> MultiWayIfExpr <$>
     (is "if" *> (withinContext $ guardedFnBody $ is "->"))
-  doExpr = defer \_ -> DoExpr <$> (is "do" *> withinContext doStep)
   switchExpr = defer \_ -> SwitchExpr <$> (is "switch" *> withinParens openForm)
     <*>
       withinContext caseBinding
   listRange = defer \_ -> withinSquareBrackets $ ListRange
     <$> (openForm <* is "..")
-    <*> (|?) openForm
+    <*> openForm
   list = defer \_ -> List <$> listOf openForm
-  fnOp = defer \_ -> CtorOp' <$> qCtorOp <|> VarOp' <$> qVarOp
-  fnOp' = defer \_ -> FnOp' <$> (quote *> fnOp)
-  fnVar = defer \_ -> FnVar' <<< Selector
-    <$> withinParens (underscore *> dot *> var)
-    <|> FnVar'
-    <$> (Selection <$> nonTokenQVar <* dot <*> someSepBy dot var)
-    <|> FnVar'
-    <<< Var'
-    <$> qVar
-    <|> FnVar'
-    <<< Ctor'
-    <$> qCtor
-  literal' = Literal' <$> literal
-  recordCreate = defer \_ -> RecordCreate <$> qCtor <*> recordFields
+  fnOp = defer \_ -> FnOp <$> (quote *> varOp)
+  fnVar = defer \_ ->
+    FnVar'
+      <$> (Selection <$> var <* dot <*> someSepBy dot var)
+      <|> FnVar'
+      <<< Var'
+      <$> var
+      <|> FnVar'
+      <<< Ctor'
+      <$> ctor
+  cell = buildCell <$> (Column <$> upper) <*> (Row <$> posInt)
+  recordCreate = defer \_ -> RecordCreate <$> ctor <*> recordFields
   recordUpdate = defer \_ -> RecordUpdate <$> delimitedForm <*> recordFields
   recordFields = defer \_ -> withinCurlyBrackets (someSepBy comma recordField)
   recordField = defer \_ -> (/\) <$> var <*> (is "=" *> openForm)
@@ -69,7 +69,9 @@ fnBody = whereExpr <|> openForm
   delimitedForm = defer \_ -> singleForm <|> withinParens complexForm <|>
     withinParens
       singleForm
-  singleForm = defer \_ -> fnApply <|> fnOp' <|> fnVar <|> literal'
+  singleForm = defer \_ -> fnApply <|> fnOp <|> fnVar <|> Literal' <$> literal
+    <|> Cell'
+    <$> cell
     <|> listRange
     <|> list
     <|>
@@ -77,19 +79,10 @@ fnBody = whereExpr <|> openForm
   complexForm = defer \_ -> infixFnApply <|> complexInfixForm
   complexInfixForm = defer \_ ->
     multiWayIfExpr
-      <|> doExpr
       <|> switchExpr
       <|> withinParens infixFnApply
       <|> recordCreate
       <|> recordUpdate
-
-doStep :: Parser DoStep
-doStep = defer \_ -> DoBinding <$> (tupleOf var <|> pure <$> var) <* is "<-"
-  <*> fnBody
-  <|> LetBinding
-  <$> fnDef
-  <|> Body
-  <$> fnBody
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding <$> pattern' <*> maybeGuardedFnBody

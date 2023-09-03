@@ -6,79 +6,51 @@ import Prim hiding (Row)
 import App.Components.Table.Cell (Cell)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Data.String.CodeUnits as CodeUnits
 
 newtype Var = Var String
 
 derive instance Eq Var
-derive instance Generic Var _
+derive instance Ord Var
+
 instance Show Var where
-  show = genericShow
+  show (Var x) = x
 
 newtype Ctor = Ctor String
 
 derive instance Eq Ctor
-derive instance Generic Ctor _
+derive instance Ord Ctor
+
 instance Show Ctor where
-  show = genericShow
+  show (Ctor x) = x
 
 newtype VarOp = VarOp String
 
 derive instance Eq VarOp
-derive instance Generic VarOp _
+derive instance Ord VarOp
 instance Show VarOp where
-  show = genericShow
-
-newtype CtorOp = CtorOp String
-
-derive instance Eq CtorOp
-derive instance Generic CtorOp _
-instance Show CtorOp where
-  show = genericShow
+  show (VarOp x) = x
 
 newtype Module = Module (Array String)
 
 derive instance Eq Module
-derive instance Generic Module _
 instance Show Module where
-  show = genericShow
+  show (Module x) = intercalate "." x
 
 data Literal
   = BoolLit Boolean
-  | IntLit String
-  | FloatLit String
+  | IntLit Int
+  | FloatLit Number
   | CharLit Char
   | StringLit String
-  | CellLit Cell
+  | ListLit (Array Literal)
 
 derive instance Eq Literal
-derive instance Generic Literal _
 instance Show Literal where
-  show = genericShow
-
-data QVar = QVar (Maybe Module) Var
-
-derive instance Eq QVar
-derive instance Generic QVar _
-instance Show QVar where
-  show = genericShow
-
-data QCtor = QCtor (Maybe Module) Ctor
-
-derive instance Eq QCtor
-derive instance Generic QCtor _
-instance Show QCtor where
-  show = genericShow
-
-data QVarOp = QVarOp (Maybe Module) VarOp
-
-derive instance Eq QVarOp
-derive instance Generic QVarOp _
-instance Show QVarOp where
-  show = genericShow
-
-data QCtorOp = QCtorOp (Maybe Module) CtorOp
-
-derive instance Eq QCtorOp
-derive instance Generic QCtorOp _
-instance Show QCtorOp where
-  show = genericShow
+  show = case _ of
+    (BoolLit x) -> show x
+    (IntLit x) -> show x
+    (FloatLit x) -> show x
+    (CharLit x) -> CodeUnits.singleton x
+    (StringLit x) -> x
+    (ListLit x) -> show x

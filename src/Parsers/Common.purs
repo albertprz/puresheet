@@ -2,12 +2,11 @@ module App.Parsers.Common where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Column(..), Row(..), buildCell)
-import App.SyntaxTrees.Common (Ctor(..), CtorOp(..), Literal(..), Module(..), QCtor(..), QCtorOp(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
+import App.SyntaxTrees.Common (Ctor(..), Literal(..), Module(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)
-import Bookhound.Parsers.Number (double, int, posInt)
+import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.String.CodeUnits (singleton) as String
@@ -16,16 +15,12 @@ import Data.String.Unsafe (char) as String
 literal :: Parser Literal
 literal = token
   $ (BoolLit <$> (true <$ is "true" <|> false <$ is "false"))
-  <|> (IntLit <<< show <$> int)
-  <|> (FloatLit <<< show <$> double)
+  <|> (IntLit <$> int)
+  <|> (FloatLit <$> double)
   <|> (CharLit <$> withinQuotes (charLit <|> charLitEscaped))
   <|>
     ( StringLit <$> withinDoubleQuotes
         ((||*) (stringLit <|> charLitEscaped))
-    )
-  <|>
-    ( CellLit <$>
-        (buildCell <$> (Column <$> upper) <*> (Row <$> posInt))
     )
   where
   charLit = noneOf [ '\'', '\\' ]
@@ -48,10 +43,6 @@ varOp = VarOp <$> notReserved
       (operator opSymbol <|> simpleOperator)
   )
 
-ctorOp :: Parser CtorOp
-ctorOp = CtorOp <$> notReserved
-  (wrapBackQuotes <$> withinBackQuotes (ident upper) <|> operator colon)
-
 argListOf :: forall a. Parser a -> Parser (Array a)
 argListOf = withinParens <<< someSepBy comma
 
@@ -60,18 +51,6 @@ module' = Module <$> someSepBy dot (ident upper)
 
 module'' :: Parser Module
 module'' = Module <$> someSepBy dot (nonTokenIdent upper)
-
-qVar :: Parser QVar
-qVar = uncurry QVar <$> qTerm var
-
-qCtor :: Parser QCtor
-qCtor = uncurry QCtor <$> qTerm' Ctor
-
-qVarOp :: Parser QVarOp
-qVarOp = uncurry QVarOp <$> qTerm varOp
-
-qCtorOp :: Parser QCtorOp
-qCtorOp = uncurry QCtorOp <$> qTerm ctorOp
 
 ident :: Parser Char -> Parser String
 ident start = token $ start ->>- ((|*) idChar)
@@ -84,11 +63,6 @@ simpleOperator = token $ oneOf [ ":" ]
 
 simpleOperatorFn :: Parser String
 simpleOperatorFn = token $ oneOf [ ",", ",,", ",,," ]
-
-nonTokenQVar :: Parser QVar
-nonTokenQVar = uncurry QVar <$> qTerm x
-  where
-  x = Var <$> check "" (_ `notElem` reservedKeyWords) (nonTokenIdent lower)
 
 nonTokenIdent :: Parser Char -> Parser String
 nonTokenIdent start = start ->>- (|*) idChar

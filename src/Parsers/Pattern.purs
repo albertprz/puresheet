@@ -2,7 +2,7 @@ module App.Parsers.Pattern where
 
 import FatPrelude
 
-import App.Parsers.Common (argListOf, literal, qCtor, qCtorOp, token, var)
+import App.Parsers.Common (argListOf, ctor, literal, token, var)
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators (anySepBy, is, sepByOp, (<|>), (|?))
@@ -14,10 +14,8 @@ import Control.Lazy (defer)
 pattern' :: Parser Pattern
 pattern' = pattern''
   where
-  ctor' = defer \_ -> CtorPattern <$> qCtor <*> argListOf ctorElem
-  nullaryCtor = defer \_ -> CtorPattern <$> qCtor <*> pure []
-  infixCtor = defer \_ -> uncurry InfixCtorPattern
-    <$> sepByOp qCtorOp (ctor' <|> ctorElem)
+  ctor' = defer \_ -> CtorPattern <$> ctor <*> argListOf ctorElem
+  nullaryCtor = defer \_ -> CtorPattern <$> ctor <*> pure []
   alias = defer \_ -> AliasedPattern <$> (var <* is "@") <*> aliasElem
   var' = defer \_ -> VarPattern <$> var
   literal' = defer \_ -> LitPattern <$> literal
@@ -35,14 +33,12 @@ pattern' = pattern''
     <|> alias
     <|> ctor'
     <|> elem'
-    <|> infixCtor
   aliasElem = defer \_ -> elem'
     <|> record
     <|> withinParens complexPattern
   record = defer \_ ->
     RecordPattern
-      <$> qCtor
+      <$> ctor
       <*> recordShape
-  complexPattern = defer \_ -> ctor' <|> infixCtor
-  pattern'' = defer \_ -> alias <|> infixCtor <|> ctor' <|> ctorElem
-
+  complexPattern = defer \_ -> ctor'
+  pattern'' = defer \_ -> alias <|> ctor' <|> ctorElem

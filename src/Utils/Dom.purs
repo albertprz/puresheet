@@ -104,7 +104,7 @@ parseKeyCode "ShiftRight" = Shift
 parseKeyCode str
   | String.length str == 4
   , String.take 3 str == "Key"
-  , Just ch <- Array.last $ toCharArray str = CharKeyCode ch
+  , Just ch <- last' $ toCharArray str = CharKeyCode ch
 parseKeyCode str = OtherKeyCode str
 
 toEvent :: forall a. IsEvent a => a -> Event

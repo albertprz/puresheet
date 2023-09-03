@@ -20,10 +20,6 @@ parseColumn elemId = case toCharArray elemId of
 parseRow :: String -> Maybe Row
 parseRow elemId = Row <$> fromString elemId
 
-showCellValue :: CellValue -> String
-showCellValue (StringVal x) = x
-showCellValue (IntVal x) = show x
-
 parseCellValue :: String -> CellValue
 parseCellValue str =
   fromMaybe (StringVal str) (IntVal <$> Int.fromString str)
@@ -56,7 +52,7 @@ getRowCell
   -> NonEmptyArray Row
   -> Cell
   -> Maybe Cell
-getRowCell f _ _ { column, row: Row (rowNum) } =
+getRowCell f _ _ { column, row: Row rowNum } =
   Just { column, row: Row $ max one $ f rowNum }
 
 nextColumnCell :: Cell -> Cell
@@ -203,7 +199,7 @@ serializeSelectionValues
 serializeSelectionValues selection selectedCell columns tableData =
   intercalate newline
     $ intercalate tab
-    <$> (foldMap showCellValue <<< (_ `Map.lookup` tableData))
+    <$> (foldMap show <<< (_ `Map.lookup` tableData))
     <$$> (getTargetCells selection selectedCell columns)
 
 deserializeSelectionValues
@@ -330,8 +326,10 @@ newtype Row = Row Int
 type Cell = { column :: Column, row :: Row }
 
 data CellValue
-  = StringVal String
+  = BoolVal Boolean
   | IntVal Int
+  | FloatVal Number
+  | StringVal String
 
 data CellMove
   = NextRow
@@ -374,8 +372,10 @@ instance Show Row where
   show (Row x) = show x
 
 instance Show CellValue where
-  show (StringVal str) = str
-  show (IntVal int) = show int
+  show (BoolVal x) = show x
+  show (IntVal x) = show x
+  show (FloatVal x) = show x
+  show (StringVal x) = x
 
 instance Range Column where
   range (Column c1) (Column c2) = Column <$> c1 .. c2

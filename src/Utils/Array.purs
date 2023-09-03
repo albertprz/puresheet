@@ -4,20 +4,12 @@ import Prelude
 
 import App.Utils.Number (dec, inc)
 import Data.Array as Array
-import Data.Array.NonEmpty
-  ( findIndex
-  , head
-  , last
-  , length
-  , mapMaybe
-  , toArray
-  , updateAtIndices
-  , (!!)
-  )
+import Data.Array.NonEmpty (findIndex, head, last, length, mapMaybe, toArray, updateAtIndices, (!!))
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
 import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 
 head' :: forall a. Array a -> Maybe a
@@ -46,6 +38,24 @@ dropEnd' = Array.dropEnd
 
 toArray' :: forall a. Maybe (NonEmptyArray a) -> Array a
 toArray' = maybe [] toArray
+
+findIndex' :: forall a. (a -> Boolean) -> Array a -> Maybe Int
+findIndex' = Array.findIndex
+
+slice' :: forall a. Int -> Int -> Array a -> Array a
+slice' = Array.slice
+
+updateAt' :: forall a. Int -> a -> Array a -> Maybe (Array a)
+updateAt' = Array.updateAt
+
+deleteAt' :: forall a. Int -> Array a -> Maybe (Array a)
+deleteAt' = Array.deleteAt
+
+insertAt' :: forall a. Int -> a -> Array a -> Maybe (Array a)
+insertAt' = Array.insertAt
+
+zip' :: forall a b. Array a -> Array b -> Array (Tuple a b)
+zip' = Array.zip
 
 getNextElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
 getNextElemSat = getElemSat inc
