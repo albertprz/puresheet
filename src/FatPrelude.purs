@@ -20,6 +20,7 @@ module FatPrelude
   , module Type.Prelude
   , module Effect
   , module Aff
+  , module Exception
   , module Unit
   , module Function
   , module Char
@@ -31,8 +32,10 @@ module FatPrelude
   , module MonadState
   , module Console
   , module PSCISupport
+  , module PointFree
   ) where
 
+import PointFree
 import Prelude
 
 import App.Utils.Array (class Range, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', range, satIndex, slice', sliceNext', slicePrev', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
@@ -64,7 +67,7 @@ import Effect.Aff (Aff, attempt, bracket, cancelWith, catchError, delay, error, 
 import Effect.Aff.Class (class MonadAff, liftAff) as AffClass
 import Effect.Class (class MonadEffect, liftEffect) as EffClass
 import Effect.Class.Console hiding (error) as Console
+import Effect.Exception (error, throw) as Exception
 import PSCI.Support (class Eval) as PSCISupport
 import Prim hiding (Row) as Prim
 import Type.Prelude (Proxy(..))
-

@@ -3,13 +3,12 @@ module App.SyntaxTrees.Common where
 import FatPrelude
 import Prim hiding (Row)
 
-import Data.String.CodeUnits as CodeUnits
+import Data.String.CodeUnits as String
 
 newtype Var = Var String
 
 derive instance Eq Var
 derive instance Ord Var
-
 instance Show Var where
   show (Var x) = x
 
@@ -17,7 +16,6 @@ newtype Ctor = Ctor String
 
 derive instance Eq Ctor
 derive instance Ord Ctor
-
 instance Show Ctor where
   show (Ctor x) = x
 
@@ -48,6 +46,6 @@ instance Show Literal where
     (BoolLit x) -> show x
     (IntLit x) -> show x
     (FloatLit x) -> show x
-    (CharLit x) -> CodeUnits.singleton x
+    (CharLit x) -> String.singleton x
     (StringLit x) -> x
     (ListLit x) -> show x

@@ -3,16 +3,11 @@ module App.Components.Table where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell
-  ( CellValue(..)
-  , Column(..)
-  , MultiSelection(..)
-  , Row(..)
-  , SelectionState(..)
-  )
+import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..), SelectionState(..))
 import App.Components.Table.Handler (handleAction)
-import App.Components.Table.Models (Action(..), State)
+import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
+import App.Interpreters.Builtins (fnsMap, operatorsMap, precedenceMap, rAssocSet)
 import Data.Map as Map
 import Halogen as H
 
@@ -25,7 +20,7 @@ component =
         { handleAction = handleAction, initialize = Just Initialize }
     }
 
-initialState :: forall a. a -> State
+initialState :: forall a. a -> AppState
 initialState = const
   { selectedCell: { column: Column 'A', row: Row 1 }
   , activeInput: false
@@ -38,4 +33,8 @@ initialState = const
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing
+  , fnsMap
+  , operatorsMap
+  , precedenceMap
+  , rAssocSet
   }

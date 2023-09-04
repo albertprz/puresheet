@@ -19,7 +19,7 @@ import App.Components.Table.Cell
   , serializeSelectionValues
   , showCell
   )
-import App.Components.Table.Models (State)
+import App.Components.Table.Models (AppState)
 import App.Utils.Dom
   ( class IsEvent
   , scrollByX
@@ -43,7 +43,7 @@ import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 cellArrowMove
   :: forall m
    . MonadEffect m
-  => MonadState State m
+  => MonadState AppState m
   => KeyboardEvent
   -> CellMove
   -> m Unit
@@ -61,7 +61,7 @@ cellArrowMove ev move = withPrevent ev $
 cellMove
   :: forall m a
    . MonadEffect m
-  => MonadState State m
+  => MonadState AppState m
   => IsEvent a
   => a
   -> CellMove
@@ -71,12 +71,17 @@ cellMove ev move = withPrevent ev do
   when (not active) $ selectCell move
 
 selectAllCells
-  :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
+  :: forall m a
+   . MonadEffect m
+  => MonadState AppState m
+  => IsEvent a
+  => a
+  -> m Unit
 selectAllCells ev = withPrevent ev $
   modify_ _ { multiSelection = AllSelection }
 
 copyCells
-  :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
+  :: forall m a. MonadAff m => MonadState AppState m => IsEvent a => a -> m Unit
 copyCells ev = withPrevent ev do
   cellContents <- gets \st -> serializeSelectionValues st.multiSelection
     st.selectedCell
@@ -86,7 +91,7 @@ copyCells ev = withPrevent ev do
   liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
 
 pasteCells
-  :: forall m a. MonadAff m => MonadState State m => IsEvent a => a -> m Unit
+  :: forall m a. MonadAff m => MonadState AppState m => IsEvent a => a -> m Unit
 pasteCells ev = withPrevent ev do
   clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
   modify_ \st -> st
@@ -96,7 +101,12 @@ pasteCells ev = withPrevent ev do
     }
 
 deleteCells
-  :: forall m a. MonadEffect m => MonadState State m => IsEvent a => a -> m Unit
+  :: forall m a
+   . MonadEffect m
+  => MonadState AppState m
+  => IsEvent a
+  => a
+  -> m Unit
 deleteCells ev = withPrevent ev $
   modify_ \st -> st
     { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells
@@ -109,7 +119,7 @@ getClipboard :: forall m. MonadEffect m => m Clipboard
 getClipboard = liftEffect $ clipboard =<< navigator =<< window
 
 selectCell
-  :: forall m. MonadEffect m => MonadState State m => CellMove -> m Unit
+  :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
 selectCell move = do
   originCell <- gets _.selectedCell
   { selectedCell, columns, rows } <- modify \st -> st
@@ -124,7 +134,7 @@ selectCell move = do
 goToCell
   :: forall m
    . MonadEffect m
-  => MonadState State m
+  => MonadState AppState m
   => Array Element
   -> Array Element
   -> NonEmptyArray Column
@@ -162,7 +172,8 @@ goToCellHelper cols rows allColumns origin { column, row } visibleCols
 
   | otherwise = pure unit
 
-adjustRows :: forall m. MonadState State m => Int -> Row -> Row -> Row -> m Unit
+adjustRows
+  :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
   | currentRow + 1 > maxRow = modify_ _
@@ -173,7 +184,7 @@ adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
   | otherwise = pure unit
 
-initialize :: forall m. MonadState State m => MonadEffect m => m Unit
+initialize :: forall m. MonadState AppState m => MonadEffect m => m Unit
 initialize = do
   { selectedCell, rows } <- get
   let Row (firstRow) = head rows

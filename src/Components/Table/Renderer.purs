@@ -35,7 +35,7 @@ import App.Components.Table.Cell
   , parseCellValue
   , showCell
   )
-import App.Components.Table.Models (Action(..), EventTransition(..), State)
+import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Utils.Dom (parseKeyCode)
 import Data.Map as Map
 import Halogen.HTML
@@ -81,7 +81,7 @@ import Halogen.HTML.Properties
   )
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
-render :: forall cs m. State -> ComponentHTML Action cs m
+render :: forall cs m. AppState -> ComponentHTML Action cs m
 render
   { selectedCell
   , activeInput

@@ -23,7 +23,7 @@ import App.Components.Table.HandlerHelpers
   , selectAllCells
   , selectCell
   )
-import App.Components.Table.Models (Action(..), EventTransition(..), State)
+import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
 import Data.Map as Map
 import Halogen as H
@@ -34,7 +34,7 @@ handleAction
   :: forall slots o m
    . MonadAff m
   => Action
-  -> H.HalogenM State Action slots o m Unit
+  -> H.HalogenM AppState Action slots o m Unit
 
 handleAction Initialize =
   initialize
