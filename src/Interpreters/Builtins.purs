@@ -1,28 +1,28 @@
 module App.Interpreters.Builtins
-  ( fnsMap
+  ( builtinFnsMap
   , operatorsMap
-  , precedenceMap
-  , rAssocSet
   ) where
 
-import App.SyntaxTrees.Common (Literal(..), Var(..), VarOp(..))
+import App.SyntaxTrees.FnDef
+
+import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
-import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (type (/\), Map, Set, bimap, lmap, ($), (&&), (*), (+), (-), (/), (/\), (<$>), (<..), (<>), (||))
+import FatPrelude (type (/\), Map, bimap, lmap, ($), (&&), (*), (+), (-), (/), (/\), (<$>), (<..), (<>), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
-fnsMap :: Map Var ((Array Literal -> Literal) /\ Int)
-fnsMap = unsafePartial $ Map.fromFoldable $ lmap Var <$>
+builtinFnsMap :: Map Var ((Array Object -> Object) /\ Int)
+builtinFnsMap = unsafePartial $ Map.fromFoldable $ lmap Var <$>
   [ ("not" /\ (not /\ 1))
   , ("neg" /\ (neg /\ 1))
-  , ("sum" /\ (sum /\ 2))
-  , ("product" /\ (product /\ 2))
+  , ("sum" /\ (sum /\ 1))
+  , ("product" /\ (product /\ 1))
+  , ("concat" /\ (concat /\ 1))
   , ("and" /\ (and /\ 2))
   , ("or" /\ (or /\ 2))
   , ("add" /\ (add /\ 2))
@@ -37,95 +37,87 @@ fnsMap = unsafePartial $ Map.fromFoldable $ lmap Var <$>
   , ("snoc" /\ (snoc /\ 2))
   ]
 
-operatorsMap :: Map VarOp Var
-operatorsMap = Map.fromFoldable $ bimap VarOp Var <$>
-  [ ("&&" /\ "and")
-  , ("||" /\ "or")
-  , ("+" /\ "add")
-  , ("-" /\ "sub")
-  , ("*" /\ "mult")
-  , ("/" /\ "div")
-  , ("%" /\ "mod")
-  , ("++" /\ "append")
-  , ("+:" /\ "cons")
-  , (":+" /\ "snoc")
-  ]
+operatorsMap :: Map VarOp OpInfo
+operatorsMap = Map.fromFoldable
+  $ bimap VarOp
+      ( \(fnName /\ precedence /\ associativity) ->
+          { fnName: Var fnName, precedence, associativity }
+      )
+  <$>
+    [ ("||" /\ ("or" /\ P2 /\ L))
+    , ("&&" /\ ("and" /\ P3 /\ L))
+    , ("++" /\ ("append" /\ P5 /\ R))
+    , ("+:" /\ ("cons" /\ P6 /\ R))
+    , (":+" /\ ("snoc" /\ P7 /\ L))
+    , ("+" /\ ("add" /\ P8 /\ L))
+    , ("-" /\ ("sub" /\ P9 /\ L))
+    , ("*" /\ ("mult" /\ P10 /\ L))
+    , ("/" /\ ("div" /\ P11 /\ L))
+    , ("%" /\ ("mod" /\ P11 /\ L))
+    ]
 
-precedenceMap :: Map VarOp Int
-precedenceMap = Map.fromFoldable $ lmap VarOp <$>
-  [ ("||" /\ 2)
-  , ("&&" /\ 3)
-  , ("++" /\ 5)
-  , ("+:" /\ 6)
-  , (":+" /\ 7)
-  , ("+" /\ 8)
-  , ("-" /\ 9)
-  , ("*" /\ 10)
-  , ("/" /\ 11)
-  , ("%" /\ 12)
-  ]
+-- Boolean Fns
+not :: Partial => Array Object -> Object
+not [ BoolObj x ] = BoolObj $ Prelude.not x
 
-rAssocSet :: Set VarOp
-rAssocSet = Set.fromFoldable $ VarOp <$>
-  [ "++", "+:" ]
+neg :: Partial => Array Object -> Object
+neg [ IntObj x ] = IntObj $ Prelude.negate x
+neg [ FloatObj x ] = FloatObj $ Prelude.negate x
 
-not :: Partial => Array Literal -> Literal
-not [ BoolLit x ] = BoolLit $ Prelude.not x
+and :: Partial => Array Object -> Object
+and [ BoolObj a, BoolObj b ] = BoolObj $ a && b
 
-neg :: Partial => Array Literal -> Literal
-neg [ IntLit x ] = IntLit $ Prelude.negate x
-neg [ FloatLit x ] = FloatLit $ Prelude.negate x
+or :: Partial => Array Object -> Object
+or [ BoolObj a, BoolObj b ] = BoolObj $ a || b
 
-and :: Partial => Array Literal -> Literal
-and [ BoolLit a, BoolLit b ] = BoolLit $ a && b
+-- Number Fns
+add :: Partial => Array Object -> Object
+add [ IntObj a, IntObj b ] = IntObj $ a + b
+add [ FloatObj a, FloatObj b ] = FloatObj $ a + b
 
-or :: Partial => Array Literal -> Literal
-or [ BoolLit a, BoolLit b ] = BoolLit $ a || b
+sub :: Partial => Array Object -> Object
+sub [ IntObj a, IntObj b ] = IntObj $ a - b
+sub [ FloatObj a, FloatObj b ] = FloatObj $ a - b
 
-add :: Partial => Array Literal -> Literal
-add [ IntLit a, IntLit b ] = IntLit $ a + b
-add [ FloatLit a, FloatLit b ] = FloatLit $ a + b
+mult :: Partial => Array Object -> Object
+mult [ IntObj a, IntObj b ] = IntObj $ a * b
+mult [ FloatObj a, FloatObj b ] = FloatObj $ a * b
 
-sub :: Partial => Array Literal -> Literal
-sub [ IntLit a, IntLit b ] = IntLit $ a - b
-sub [ FloatLit a, FloatLit b ] = FloatLit $ a - b
+div :: Partial => Array Object -> Object
+div [ IntObj a, IntObj b ] = IntObj $ a / b
+div [ FloatObj a, FloatObj b ] = FloatObj $ a / b
 
-mult :: Partial => Array Literal -> Literal
-mult [ IntLit a, IntLit b ] = IntLit $ a * b
-mult [ FloatLit a, FloatLit b ] = FloatLit $ a * b
+mod :: Partial => Array Object -> Object
+mod [ IntObj a, IntObj b ] = IntObj $ Ring.mod a b
 
-div :: Partial => Array Literal -> Literal
-div [ IntLit a, IntLit b ] = IntLit $ a / b
-div [ FloatLit a, FloatLit b ] = FloatLit $ a / b
+gcd :: Partial => Array Object -> Object
+gcd [ IntObj a, IntObj b ] = IntObj $ Ring.gcd a b
 
-mod :: Partial => Array Literal -> Literal
-mod [ IntLit a, IntLit b ] = IntLit $ Ring.mod a b
+lcm :: Partial => Array Object -> Object
+lcm [ IntObj a, IntObj b ] = IntObj $ Ring.lcm a b
 
-gcd :: Partial => Array Literal -> Literal
-gcd [ IntLit a, IntLit b ] = IntLit $ Ring.gcd a b
+sum :: Partial => Array Object -> Object
+sum [ ListObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray xs
 
-lcm :: Partial => Array Literal -> Literal
-lcm [ IntLit a, IntLit b ] = IntLit $ Ring.lcm a b
+product :: Partial => Array Object -> Object
+product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray xs
 
-sum :: Partial => Array Literal -> Literal
-sum [ ListLit [] ] = IntLit 0
-sum [ ListLit xs ] = foldl1 (add <.. arr2) $ NonEmptyArray xs
+-- List / String Fns
+append :: Partial => Array Object -> Object
+append [ StringObj a, StringObj b ] = StringObj $ a <> b
+append [ ListObj a, ListObj b ] = ListObj $ a <> b
 
-product :: Partial => Array Literal -> Literal
-product [ ListLit [] ] = IntLit 1
-product [ ListLit xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray xs
+cons :: Partial => Array Object -> Object
+cons [ CharObj a, StringObj b ] = StringObj $ String.singleton a <> b
+cons [ a, ListObj b ] = ListObj $ Array.cons a b
 
-append :: Partial => Array Literal -> Literal
-append [ StringLit a, StringLit b ] = StringLit $ a <> b
-append [ ListLit a, ListLit b ] = ListLit $ a <> b
+snoc :: Partial => Array Object -> Object
+snoc [ StringObj a, CharObj b ] = StringObj $ a <> String.singleton b
+snoc [ ListObj a, b ] = ListObj $ Array.snoc a b
 
-cons :: Partial => Array Literal -> Literal
-cons [ CharLit a, StringLit b ] = StringLit $ String.singleton a <> b
-cons [ a, ListLit b ] = ListLit $ Array.cons a b
+concat :: Partial => Array Object -> Object
+concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
 
-snoc :: Partial => Array Literal -> Literal
-snoc [ StringLit a, CharLit b ] = StringLit $ a <> String.singleton b
-snoc [ ListLit a, b ] = ListLit $ Array.snoc a b
-
-arr2 :: forall t202. t202 -> t202 -> Array t202
+arr2 :: forall a. a -> a -> Array a
 arr2 a b = [ a, b ]
+

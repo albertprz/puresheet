@@ -7,7 +7,7 @@ import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..),
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
-import App.Interpreters.Builtins (fnsMap, operatorsMap, precedenceMap, rAssocSet)
+import App.Interpreters.Builtins (builtinFnsMap, operatorsMap)
 import Data.Map as Map
 import Halogen as H
 
@@ -33,8 +33,9 @@ initialState = const
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing
-  , fnsMap
-  , operatorsMap
-  , precedenceMap
-  , rAssocSet
+  , formulaCtx:
+      { fnsMap: Map.empty
+      , builtinFnsMap
+      , operatorsMap
+      }
   }

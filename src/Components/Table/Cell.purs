@@ -7,6 +7,7 @@ import Data.Array as Array
 import Data.Int as Int
 import Data.Map as Map
 import Data.Set as Set
+import Data.String.CodeUnits as String
 import Data.String.Pattern (Pattern(..))
 
 showCell :: Cell -> String
@@ -329,6 +330,7 @@ data CellValue
   = BoolVal Boolean
   | IntVal Int
   | FloatVal Number
+  | CharVal Char
   | StringVal String
 
 data CellMove
@@ -375,6 +377,7 @@ instance Show CellValue where
   show (BoolVal x) = show x
   show (IntVal x) = show x
   show (FloatVal x) = show x
+  show (CharVal x) = String.singleton x
   show (StringVal x) = x
 
 instance Range Column where

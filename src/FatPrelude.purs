@@ -13,6 +13,7 @@ module FatPrelude
   , module Map
   , module Set
   , module Maybe
+  , module Either
   , module Bifunctor
   , module NonEmptyArray
   , module Tuple
@@ -35,7 +36,6 @@ module FatPrelude
   , module PointFree
   ) where
 
-import PointFree
 import Prelude
 
 import App.Utils.Array (class Range, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', range, satIndex, slice', sliceNext', slicePrev', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
@@ -49,6 +49,7 @@ import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), eval
 import Data.Array.NonEmpty hiding (all, any, elem, find, findMap, foldM, intercalate, length, notElem, range, scanl, scanr, (..)) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor
 import Data.Char (fromCharCode, toCharCode) as Char
+import Data.Either (Either(..), blush, choose, either, fromLeft, fromLeft', fromRight, fromRight', hush, isLeft, isRight, note, note') as Either
 import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldMapDefaultL, foldMapDefaultR, foldl, foldlDefault, foldr, foldrDefault, for_, indexl, indexr, intercalate, length, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
 import Data.Function (applyFlipped, applyN, compose, const, flip, identity, on, (#), ($), (<<<), (>>>)) as Function
 import Data.Int (Parity(..), Radix, base36, binary, ceil, decimal, even, floor, fromNumber, fromString, fromStringAs, hexadecimal, octal, odd, parity, pow, quot, radix, rem, round, toNumber, toStringAs, trunc) as Int
@@ -69,5 +70,6 @@ import Effect.Class (class MonadEffect, liftEffect) as EffClass
 import Effect.Class.Console hiding (error) as Console
 import Effect.Exception (error, throw) as Exception
 import PSCI.Support (class Eval) as PSCISupport
+import PointFree (applySecond, applySecondFlipped, applyThird, applyThirdFlipped, compose2, compose2Flipped, compose2Second, compose2SecondFlipped, compose2Third, compose2ThirdFlipped, compose3, compose3Flipped, compose3Second, compose3SecondFlipped, composeSecond, composeSecondFlipped, composeThird, composeThirdFlipped, (#~), (#~~), (#~~~), (...>), (..>), (.>), (<.), (<..), (<...), (<~.), (<~..), (<~...), (<~~.), (<~~..), (<~~~.), (~$), (~...>), (~..>), (~.>), (~~$), (~~..>), (~~.>), (~~~$), (~~~.>))
 import Prim hiding (Row) as Prim
 import Type.Prelude (Proxy(..))

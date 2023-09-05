@@ -4,7 +4,8 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
-import App.SyntaxTrees.Common (Literal, Var, VarOp)
+import App.SyntaxTrees.Common (Var, VarOp)
+import App.SyntaxTrees.FnDef (FnInfo, Object, OpInfo)
 import App.Utils.Dom (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
@@ -20,10 +21,13 @@ type AppState =
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
-  , fnsMap :: Map Var ((Array Literal -> Literal) /\ Int)
-  , operatorsMap :: Map VarOp Var
-  , precedenceMap :: Map VarOp Int
-  , rAssocSet :: Set VarOp
+  , formulaCtx :: FormulaCtx
+  }
+
+type FormulaCtx =
+  { fnsMap :: Map Var FnInfo
+  , builtinFnsMap :: Map Var ((Array Object -> Object) /\ Int)
+  , operatorsMap :: Map VarOp OpInfo
   }
 
 data Action

@@ -2,8 +2,8 @@ module App.SyntaxTrees.FnDef where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell)
-import App.SyntaxTrees.Common (Ctor, Literal, Var, VarOp)
+import App.Components.Table.Cell (Cell, CellValue)
+import App.SyntaxTrees.Common (Ctor, Var, VarOp)
 import App.SyntaxTrees.Pattern (Pattern)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
@@ -24,8 +24,9 @@ data FnBody
   | List (Array FnBody)
   | FnVar' FnVar
   | FnOp VarOp
-  | Literal' Literal
+  | CellValue' CellValue
   | Cell' Cell
+  | Object' Object
 
 data FnVar
   = Selection Var (Array Var)
@@ -47,6 +48,47 @@ data Guard
 data PatternGuard
   = PatternGuard Pattern FnBody
   | SimpleGuard FnBody
+
+data Object
+  = BoolObj Boolean
+  | IntObj Int
+  | FloatObj Number
+  | CharObj Char
+  | StringObj String
+  | ListObj (Array Object)
+  | FnObj FnInfo
+
+type FnInfo =
+  { body :: FnBody
+  , params :: Array Var
+  }
+
+type OpInfo =
+  { fnName :: Var
+  , precedence :: Precedence
+  , associativity :: Associativity
+  }
+
+data Precedence
+  = P1
+  | P2
+  | P3
+  | P4
+  | P5
+  | P6
+  | P7
+  | P8
+  | P9
+  | P10
+  | P11
+  | P12
+
+derive instance Eq Precedence
+derive instance Ord Precedence
+
+data Associativity
+  = L
+  | R
 
 derive instance Generic FnDef _
 instance Show FnDef where
@@ -81,4 +123,8 @@ instance Show Guard where
 
 derive instance Generic PatternGuard _
 instance Show PatternGuard where
+  show x = genericShow x
+
+derive instance Generic Object _
+instance Show Object where
   show x = genericShow x

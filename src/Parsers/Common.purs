@@ -2,7 +2,8 @@ module App.Parsers.Common where
 
 import FatPrelude
 
-import App.SyntaxTrees.Common (Ctor(..), Literal(..), Module(..), Var(..), VarOp(..))
+import App.Components.Table.Cell (CellValue(..))
+import App.SyntaxTrees.Common (Ctor(..), Module(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)
@@ -12,14 +13,14 @@ import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.String.CodeUnits (singleton) as String
 import Data.String.Unsafe (char) as String
 
-literal :: Parser Literal
-literal = token
-  $ (BoolLit <$> (true <$ is "true" <|> false <$ is "false"))
-  <|> (IntLit <$> int)
-  <|> (FloatLit <$> double)
-  <|> (CharLit <$> withinQuotes (charLit <|> charLitEscaped))
+cellValue :: Parser CellValue
+cellValue = token
+  $ (BoolVal <$> (true <$ is "true" <|> false <$ is "false"))
+  <|> (IntVal <$> int)
+  <|> (FloatVal <$> double)
+  <|> (CharVal <$> withinQuotes (charLit <|> charLitEscaped))
   <|>
-    ( StringLit <$> withinDoubleQuotes
+    ( StringVal <$> withinDoubleQuotes
         ((||*) (stringLit <|> charLitEscaped))
     )
   where

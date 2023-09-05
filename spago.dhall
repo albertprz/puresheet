@@ -8,6 +8,7 @@
   , "console"
   , "control"
   , "effect"
+  , "either"
   , "exceptions"
   , "filterable"
   , "foldable-traversable"

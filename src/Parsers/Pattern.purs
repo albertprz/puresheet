@@ -2,7 +2,7 @@ module App.Parsers.Pattern where
 
 import FatPrelude
 
-import App.Parsers.Common (argListOf, ctor, literal, token, var)
+import App.Parsers.Common (argListOf, cellValue, ctor, token, var)
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators (anySepBy, is, (<|>), (|?))
@@ -18,12 +18,12 @@ pattern' = pattern''
   nullaryCtor = defer \_ -> CtorPattern <$> ctor <*> pure []
   alias = defer \_ -> AliasedPattern <$> (var <* is "@") <*> aliasElem
   var' = defer \_ -> VarPattern <$> var
-  literal' = defer \_ -> LitPattern <$> literal
+  cellValue' = defer \_ -> LitPattern <$> cellValue
   wildcard = defer \_ -> Wildcard <$ token underscore
   list = defer \_ -> ListPattern <$> listOf pattern'
   recordField = defer \_ -> (/\) <$> var <*> (|?) (is "=" *> pattern'')
   recordShape = defer \_ -> withinCurlyBrackets (anySepBy comma recordField)
-  elem' = defer \_ -> literal'
+  elem' = defer \_ -> cellValue'
     <|> var'
     <|> alias
     <|> wildcard
