@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
 import App.SyntaxTrees.Common (Var, VarOp)
-import App.SyntaxTrees.FnDef (FnInfo, Object, OpInfo)
+import App.SyntaxTrees.FnDef (FnInfo, OpInfo)
 import App.Utils.Dom (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
@@ -26,7 +26,6 @@ type AppState =
 
 type FormulaCtx =
   { fnsMap :: Map Var FnInfo
-  , builtinFnsMap :: Map Var ((Array Object -> Object) /\ Int)
   , operatorsMap :: Map VarOp OpInfo
   }
 

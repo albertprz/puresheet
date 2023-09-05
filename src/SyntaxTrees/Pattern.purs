@@ -9,7 +9,6 @@ import Data.Show.Generic (genericShow)
 
 data Pattern
   = CtorPattern Ctor (Array Pattern)
-  | RecordPattern Ctor (Array (Var /\ Maybe Pattern))
   | AliasedPattern Var Pattern
   | ListPattern (Array Pattern)
   | VarPattern Var

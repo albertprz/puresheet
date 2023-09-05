@@ -8,14 +8,11 @@ sum (myList) = myList |reduce> (0, '+)
 product :: [Int] -> Int
 product (myList) = myList |reduce> (1, '*)
 
-findEvens :: [Int] -> [Int]
-findEvens = _ |filter> isEven 
+filterEvens :: [Int] -> [Int]
+filterEvens = _ |filter> even 
 
-divOptions :: Option (Float) -> Option (Float) -> Option (Float)
-divOptions (opt1, opt2) = result
-  where {
-    | result = opt1 |map> '/ |apply> opt2
-}
+filterOdds :: [Int] -> [Int]
+filterOdds = odd <filter| _
 
 
 greeting :: Person -> String
@@ -33,11 +30,11 @@ head _          = None
 
 addLookup :: Map (String, Int) -> String -> String -> Int
 addLookup (env, key1, key2) = 
-   if {
+   cond {
      ? Just (val1) <- lookup (env, key1)
      , Just (val2) <- lookup (env, key2)
        = val1 + val2
-     ? else = 0
+     ? otherwise = 0
 }
 
 

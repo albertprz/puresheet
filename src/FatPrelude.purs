@@ -38,7 +38,7 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.Array (class Range, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', range, satIndex, slice', sliceNext', slicePrev', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
+import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', maybeToArray, range, satIndex, slice', sliceNext', slicePrev', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.Foldable (wrapMaybe) as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils

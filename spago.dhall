@@ -9,6 +9,7 @@
   , "control"
   , "effect"
   , "either"
+  , "enums"
   , "exceptions"
   , "filterable"
   , "foldable-traversable"

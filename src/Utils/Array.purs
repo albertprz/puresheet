@@ -8,7 +8,7 @@ import Data.Array.NonEmpty (findIndex, head, last, length, mapMaybe, toArray, up
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
-import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 
@@ -91,6 +91,13 @@ satIndex seq idx = fromMaybe bound (seq !! idx)
   bound
     | idx < 0 = head seq
     | otherwise = last seq
+
+arr2 :: forall a. a -> a -> Array a
+arr2 a b = [ a, b ]
+
+maybeToArray :: forall a. Maybe a -> Array a
+maybeToArray (Just x) = [ x ]
+maybeToArray Nothing = []
 
 inRange :: forall a. Ord a => a -> a -> a -> Boolean
 inRange x y value = between x y value ||

@@ -7,7 +7,7 @@ import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..),
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
-import App.Interpreters.Builtins (builtinFnsMap, operatorsMap)
+import App.Interpreters.Builtins (operatorsMap)
 import Data.Map as Map
 import Halogen as H
 
@@ -35,7 +35,6 @@ initialState = const
   , draggedHeader: Nothing
   , formulaCtx:
       { fnsMap: Map.empty
-      , builtinFnsMap
       , operatorsMap
       }
   }
