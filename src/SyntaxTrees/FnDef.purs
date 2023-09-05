@@ -11,14 +11,14 @@ import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, gene
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
-data FnDef = FnDef (Array Var) (Array Pattern) MaybeGuardedFnBody
+data FnDef = FnDef Var (Array Var) FnBody
 
 data FnBody
   = FnApply FnBody (Array FnBody)
   | InfixFnApply (Array VarOp) (Array FnBody)
   | LeftOpSection VarOp FnBody
   | RightOpSection FnBody VarOp
-  | Bindings FnBody (Array FnDef)
+  | WhereExpr FnBody (Array FnDef)
   | CondExpr (Array GuardedFnBody)
   | SwitchExpr FnBody (Array CaseBinding)
   | ListRange FnBody FnBody

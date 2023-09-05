@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "purescript": "^0.15.10",
-    "spago": "^0.21",
+    "spago": "^0.21.0",
     "parcel": "^2.9.3"
   }
 }

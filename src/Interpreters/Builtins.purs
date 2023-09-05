@@ -7,12 +7,13 @@ import App.SyntaxTrees.FnDef
 
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import Data.Array as Array
+import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
 import Data.String.CodeUnits as String
-import FatPrelude (Map, arr2, bimap, ($), (&&), (*), (+), (-), (/), (/\), (<$>), (<..), (<>), (||))
+import FatPrelude (Map, arr2, bimap, ($), (&&), (*), (+), (-), (..), (/), (/\), (<$>), (<..), (<>), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -39,6 +40,7 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("append" /\ (append /\ A2))
     , ("cons" /\ (cons /\ A2))
     , ("snoc" /\ (snoc /\ A2))
+    , ("range" /\ (range /\ A2))
     ]
 
 operatorsMap :: Map VarOp OpInfo
@@ -122,3 +124,6 @@ snoc [ ListObj a, b ] = ListObj $ Array.snoc a b
 concat :: Partial => Array Object -> Object
 concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
 
+range :: Partial => Array Object -> Object
+range [ IntObj a, IntObj b ] = ListObj $ IntObj <$> toArray (a .. b)
+range [ CharObj a, CharObj b ] = ListObj $ CharObj <$> toArray (a .. b)

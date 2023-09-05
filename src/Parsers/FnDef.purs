@@ -9,7 +9,7 @@ import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..),
 import Bookhound.Parser (Parser, withError)
 import Bookhound.ParserCombinators (is, someSepBy, (<|>), (|*), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote, upper)
-import Bookhound.Parsers.Collections (listOf, tupleOf)
+import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (posInt)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
@@ -18,9 +18,9 @@ import Data.Array as Array
 fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
   $ FnDef
-  <$> (tupleOf var <|> pure <$> var)
-  <*> (|*) pattern'
-  <*> maybeGuardedFnBody (is "=")
+  <$> var
+  <*> (|*) var
+  <*> fnBody
 
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
@@ -33,7 +33,7 @@ fnBody = whereExpr <|> openForm
   rightOpSection = defer \_ -> uncurry RightOpSection <$> withinParens
     ((/\) <$> openForm <*> varOp)
   opSection = defer \_ -> leftOpSection <|> rightOpSection
-  whereExpr = defer \_ -> Bindings <$> openForm
+  whereExpr = defer \_ -> WhereExpr <$> openForm
     <* is "where"
     <*> withinContext fnDef
   condExpr = defer \_ -> CondExpr <$>

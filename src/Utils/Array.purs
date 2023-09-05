@@ -66,6 +66,9 @@ insertAt' = Array.insertAt
 zip' :: forall a b. Array a -> Array b -> Array (Tuple a b)
 zip' = Array.zip
 
+zipWith' :: forall a b c. (a -> b -> c) -> Array a -> Array b -> Array c
+zipWith' = Array.zipWith
+
 getNextElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
 getNextElemSat = getElemSat inc
 

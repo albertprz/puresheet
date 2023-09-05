@@ -72,7 +72,7 @@ idChar :: Parser Char
 idChar = alphaNum <|> underscore <|> quote
 
 opSymbol :: Parser Char
-opSymbol = oneOf symbolChars
+opSymbol = oneOf opSymbolChars
 
 token :: forall a. Parser a -> Parser a
 token =
@@ -94,7 +94,7 @@ qTerm' fn = token parser
 
 lineComment :: Parser String
 lineComment = is "--" ->>-
-  ( ( String.singleton <$> newLine <|> noneOf symbolChars ->>-
+  ( ( String.singleton <$> newLine <|> noneOf opSymbolChars ->>-
         (|*) (inverse newLine)
     )
   )
@@ -106,8 +106,8 @@ notReserved = check "reserved"
 withinBackQuotes :: forall b. Parser b -> Parser b
 withinBackQuotes = within (is '`')
 
-symbolChars :: Array Char
-symbolChars =
+opSymbolChars :: Array Char
+opSymbolChars =
   [ '!'
   , '#'
   , '$'
@@ -132,33 +132,29 @@ symbolChars =
 
 reservedKeyWords :: Array String
 reservedKeyWords =
-  [ "case"
+  [ "switch"
+  , "cond"
   , "class"
+  , "instance"
   , "data"
-  , "default"
-  , "deriving"
+  , "newtype"
+  , "type"
   , "do"
+  , "if"
+  , "then"
   , "else"
   , "forall"
-  , "if"
   , "import"
-  , "in"
-  , "infix"
   , "infixl"
   , "infixr"
-  , "instance"
-  , "let"
-  , "module"
-  , "newtype"
-  , "of"
-  , "qualified"
-  , "then"
-  , "type"
   , "where"
+  , "let"
   , "_"
+  , "module"
+  , "qualified"
   , "as"
   ]
 
 reservedSymbols :: Array String
 reservedSymbols =
-  [ "..", "::", "=", "\\", "|", "<-", "->", "@", "~", "=>", "[", "]" ]
+  [ "..", "::", "=", "\\", "|", "?", "<-", "->", "@", "~", "=>", "[", "]" ]
