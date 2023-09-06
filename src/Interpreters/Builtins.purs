@@ -23,7 +23,8 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
       ( \(fn /\ arity) -> { fn, arity }
       )
   <$>
-    [ ("not" /\ (not /\ A1))
+    [ ("emptyList" /\ (emptyList /\ A0))
+    , ("not" /\ (not /\ A1))
     , ("neg" /\ (neg /\ A1))
     , ("sum" /\ (sum /\ A1))
     , ("product" /\ (product /\ A1))
@@ -61,6 +62,9 @@ operatorsMap = Map.fromFoldable
     , ("/" /\ ("div" /\ P11 /\ L))
     , ("%" /\ ("mod" /\ P11 /\ L))
     ]
+
+emptyList :: Partial => Array Object -> Object
+emptyList [] = ListObj []
 
 -- Boolean Fns
 not :: Partial => Array Object -> Object

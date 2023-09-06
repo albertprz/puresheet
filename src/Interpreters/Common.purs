@@ -6,9 +6,9 @@ import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
 import App.SyntaxTrees.Common (Var(..), VarOp)
-import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, FnBody(..), FnDef(..), FnInfo, FnVar(..), Object(..), OpInfo)
+import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, FnBody(..), FnDef(..), FnInfo, FnVar(..), Object(..), OpInfo)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Data.Enum (fromEnum)
+import Data.Enum (fromEnum, toEnum)
 import Data.Filterable (filterMap)
 import Data.Map as Map
 import Partial.Unsafe (unsafeCrashWith)
@@ -21,13 +21,11 @@ type LocalFormulaCtx =
   , builtinFnsMap :: Map Var BuiltinFnInfo
   }
 
-evalFormula :: AppState -> FnBody -> Object
-evalFormula = (fromMaybe (ListObj []) <<< extractObject) <.. evalExpr
-
-evalExpr :: AppState -> FnBody -> FnBody
-evalExpr appState expr = evalState (reduceExpr expr) localFormulaCtx
-  where
-  localFormulaCtx =
+evalExprInApp
+  :: forall m. Partial => MonadState AppState m => FnBody -> m Object
+evalExprInApp expr = do
+  appState <- get
+  pure $ evalState (evalExpr expr)
     { tableData: appState.tableData
     , fnsMap: appState.formulaCtx.fnsMap
     , operatorsMap: appState.formulaCtx.operatorsMap
@@ -35,97 +33,114 @@ evalExpr appState expr = evalState (reduceExpr expr) localFormulaCtx
     , localFnsMap: Map.empty
     }
 
-reduceExpr :: forall m. MonadState LocalFormulaCtx m => FnBody -> m FnBody
-reduceExpr (FnApply fnObj@(Object' (BuiltinFnObj { fn, arity })) args)
-  | Just args' <- traverse extractObject args =
-      if length unappliedArgs == 0 then
-        pure $ Object' $ fn args'
-      else if length unappliedArgs > 0 then
-        pure $ Object' $ FnObj
-          { body: (FnApply fnObj (args <> (varFn <$> unappliedArgs)))
-          , params: Var <$> unappliedArgs
-          }
-      else
-        unsafeCrashWith "Too many arguments applied"
-      where
-      unappliedArgs = argIds (fromEnum arity - length args')
+evalExpr
+  :: forall m. Partial => MonadState LocalFormulaCtx m => FnBody -> m Object
 
-reduceExpr (FnApply fnObj@(Object' (FnObj { body, params })) args) =
-  if length unappliedArgs == 0 then
-    do
-      st <- get
-      pure $ evalState (reduceExpr body)
-        (st { localFnsMap = Map.union argBindings st.localFnsMap })
-  else if length unappliedArgs > 0 then
-    pure $ Object' $ FnObj
-      { body: (FnApply fnObj (args <> (varFn <$> unappliedArgs)))
-      , params: Var <$> unappliedArgs
-      }
-  else unsafeCrashWith "Too many arguments applied"
-  where
-  unappliedArgs = argIds (length params - length args)
-  argBindings = Map.fromFoldable
-    $ rmap (\arg -> { body: arg, params: [] })
-    <$> zip' params args
+evalExpr (FnApply fnExpr args) = do
+  fnObj <- evalExpr fnExpr
+  argObjs <- traverse evalExpr args
+  case fnObj of
+    FnObj fnInfo -> evalFn fnInfo argObjs
+    BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
+    _ -> unsafeCrashWith (show fnObj <> " is not a function")
 
-reduceExpr (FnApply fn args) =
-  reduceExpr =<< (FnApply <$> reduceExpr fn <*> traverse reduceExpr args)
-
-reduceExpr (InfixFnApply fnOps args) =
+evalExpr (InfixFnApply fnOps args) =
   do
     { operatorsMap } <- get
-    reduceExpr =<< nestInfixFns (lookupArray fnOps operatorsMap) args
+    evalExpr =<< nestInfixFns (lookupArray fnOps operatorsMap) args
 
-reduceExpr (LeftOpSection fnOp body) =
-  pure $ Object' $ FnObj
+evalExpr (LeftOpSection fnOp body) =
+  pure $ FnObj
     { body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
     , params: [ Var argId ]
     }
 
-reduceExpr (RightOpSection body fnOp) =
-  pure $ Object' $ FnObj
+evalExpr (RightOpSection body fnOp) =
+  pure $ FnObj
     { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
     , params: [ Var argId ]
     }
 
-reduceExpr (WhereExpr fnBody bindings) =
-  traverse_ registerFn bindings *> reduceExpr fnBody
+evalExpr (WhereExpr fnBody bindings) =
+  traverse_ registerLocalFn bindings *> evalExpr fnBody
 
-  where
-  registerFn (FnDef fnName params body) =
-    modify_ \st ->
-      st { localFnsMap = Map.insert fnName { params, body } st.localFnsMap }
+evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
-reduceExpr (ListRange x y) = reduceExpr $ FnApply (varFn "range") [ x, y ]
-
-reduceExpr (List list) =
-  reduceExpr $ foldl (FnApply (varFn "snoc") <.. arr2)
-    (Object' $ ListObj [])
+evalExpr (List list) =
+  evalExpr $ foldl (FnApply (varFn "snoc") <.. arr2)
+    (FnApply (varFn "emptyList") [])
     list
 
-reduceExpr (FnVar' (Var' fn)) = do
+evalExpr (FnVar' (Var' fn)) = do
   fnInfo <- lookupFn fn (_.builtinFnsMap)
   case fnInfo of
-    Just x -> pure $ Object' $ BuiltinFnObj x
-    Nothing -> Object' <<< FnObj <$> unsafeLookupFn fn
+    Just x -> pure $ BuiltinFnObj x
+    Nothing -> FnObj <$> unsafeLookupFn fn
       (\x -> Map.union x.localFnsMap x.fnsMap)
 
-reduceExpr (FnOp fnOp) = do
+evalExpr (FnOp fnOp) = do
   { fnName } <- unsafeLookupFn fnOp (_.operatorsMap)
   fnInfo <- unsafeLookupFn fnName (_.fnsMap)
-  reduceExpr $ Object' $ FnObj fnInfo
+  pure $ FnObj fnInfo
 
-reduceExpr (Cell' cell) =
+evalExpr (Cell' cell) =
   do
     { tableData } <- get
-    pure $ Object' $ maybe (ListObj []) cellValueToObj $ Map.lookup cell
+    pure $ maybe (ListObj []) cellValueToObj $ Map.lookup cell
       tableData
 
-reduceExpr (CellValue' cellValue) = pure $ Object' $ cellValueToObj cellValue
+evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 
-reduceExpr (Object' obj) = pure $ Object' obj
+evalFn
+  :: forall m
+   . Partial
+  => MonadState LocalFormulaCtx m
+  => FnInfo
+  -> Array Object
+  -> m Object
+evalFn { body, params } args = do
+  st <- get
+  let
+    evalInContext expr f =
+      evalState (evalExpr expr)
+        ( st
+            { builtinFnsMap = Map.union argBindings st.builtinFnsMap
+            , localFnsMap = f $ st.localFnsMap
+            }
+        )
+  if unappliedArgsNum == 0 then
+    pure $ evalInContext body identity
+  else if unappliedArgsNum > 0 then
+    pure $ evalInContext (varFn argId)
+      ( Map.insert (Var argId)
+          { body, params: takeEnd' unappliedArgsNum params }
+      )
+  else unsafeCrashWith "Too many arguments supplied to current function"
+  where
+  unappliedArgsNum = length params - length args
+  argBindings = Map.fromFoldable
+    $ rmap (\arg -> { fn: const arg, arity: A0 })
+    <$> zip' params args
 
-reduceExpr x = pure x
+evalBuiltinFn
+  :: forall m
+   . Partial
+  => MonadState LocalFormulaCtx m
+  => BuiltinFnInfo
+  -> Array Object
+  -> m Object
+evalBuiltinFn { fn, arity } args =
+  if unappliedArgsNum == 0 then
+    pure $ fn args
+  else if unappliedArgsNum > 0 then
+    pure $ BuiltinFnObj
+      { fn: \newArgs -> fn (args <> newArgs)
+      , arity: unsafeFromJust $ toEnum unappliedArgsNum
+      }
+  else
+    unsafeCrashWith "Too many arguments supplied to current function"
+  where
+  unappliedArgsNum = fromEnum arity - length args
 
 nestInfixFns
   :: forall m
@@ -150,6 +165,11 @@ nestInfixFns fnOps args = nestInfixFns newFns newArgs
   redexArgs = sliceFn 2 idx args
   newArgs = fold $ deleteAt' (idx + 1) $ fold
     $ updateAt' idx (FnApply (FnVar' $ Var' fnName) redexArgs) args
+
+registerLocalFn :: forall m. MonadState LocalFormulaCtx m => FnDef -> m Unit
+registerLocalFn (FnDef fnName params body) =
+  modify_ \st ->
+    st { localFnsMap = Map.insert fnName { params, body } st.localFnsMap }
 
 cellValueToObj :: CellValue -> Object
 cellValueToObj = case _ of
@@ -186,16 +206,8 @@ lookupArray keys dict = keys `zip'` vals
   where
   vals = filterMap (_ `Map.lookup` dict) keys
 
-extractObject :: FnBody -> Maybe Object
-extractObject (Object' x) = Just x
-extractObject (CellValue' x) = Just $ cellValueToObj x
-extractObject _ = Nothing
-
 varFn :: String -> FnBody
 varFn = FnVar' <<< Var' <<< Var
 
 argId :: String
-argId = "arg_1"
-
-argIds :: Int -> Array String
-argIds n = (("arg_" <> _) <<< show) <$> toArray (1 .. n)
+argId = "__arg__"

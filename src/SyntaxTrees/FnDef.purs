@@ -27,7 +27,6 @@ data FnBody
   | FnOp VarOp
   | Cell' Cell
   | CellValue' CellValue
-  | Object' Object
 
 data FnVar
   = Var' Var
@@ -76,7 +75,8 @@ type OpInfo =
   }
 
 data Arity
-  = A1
+  = A0
+  | A1
   | A2
 
 data Precedence
@@ -103,6 +103,7 @@ derive instance Ord Precedence
 derive instance Eq Arity
 derive instance Ord Arity
 derive instance Generic Arity _
+
 instance Enum Arity where
   succ = genericSucc
   pred = genericPred
