@@ -10,6 +10,7 @@ import Data.Enum (class BoundedEnum, class Enum)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Partial.Unsafe (unsafeCrashWith)
 
 data FnDef = FnDef Var (Array Var) FnBody
 
@@ -159,3 +160,23 @@ instance Show Object where
     (ListObj x) -> show x
     (FnObj x) -> show x
     (BuiltinFnObj _) -> "builtin Fn"
+
+instance Eq Object where
+  eq (BoolObj x) (BoolObj y) = x == y
+  eq (IntObj x) (IntObj y) = x == y
+  eq (FloatObj x) (FloatObj y) = x == y
+  eq (CharObj x) (CharObj y) = x == y
+  eq (StringObj x) (StringObj y) = x == y
+  eq (ListObj x) (ListObj y) = x == y
+  eq x y = unsafeCrashWith
+    ("Cannot check equality of: " <> show x <> " and " <> show y)
+
+instance Ord Object where
+  compare (BoolObj x) (BoolObj y) = compare x y
+  compare (IntObj x) (IntObj y) = compare x y
+  compare (FloatObj x) (FloatObj y) = compare x y
+  compare (CharObj x) (CharObj y) = compare x y
+  compare (StringObj x) (StringObj y) = compare x y
+  compare (ListObj x) (ListObj y) = compare x y
+  compare x y = unsafeCrashWith
+    ("Cannot compare: " <> show x <> " and " <> show y)

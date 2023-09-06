@@ -48,9 +48,6 @@ findLastIndex' = Array.findLastIndex
 slice' :: forall a. Int -> Int -> Array a -> Array a
 slice' = Array.slice
 
-slicePrev' :: forall a. Int -> Int -> Array a -> Array a
-slicePrev' n idx = slice' idx (idx - n)
-
 sliceNext' :: forall a. Int -> Int -> Array a -> Array a
 sliceNext' n idx = slice' idx (idx + n)
 

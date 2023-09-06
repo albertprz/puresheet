@@ -13,7 +13,7 @@ import Data.EuclideanRing as Ring
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
 import Data.String.CodeUnits as String
-import FatPrelude (Map, arr2, bimap, ($), (&&), (*), (+), (-), (..), (/), (/\), (<$>), (<..), (<>), (||))
+import FatPrelude (Map, arr2, bimap, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -31,6 +31,12 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("concat" /\ (concat /\ A1))
     , ("and" /\ (and /\ A2))
     , ("or" /\ (or /\ A2))
+    , ("eq" /\ (eq /\ A2))
+    , ("notEq" /\ (notEq /\ A2))
+    , ("gt" /\ (gt /\ A2))
+    , ("gtOrEq" /\ (gtOrEq /\ A2))
+    , ("lt" /\ (lt /\ A2))
+    , ("ltOrEq" /\ (ltOrEq /\ A2))
     , ("add" /\ (add /\ A2))
     , ("sub" /\ (sub /\ A2))
     , ("mult" /\ (mult /\ A2))
@@ -51,8 +57,14 @@ operatorsMap = Map.fromFoldable
           { fnName: Var fnName, precedence, associativity }
       )
   <$>
-    [ ("||" /\ ("or" /\ P2 /\ L))
-    , ("&&" /\ ("and" /\ P3 /\ L))
+    [ ("||" /\ ("or" /\ P2 /\ R))
+    , ("&&" /\ ("and" /\ P3 /\ R))
+    , ("==" /\ ("eq" /\ P4 /\ L))
+    , ("!=" /\ ("notEq" /\ P4 /\ L))
+    , (">" /\ ("gt" /\ P4 /\ L))
+    , (">=" /\ ("gtOrEq" /\ P4 /\ L))
+    , ("<" /\ ("lt" /\ P4 /\ L))
+    , ("<=" /\ ("ltOrEq" /\ P4 /\ L))
     , ("++" /\ ("append" /\ P5 /\ R))
     , ("+:" /\ ("cons" /\ P6 /\ R))
     , (":+" /\ ("snoc" /\ P7 /\ L))
@@ -79,6 +91,24 @@ and [ BoolObj a, BoolObj b ] = BoolObj $ a && b
 
 or :: Partial => Array Object -> Object
 or [ BoolObj a, BoolObj b ] = BoolObj $ a || b
+
+eq :: Partial => Array Object -> Object
+eq [ obj1, obj2 ] = BoolObj $ obj1 == obj2
+
+notEq :: Partial => Array Object -> Object
+notEq [ obj1, obj2 ] = BoolObj $ obj1 /= obj2
+
+gt :: Partial => Array Object -> Object
+gt [ obj1, obj2 ] = BoolObj $ obj1 > obj2
+
+gtOrEq :: Partial => Array Object -> Object
+gtOrEq [ obj1, obj2 ] = BoolObj $ obj1 >= obj2
+
+lt :: Partial => Array Object -> Object
+lt [ obj1, obj2 ] = BoolObj $ obj1 < obj2
+
+ltOrEq :: Partial => Array Object -> Object
+ltOrEq [ obj1, obj2 ] = BoolObj $ obj1 <= obj2
 
 -- Number Fns
 add :: Partial => Array Object -> Object
