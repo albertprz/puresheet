@@ -3,7 +3,7 @@ module App.Parsers.FnDef where
 import FatPrelude
 
 import App.Components.Table.Cell (Column(..), Row(..), buildCell)
-import App.Parsers.Common (argListOf, cellValue, ctor, token, var, varOp)
+import App.Parsers.Common (argListOf, cellValue, token, var, varOp)
 import App.Parsers.Pattern (pattern')
 import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
@@ -47,7 +47,8 @@ fnBody = whereExpr <|> openForm
   list = defer \_ -> List <$> listOf openForm
   fnOp = defer \_ -> FnOp <$> (quote *> varOp)
   fnVar = defer \_ ->
-    FnVar' <<< Var' <$> var <|> FnVar' <<< Ctor' <$> ctor
+    FnVar' <<< Var' <$> var
+  -- <|> FnVar' <<< Ctor' <$> ctor
   cell = buildCell <$> (Column <$> upper) <*> (Row <$> posInt)
   infixArgForm = defer \_ -> complexInfixForm <|> withinParens complexInfixForm
     <|> singleForm

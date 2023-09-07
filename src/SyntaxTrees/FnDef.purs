@@ -3,10 +3,9 @@ module App.SyntaxTrees.FnDef where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
-import App.SyntaxTrees.Common (Ctor, Var, VarOp)
+import App.SyntaxTrees.Common (Var, VarOp)
 import App.SyntaxTrees.Pattern (Pattern)
 import Data.Bounded.Generic (genericBottom, genericTop)
-import Data.Enum (class BoundedEnum, class Enum)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
@@ -28,10 +27,11 @@ data FnBody
   | FnOp VarOp
   | Cell' Cell
   | CellValue' CellValue
+  | Object' Object
 
-data FnVar
-  = Var' Var
-  | Ctor' Ctor
+data FnVar = Var' Var
+
+-- | Ctor' Ctor
 
 data CaseBinding = CaseBinding Pattern MaybeGuardedFnBody
 
@@ -128,7 +128,6 @@ instance Show FnBody where
 
 instance Show FnVar where
   show (Var' var) = show var
-  show (Ctor' var) = show var
 
 derive instance Generic CaseBinding _
 instance Show CaseBinding where

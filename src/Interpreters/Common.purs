@@ -6,10 +6,9 @@ import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
 import App.SyntaxTrees.Common (Var(..), VarOp)
-import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, FnBody(..), FnDef(..), FnInfo, FnVar(..), GuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Data.Enum (fromEnum, toEnum)
-import Data.Filterable (filterMap)
 import Data.Map as Map
 import Partial.Unsafe (unsafeCrashWith)
 
@@ -20,7 +19,7 @@ type LocalFormulaCtx =
   }
 
 evalExprInApp
-  :: forall m. Partial => MonadState AppState m => FnBody -> m Object
+  :: forall m. MonadState AppState m => FnBody -> m Object
 evalExprInApp expr = do
   appState <- get
   pure $ evalState (evalExpr expr)
@@ -30,7 +29,7 @@ evalExprInApp expr = do
     }
 
 evalExpr
-  :: forall m. Partial => MonadState LocalFormulaCtx m => FnBody -> m Object
+  :: forall m. MonadState LocalFormulaCtx m => FnBody -> m Object
 
 evalExpr (FnApply fnExpr args) = do
   fnObj <- evalExpr fnExpr
@@ -60,7 +59,16 @@ evalExpr (RightOpSection body fnOp) =
 evalExpr (WhereExpr fnBody bindings) =
   traverse_ registerLocalFn bindings *> evalExpr fnBody
 
--- evalExpr (CondExpr conds) =
+evalExpr (CondExpr conds) = do
+  st <- get
+  pure $ fromMaybe (unsafeCrashWith "Unreachable pattern match") $
+    findMap (evalGuardedFnBody st) conds
+
+evalExpr (SwitchExpr matchee cases) = do
+  st <- get
+  result <- evalExpr matchee
+  pure $ fromMaybe (unsafeCrashWith "Unreachable pattern match") $
+    findMap (evalCaseBinding st result) cases
 
 evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
@@ -87,10 +95,11 @@ evalExpr (Cell' cell) =
 
 evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 
+evalExpr (Object' obj) = pure obj
+
 evalFn
   :: forall m
-   . Partial
-  => MonadState LocalFormulaCtx m
+   . MonadState LocalFormulaCtx m
   => FnInfo
   -> Array FnBody
   -> m Object
@@ -115,8 +124,7 @@ evalFn { body, params } args = do
 
 evalBuiltinFn
   :: forall m
-   . Partial
-  => MonadState LocalFormulaCtx m
+   . MonadState LocalFormulaCtx m
   => BuiltinFnInfo
   -> Array Object
   -> m Object
@@ -157,14 +165,103 @@ nestInfixFns fnOps args = nestInfixFns newFns newArgs
   newArgs = fold $ deleteAt' (idx + 1) $ fold
     $ updateAt' idx (FnApply (FnVar' $ Var' fnName) redexArgs) args
 
--- evalGuardedFnBody (GuardedFnBody guard body) =
---   evalGuard
---
--- evalPatternGuard (PatternGuard pattern body) =
---   evalExpr body >>= evalPattern pattern
+evalCaseBinding
+  :: LocalFormulaCtx
+  -> Object
+  -> CaseBinding
+  -> Maybe Object
+evalCaseBinding ctx matchee (CaseBinding pattern body) =
+  evalState action ctx
+  where
+  action = ifM (evalPatternBinding pattern matchee)
+    (Just <$> evalMaybeGuardedFnBody body)
+    (pure Nothing)
+
+evalMaybeGuardedFnBody
+  :: forall m
+   . MonadState LocalFormulaCtx m
+  => MaybeGuardedFnBody
+  -> m Object
+evalMaybeGuardedFnBody (Guarded conds) =
+  evalExpr $ CondExpr conds
+
+evalMaybeGuardedFnBody (Standard body) =
+  evalExpr body
+
+evalGuardedFnBody
+  :: LocalFormulaCtx
+  -> GuardedFnBody
+  -> Maybe Object
+evalGuardedFnBody ctx (GuardedFnBody guard body) =
+  evalState action ctx
+  where
+  action = ifM (evalGuard guard)
+    (Just <$> evalExpr body)
+    (pure Nothing)
+
+evalGuard
+  :: forall m
+   . MonadState LocalFormulaCtx m
+  => Guard
+  -> m Boolean
+evalGuard (Guard guardPatterns) =
+  and <$> traverse evalPatternGuard guardPatterns
+
+evalGuard Otherwise = pure true
+
+evalPatternGuard
+  :: forall m
+   . MonadState LocalFormulaCtx m
+  => PatternGuard
+  -> m Boolean
+evalPatternGuard (PatternGuard pattern body) =
+  evalPatternBinding pattern =<< evalExpr body
 
 evalPatternGuard (SimpleGuard body) =
-  evalExpr body
+  extractBool <$> evalExpr body
+
+evalPatternBinding
+  :: forall m
+   . MonadState LocalFormulaCtx m
+  => Pattern
+  -> Object
+  -> m Boolean
+evalPatternBinding (VarPattern var) result =
+  registerLocalFn (FnDef var [] $ Object' result) $> true
+
+evalPatternBinding (LitPattern cellValue) result =
+  pure $ cellValueToObj cellValue == result
+
+evalPatternBinding (AliasedPattern var pattern) result =
+  registerLocalFn (FnDef var [] $ Object' result) *>
+    evalPatternBinding pattern result
+
+evalPatternBinding (ListPattern patterns) result
+  | Just idx <- findIndex' (_ == Spread) patterns
+  , length (filter (_ == Spread) patterns) == 1
+  , ListObj results <- result =
+      evalPatternBinding
+        (ListPattern $ patternsBegin <> patternsEnd)
+        (ListObj $ resultsBegin <> resultsEnd)
+      where
+      { before, after } = splitAt' idx patterns
+      (patternsBegin /\ patternsEnd) = (before /\ fold (tail' after))
+      resultsBegin = take' (length patternsBegin) results
+      resultsEnd = takeEnd' (length patternsEnd) results
+
+evalPatternBinding (ListPattern patterns) result
+  | Just results <- extractList (length patterns) result =
+      and <$> traverse (uncurry evalPatternBinding)
+        (patterns `zip'` results)
+
+evalPatternBinding (ListPattern _) _ =
+  pure false
+
+evalPatternBinding (Wildcard) _ =
+  pure true
+
+evalPatternBinding (Spread) _ =
+  pure true
 
 registerLocalFn :: forall m. MonadState LocalFormulaCtx m => FnDef -> m Unit
 registerLocalFn (FnDef fnName params body) =
@@ -178,6 +275,14 @@ cellValueToObj = case _ of
   (FloatVal x) -> FloatObj x
   (CharVal x) -> CharObj x
   (StringVal x) -> StringObj x
+
+extractBool :: Object -> Boolean
+extractBool (BoolObj x) = x
+extractBool _ = unsafeCrashWith "guard expression does not return Bool"
+
+extractList :: Int -> Object -> Maybe (Array Object)
+extractList n (ListObj xs) | length xs == n = Just xs
+extractList _ _ = Nothing
 
 unsafeLookupFn
   :: forall k v s m

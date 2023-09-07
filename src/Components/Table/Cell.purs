@@ -365,6 +365,7 @@ derive newtype instance Eq Column
 derive newtype instance Ord Column
 derive newtype instance Eq Row
 derive newtype instance Ord Row
+derive instance Eq CellValue
 derive instance Eq SelectionState
 
 instance Show Column where

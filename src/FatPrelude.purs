@@ -10,7 +10,9 @@ module FatPrelude
   , module Foldable
   , module Traversable
   , module SemiFoldable
+  , module Filterable
   , module Map
+  , module Enum
   , module Set
   , module Maybe
   , module Either
@@ -38,7 +40,7 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', maybeToArray, range, satIndex, slice', sliceNext', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
+import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.Foldable (wrapMaybe) as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
@@ -46,10 +48,12 @@ import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos) as NumberUtils
 import App.Utils.String (newline, tab, wrap, wrapBackQuotes, wrapBoth, wrapQuotes) as StringUtils
 import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
-import Data.Array.NonEmpty hiding (all, any, elem, find, findMap, foldM, intercalate, length, notElem, range, scanl, scanr, (..)) as NonEmptyArray
+import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, foldM, intercalate, length, notElem, partition, range, scanl, scanr, (..)) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor
 import Data.Char (fromCharCode, toCharCode) as Char
 import Data.Either (Either(..), blush, choose, either, fromLeft, fromLeft', fromRight, fromRight', hush, isLeft, isRight, note, note') as Either
+import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, defaultCardinality, defaultFromEnum, defaultPred, defaultSucc, defaultToEnum, downFrom, downFromIncluding, enumFromThenTo, enumFromTo, fromEnum, pred, succ, toEnum, toEnumWithDefaults, upFrom, upFromIncluding) as Enum
+import Data.Filterable (class Compactable, class Filterable, cleared, compact, eitherBool, filter, filterDefault, filterDefaultPartition, filterDefaultPartitionMap, filterMap, filterMapDefault, maybeBool, partition, partitionDefault, partitionDefaultFilter, partitionDefaultFilterMap, partitionMap, partitionMapDefault, separate) as Filterable
 import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldMapDefaultL, foldMapDefaultR, foldl, foldlDefault, foldr, foldrDefault, for_, indexl, indexr, intercalate, length, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
 import Data.Function (applyFlipped, applyN, compose, const, flip, identity, on, (#), ($), (<<<), (>>>)) as Function
 import Data.Int (Parity(..), Radix, base36, binary, ceil, decimal, even, floor, fromNumber, fromString, fromStringAs, hexadecimal, octal, odd, parity, pow, quot, radix, rem, round, toNumber, toStringAs, trunc) as Int
