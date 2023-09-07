@@ -70,6 +70,32 @@ evalExpr (SwitchExpr matchee cases) = do
   pure $ fromMaybe (unsafeCrashWith "Unreachable pattern match") $
     findMap (evalCaseBinding st result) cases
 
+evalExpr
+  ( ListRange (Cell' { column: colX, row: rowX })
+      (Cell' { column: colY, row: rowY })
+  ) | rowX == rowY =
+  evalExpr $ List $ toArray $ (\column -> Cell' { column, row: rowX }) <$>
+    (colX .. colY)
+
+evalExpr
+  ( ListRange (Cell' { column: colX, row: rowX })
+      (Cell' { column: colY, row: rowY })
+  ) | colX == colY =
+  evalExpr $ List $ (\row -> Cell' { row, column: colX }) <$>
+    toArray (rowX .. rowY)
+
+evalExpr
+  ( MatrixRange { column: colX, row: rowX }
+      { column: colY, row: rowY }
+  ) =
+  evalExpr $ List (List <$> matrix)
+  where
+  matrix = do
+    row <- toArray $ rowX .. rowY
+    pure $ do
+      column <- toArray $ colX .. colY
+      pure $ Cell' { column, row }
+
 evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr (List list) =
@@ -106,18 +132,16 @@ evalFn
 evalFn { body, params } args = do
   st <- get
   if unappliedArgsNum == 0 then
-    evalInContext st body identity
+    evalInContext st body
   else if unappliedArgsNum > 0 then
-    evalInContext st (varFn argId)
-      ( Map.insert (Var argId)
-          { body, params: takeEnd' unappliedArgsNum params }
-      )
+    evalInContext st
+      (Object' $ FnObj { body, params: takeEnd' unappliedArgsNum params })
   else unsafeCrashWith "Too many arguments supplied to current function"
   where
   unappliedArgsNum = length params - length args
-  evalInContext st expr f =
+  evalInContext st expr =
     pure $ evalState (evalExpr expr)
-      (st { fnsMap = f $ Map.union argBindings st.fnsMap })
+      (st { fnsMap = Map.union argBindings st.fnsMap })
   argBindings = Map.fromFoldable
     $ rmap (\arg -> { body: arg, params: [] })
     <$> zip' params args

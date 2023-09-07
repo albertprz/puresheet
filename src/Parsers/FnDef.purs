@@ -44,6 +44,10 @@ fnBody = whereExpr <|> openForm
   listRange = defer \_ -> withinSquareBrackets $ ListRange
     <$> (openForm <* is "..")
     <*> openForm
+  matrixRange = defer \_ -> withinSquareBrackets $ withinSquareBrackets
+    $ MatrixRange
+    <$> (cell <* is "..")
+    <*> cell
   list = defer \_ -> List <$> listOf openForm
   fnOp = defer \_ -> FnOp <$> (quote *> varOp)
   fnVar = defer \_ ->
@@ -61,6 +65,7 @@ fnBody = whereExpr <|> openForm
     <$> cellValue
     <|> Cell'
     <$> cell
+    <|> matrixRange
     <|> listRange
     <|> list
     <|>

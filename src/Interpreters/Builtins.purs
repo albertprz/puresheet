@@ -13,7 +13,7 @@ import Data.EuclideanRing as Ring
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
 import Data.String.CodeUnits as String
-import FatPrelude (Map, arr2, bimap, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, arr2, bimap, drop', dropEnd', slice', take', takeEnd', ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -48,6 +48,11 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("cons" /\ (cons /\ A2))
     , ("snoc" /\ (snoc /\ A2))
     , ("range" /\ (range /\ A2))
+    , ("take" /\ (take /\ A2))
+    , ("takeLast" /\ (takeLast /\ A2))
+    , ("drop" /\ (drop /\ A2))
+    , ("dropLast" /\ (dropLast /\ A2))
+    , ("slice" /\ (slice /\ A3))
     ]
 
 operatorsMap :: Map VarOp OpInfo
@@ -144,16 +149,16 @@ product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray xs
 
 -- List / String Fns
 append :: Partial => Array Object -> Object
-append [ StringObj a, StringObj b ] = StringObj $ a <> b
 append [ ListObj a, ListObj b ] = ListObj $ a <> b
+append [ StringObj a, StringObj b ] = StringObj $ a <> b
 
 cons :: Partial => Array Object -> Object
-cons [ CharObj a, StringObj b ] = StringObj $ String.singleton a <> b
 cons [ a, ListObj b ] = ListObj $ Array.cons a b
+cons [ CharObj a, StringObj b ] = StringObj $ String.singleton a <> b
 
 snoc :: Partial => Array Object -> Object
-snoc [ StringObj a, CharObj b ] = StringObj $ a <> String.singleton b
 snoc [ ListObj a, b ] = ListObj $ Array.snoc a b
+snoc [ StringObj a, CharObj b ] = StringObj $ a <> String.singleton b
 
 concat :: Partial => Array Object -> Object
 concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
@@ -161,3 +166,23 @@ concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
 range :: Partial => Array Object -> Object
 range [ IntObj a, IntObj b ] = ListObj $ IntObj <$> toArray (a .. b)
 range [ CharObj a, CharObj b ] = ListObj $ CharObj <$> toArray (a .. b)
+
+take :: Partial => Array Object -> Object
+take [ IntObj n, ListObj xs ] = ListObj $ take' n xs
+take [ IntObj n, StringObj xs ] = StringObj $ String.take n xs
+
+takeLast :: Partial => Array Object -> Object
+takeLast [ IntObj n, ListObj xs ] = ListObj $ takeEnd' n xs
+takeLast [ IntObj n, StringObj xs ] = StringObj $ String.takeRight n xs
+
+drop :: Partial => Array Object -> Object
+drop [ IntObj n, ListObj xs ] = ListObj $ drop' n xs
+drop [ IntObj n, StringObj xs ] = StringObj $ String.drop n xs
+
+dropLast :: Partial => Array Object -> Object
+dropLast [ IntObj n, ListObj xs ] = ListObj $ dropEnd' n xs
+dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
+
+slice :: Partial => Array Object -> Object
+slice [ IntObj n1, IntObj n2, ListObj xs ] = ListObj $ slice' n1 n2 xs
+slice [ IntObj n1, IntObj n2, StringObj xs ] = StringObj $ String.slice n1 n2 xs

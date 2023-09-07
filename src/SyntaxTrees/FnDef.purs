@@ -22,6 +22,7 @@ data FnBody
   | CondExpr (Array GuardedFnBody)
   | SwitchExpr FnBody (Array CaseBinding)
   | ListRange FnBody FnBody
+  | MatrixRange Cell Cell
   | List (Array FnBody)
   | FnVar' FnVar
   | FnOp VarOp
@@ -79,6 +80,7 @@ data Arity
   = A0
   | A1
   | A2
+  | A3
 
 data Precedence
   = P1
