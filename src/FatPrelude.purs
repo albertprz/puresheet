@@ -6,9 +6,11 @@ module FatPrelude
   , module StringUtils
   , module NumberUtils
   , module FunctorUtils
-  , module FoldableUtils
+  , module MaybeUtils
+  , module CommonUtils
   , module Foldable
   , module Traversable
+  , module Bitraversable
   , module SemiFoldable
   , module Filterable
   , module Map
@@ -42,14 +44,16 @@ import Prelude
 
 import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
-import App.Utils.Foldable (wrapMaybe) as FoldableUtils
+import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
+import App.Utils.Maybe (toMaybe, wrapMaybe) as MaybeUtils
 import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos) as NumberUtils
 import App.Utils.String (newline, tab, wrap, wrapBackQuotes, wrapBoth, wrapQuotes) as StringUtils
 import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
 import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, foldM, intercalate, length, notElem, partition, range, scanl, scanr, (..)) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor
+import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldMapDefaultL, bifoldMapDefaultR, bifoldl, bifoldlDefault, bifoldr, bifoldrDefault, bifor, bifor_, bisequence, bisequenceDefault, bisequence_, bitraverse, bitraverseDefault, bitraverse_, lfor, ltraverse, rfor, rtraverse) as Bitraversable
 import Data.Char (fromCharCode, toCharCode) as Char
 import Data.Either (Either(..), blush, choose, either, fromLeft, fromLeft', fromRight, fromRight', hush, isLeft, isRight, note, note') as Either
 import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, defaultCardinality, defaultFromEnum, defaultPred, defaultSucc, defaultToEnum, downFrom, downFromIncluding, enumFromThenTo, enumFromTo, fromEnum, pred, succ, toEnum, toEnumWithDefaults, upFrom, upFromIncluding) as Enum

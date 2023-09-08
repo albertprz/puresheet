@@ -2,7 +2,7 @@ module App.Interpreters.Common where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell, CellValue(..))
+import App.Components.Table.Cell (Cell, CellValue(..), buildCell)
 import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
 import App.SyntaxTrees.Common (Var(..), VarOp)
@@ -10,6 +10,8 @@ import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..),
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Map as Map
+import Matrix (Matrix)
+import Matrix as Matrix
 import Partial.Unsafe (unsafeCrashWith)
 
 type LocalFormulaCtx =
@@ -17,6 +19,27 @@ type LocalFormulaCtx =
   , fnsMap :: Map Var FnInfo
   , operatorsMap :: Map VarOp OpInfo
   }
+
+evalFormula
+  :: forall m
+   . MonadState AppState m
+  => FnBody
+  -> m (Maybe (Map Cell CellValue))
+evalFormula body =
+  do
+    { columns, rows, selectedCell: { column, row } } <- get
+    obj <- evalExprInApp body
+    let
+      toCellMap cellMatrix = Map.fromFoldable
+        $ filterMap toCellPair
+        $ Matrix.toIndexedArray cellMatrix
+      toCellPair { x, y, value } =
+        (_ /\ value) <<< uncurry buildCell <$>
+          bisequence
+            ( getElemSat (_ + x) columns column /\
+                getElemSat (_ + y) rows row
+            )
+    pure $ toCellMap <$> join (partialMaybe objectToCellValues $ obj)
 
 evalExprInApp
   :: forall m. MonadState AppState m => FnBody -> m Object
@@ -294,15 +317,43 @@ registerLocalFn (FnDef fnName params body) =
 
 cellValueToObj :: CellValue -> Object
 cellValueToObj = case _ of
-  (BoolVal x) -> BoolObj x
-  (IntVal x) -> IntObj x
-  (FloatVal x) -> FloatObj x
-  (CharVal x) -> CharObj x
-  (StringVal x) -> StringObj x
+  BoolVal x -> BoolObj x
+  IntVal x -> IntObj x
+  FloatVal x -> FloatObj x
+  CharVal x -> CharObj x
+  StringVal x -> StringObj x
+
+objectToCellValues :: Partial => Object -> Maybe (Matrix CellValue)
+objectToCellValues = Matrix.fromArray <<< cellValues
+  where
+  cellValues = case _ of
+    ListObj xs
+      | Just xss <- traverse extractShallowList xs ->
+          objectToCellValue <$$> xss
+    ListObj xs
+      | all isElement xs ->
+          [ objectToCellValue <$> xs ]
+    x -> [ [ objectToCellValue x ] ]
+
+objectToCellValue :: Partial => Object -> CellValue
+objectToCellValue = case _ of
+  BoolObj x -> BoolVal x
+  IntObj x -> IntVal x
+  FloatObj x -> FloatVal x
+  CharObj x -> CharVal x
+  StringObj x -> StringVal x
 
 extractBool :: Object -> Boolean
 extractBool (BoolObj x) = x
 extractBool _ = unsafeCrashWith "guard expression does not return Bool"
+
+extractShallowList :: Object -> Maybe (Array Object)
+extractShallowList (ListObj xs) | all isElement xs = Just xs
+extractShallowList _ = Nothing
+
+isElement :: Object -> Boolean
+isElement (ListObj _) = false
+isElement _ = true
 
 extractList :: Int -> Object -> Maybe (Array Object)
 extractList n (ListObj xs) | length xs == n = Just xs
