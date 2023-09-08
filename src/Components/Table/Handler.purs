@@ -2,29 +2,11 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.Components.Table.Cell
-  ( CellMove(..)
-  , Header(..)
-  , MultiSelection(..)
-  , SelectionState(..)
-  , getColumnHeader
-  , getRowHeader
-  , swapTableMapColumn
-  , swapTableMapRow
-  )
-import App.Components.Table.HandlerHelpers
-  ( actOnCell
-  , cellArrowMove
-  , cellMove
-  , copyCells
-  , deleteCells
-  , initialize
-  , pasteCells
-  , selectAllCells
-  , selectCell
-  )
+import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
+import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
-import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, withPrevent)
+import App.Interpreters.Common (evalFormula)
+import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
@@ -42,6 +24,15 @@ handleAction Initialize =
 handleAction (WriteCell cell value) =
   modify_ \st -> st
     { tableData = Map.insert cell value st.tableData
+    , activeInput = false
+    }
+
+handleAction (EvalFormula cell body) = do
+  resultOpt <- traverse (evalFormula cell) body
+  let result = fromMaybe Map.empty $ join resultOpt
+  logShow result
+  modify_ \st -> st
+    { tableData = Map.union result st.tableData
     , activeInput = false
     }
 
@@ -141,7 +132,7 @@ handleAction (ClickHeader (RowHeader row) _) = do
     , selectionState = NotStartedSelection
     }
 
-handleAction (HoverCell Start startCell _) = do
+handleAction (HoverCell Start startCell ev) = withPrevent ev do
   selectCell (OtherCell startCell)
   modify_ _ { selectionState = InProgressSelection }
 
@@ -149,7 +140,7 @@ handleAction (HoverCell End _ ev) =
   when (not $ shiftKey ev) $
     modify_ _ { selectionState = NotStartedSelection }
 
-handleAction (HoverCell Over overCell _) = do
+handleAction (HoverCell Over overCell ev) = withPrevent ev do
   { selectionState, multiSelection, selectedCell } <- get
   when (selectionState == InProgressSelection) $
     case multiSelection of
@@ -164,11 +155,10 @@ handleAction (HoverCell Over overCell _) = do
       _ -> pure unit
 
 handleAction (HoverHeader Start _ _) =
-  modify_ _ { selectionState = InProgressSelection }
+  pure unit
 
-handleAction (HoverHeader End _ ev) =
-  when (not $ shiftKey ev) $
-    modify_ _ { selectionState = NotStartedSelection }
+handleAction (HoverHeader End _ _) =
+  pure unit
 
 handleAction (HoverHeader Over (RowHeader overRow) _) = do
   { selectionState, multiSelection } <- get
@@ -192,24 +182,29 @@ handleAction (HoverHeader Over (ColumnHeader overColumn) _) = do
 
 handleAction (HoverHeader Over CornerHeader _) = pure unit
 
-handleAction (DragHeader Start header _) =
+handleAction (DragHeader Start header ev) = do
   modify_ _ { draggedHeader = Just header }
+  handleAction $ ClickHeader header (toMouseEvent ev)
 
-handleAction (DragHeader End (ColumnHeader newColumn) _) =
-  modify_ \st -> st
-    { tableData = maybe st.tableData
-        (\col -> swapTableMapColumn col newColumn st.tableData)
-        (st.draggedHeader >>= getColumnHeader)
-    , draggedHeader = Nothing
-    }
+handleAction (DragHeader End header@(ColumnHeader newColumn) ev) = do
+  modify_ \st ->
+    st
+      { tableData = maybe st.tableData
+          (\col -> swapTableMapColumn col newColumn st.tableData)
+          (st.draggedHeader >>= getColumnHeader)
+      , draggedHeader = Nothing
+      }
+  handleAction $ ClickHeader header (toMouseEvent ev)
 
-handleAction (DragHeader End (RowHeader newRow) _) =
-  modify_ \st -> st
-    { tableData = maybe st.tableData
-        (\row -> swapTableMapRow row newRow st.tableData)
-        (st.draggedHeader >>= getRowHeader)
-    , draggedHeader = Nothing
-    }
+handleAction (DragHeader End header@(RowHeader newRow) ev) = do
+  modify_ \st ->
+    st
+      { tableData = maybe st.tableData
+          (\row -> swapTableMapRow row newRow st.tableData)
+          (st.draggedHeader >>= getRowHeader)
+      , draggedHeader = Nothing
+      }
+  handleAction $ ClickHeader header (toMouseEvent ev)
 
 handleAction (DragHeader Over _ ev) =
   prevent ev

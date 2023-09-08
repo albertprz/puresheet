@@ -109,6 +109,9 @@ parseKeyCode str = OtherKeyCode str
 toEvent :: forall a. IsEvent a => a -> Event
 toEvent = unsafeCoerce
 
+toMouseEvent :: forall a. IsEvent a => a -> MouseEvent
+toMouseEvent = unsafeCoerce
+
 newtype Height = Height Number
 newtype Width = Width Number
 

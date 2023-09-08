@@ -23,23 +23,23 @@ type LocalFormulaCtx =
 evalFormula
   :: forall m
    . MonadState AppState m
-  => FnBody
+  => Cell
+  -> FnBody
   -> m (Maybe (Map Cell CellValue))
-evalFormula body =
-  do
-    { columns, rows, selectedCell: { column, row } } <- get
-    obj <- evalExprInApp body
-    let
-      toCellMap cellMatrix = Map.fromFoldable
-        $ filterMap toCellPair
-        $ Matrix.toIndexedArray cellMatrix
-      toCellPair { x, y, value } =
-        (_ /\ value) <<< uncurry buildCell <$>
-          bisequence
-            ( getElemSat (_ + x) columns column /\
-                getElemSat (_ + y) rows row
-            )
-    pure $ toCellMap <$> join (partialMaybe objectToCellValues $ obj)
+evalFormula { column, row } body = do
+  { columns, rows } <- get
+  obj <- evalExprInApp body
+  let
+    toCellMap cellMatrix = Map.fromFoldable
+      $ filterMap toCellPair
+      $ Matrix.toIndexedArray cellMatrix
+    toCellPair { x, y, value } =
+      (_ /\ value) <<< uncurry buildCell <$>
+        bisequence
+          ( getElemSat (_ + x) columns column /\
+              getElemSat (_ + y) rows row
+          )
+  pure $ toCellMap <$> join (partialMaybe objectToCellValues $ obj)
 
 evalExprInApp
   :: forall m. MonadState AppState m => FnBody -> m Object

@@ -6,11 +6,13 @@ import Prim hiding (Row)
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
+import App.Parsers.FnDef (fnBody)
 import App.Utils.Dom (parseKeyCode)
+import Bookhound.Parser (runParser)
 import Data.Map as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
-import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, disabled, draggable, id, readOnly, style, tabIndex, type_, value)
+import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 render :: forall cs m. AppState -> ComponentHTML Action cs m
@@ -64,7 +66,7 @@ renderRowHeader selected selection row =
     , draggable true
     , onClick $ ClickHeader $ RowHeader row
     , onMouseDown $ HoverHeader Start $ RowHeader row
-    , onMouseUp $ HoverHeader End $ RowHeader row
+    , onMouseUp $ HoverHeader Over $ RowHeader row
     , onMouseOver $ HoverHeader Over $ RowHeader row
     , onDragStart $ DragHeader Start $ RowHeader row
     , onDrop $ DragHeader End $ RowHeader row
@@ -84,7 +86,7 @@ renderColumnHeader selected selection column =
     , draggable true
     , onClick $ ClickHeader $ ColumnHeader column
     , onMouseDown $ HoverHeader Start $ ColumnHeader column
-    , onMouseUp $ HoverHeader End $ ColumnHeader column
+    , onMouseUp $ HoverHeader Over $ ColumnHeader column
     , onMouseOver $ HoverHeader Over $ ColumnHeader column
     , onDragStart $ DragHeader Start $ ColumnHeader column
     , onDrop $ DragHeader End $ ColumnHeader column
@@ -126,7 +128,8 @@ renderBodyCell selected selection active cell cellValue =
         , autocomplete AutocompleteOff
         , readOnly $ not $ cell == selected && active
         , value $ foldMap show cellValue
-        , onValueChange $ WriteCell cell <<< parseCellValue
+        -- , onValueChange $ WriteCell cell <<< parseCellValue
+        , onValueChange $ EvalFormula cell <<< hush <<< runParser fnBody
         , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev)
             ev
         ]

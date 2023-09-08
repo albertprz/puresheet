@@ -1,4 +1,4 @@
-module App.Parsers.FnDef where
+module App.Parsers.FnDef (fnDef, fnBody) where
 
 import FatPrelude
 
@@ -25,7 +25,7 @@ fnDef = defer \_ -> withError "Function definition"
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
   where
-  fnApply = defer \_ -> FnApply <$> delimitedForm <*> argListOf delimitedForm
+  fnApply = defer \_ -> FnApply <$> fnForm <*> argListOf openForm
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps varOp
     infixArgForm
   leftOpSection = defer \_ -> uncurry LeftOpSection <$> withinParens
@@ -54,22 +54,23 @@ fnBody = whereExpr <|> openForm
     FnVar' <<< Var' <$> var
   -- <|> FnVar' <<< Ctor' <$> ctor
   cell = buildCell <$> (Column <$> upper) <*> (Row <$> posInt)
-  infixArgForm = defer \_ -> complexInfixForm <|> withinParens complexInfixForm
+  infixArgForm = defer \_ -> complexInfixForm
+    <|> withinParens complexInfixForm
     <|> singleForm
-  openForm = defer \_ -> complexForm <|> singleForm <|> withinParens
-    (complexForm <|> singleForm)
-  delimitedForm = defer \_ -> singleForm <|> withinParens complexForm <|>
-    withinParens
-      singleForm
-  singleForm = defer \_ -> fnApply <|> fnOp <|> fnVar <|> CellValue'
+  openForm = defer \_ -> singleForm <|> complexForm
+    <|> withinParens (complexForm <|> singleForm)
+  fnForm = defer \_ -> fnVar <|> fnOp <|> withinParens (fnApply <|> complexForm)
+  singleForm = defer \_ -> fnApply
+    <|> fnOp
+    <|> fnVar
+    <|> CellValue'
     <$> cellValue
     <|> Cell'
     <$> cell
     <|> matrixRange
     <|> listRange
     <|> list
-    <|>
-      opSection
+    <|> opSection
   complexForm = defer \_ -> infixFnApply <|> complexInfixForm
   complexInfixForm = defer \_ ->
     condExpr
@@ -96,7 +97,8 @@ guard = defer \_ -> Otherwise <$ (is "?" *> token (is "otherwise")) <|> Guard
     (is "?" *> someSepBy comma patternGuard)
 
 patternGuard :: Parser PatternGuard
-patternGuard = defer \_ -> PatternGuard <$> (pattern' <* is "<-") <*> fnBody
+patternGuard = defer \_ -> PatternGuard <$> (pattern' <* is "<-")
+  <*> fnBody
   <|> SimpleGuard
   <$> fnBody
 

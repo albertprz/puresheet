@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
 import App.SyntaxTrees.Common (Var, VarOp)
-import App.SyntaxTrees.FnDef (FnInfo, OpInfo)
+import App.SyntaxTrees.FnDef (FnBody, FnInfo, OpInfo)
 import App.Utils.Dom (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
@@ -32,6 +32,7 @@ type FormulaCtx =
 data Action
   = Initialize
   | WriteCell Cell CellValue
+  | EvalFormula Cell (Maybe FnBody)
   | ClickHeader Header MouseEvent
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
