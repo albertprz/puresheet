@@ -50,11 +50,11 @@ handleAction (ClickCell cell ev) = withPrevent ev do
   cellMove ev (OtherCell cell)
   when (cell /= selectedCell) $ modify_ _ { activeInput = false }
 
-handleAction (DoubleClickCell cell ev) = do
-  withPrevent ev $ selectCell (OtherCell cell)
+handleAction (DoubleClickCell cell ev) = withPrevent ev do
+  selectCell (OtherCell cell)
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  actOnCell selectedCell focus $ whenMonoid activeInput $ Just "input"
+  actOnCell selectedCell focus $ toMaybe' activeInput "input"
 
 handleAction (KeyPress ArrowLeft ev) =
   cellArrowMove ev PrevColumn
@@ -71,7 +71,7 @@ handleAction (KeyPress ArrowDown ev) =
 handleAction (KeyPress Enter ev) = withPrevent ev do
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  actOnCell selectedCell focus $ whenMonoid activeInput $ Just "input"
+  actOnCell selectedCell focus $ toMaybe' activeInput "input"
 
 handleAction (KeyPress Tab ev) =
   withPrevent ev $ selectCell move

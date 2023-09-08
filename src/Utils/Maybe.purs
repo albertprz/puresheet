@@ -9,3 +9,6 @@ wrapMaybe x = if hasNone x then Just x else Nothing
 
 toMaybe :: forall a. (a -> Boolean) -> a -> Maybe a
 toMaybe pred x = if pred x then Just x else Nothing
+
+toMaybe' :: forall a. Boolean -> a -> Maybe a
+toMaybe' cond x = if cond then Just x else Nothing

@@ -3,82 +3,14 @@ module App.Components.Table.Renderer where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.ClassNames
-  ( aboveSelection
-  , atLeftSelection
-  , atRightSelection
-  , belowSelection
-  , columnHeader
-  , copySelection
-  , cornerHeader
-  , inSelection
-  , rowHeader
-  , selectedHeader
-  , selectedSheetCell
-  , sheetCell
-  )
-import App.Components.Table.Cell
-  ( Cell
-  , CellValue
-  , Column
-  , Header(..)
-  , MultiSelection
-  , Row
-  , SelectionState(..)
-  , isCellAboveSelection
-  , isCellAtLeftSelection
-  , isCellAtRightSelection
-  , isCellBelowSelection
-  , isCellInSelection
-  , isColumnSelected
-  , isRowSelected
-  , parseCellValue
-  , showCell
-  )
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Utils.Dom (parseKeyCode)
 import Data.Map as Map
-import Halogen.HTML
-  ( ClassName
-  , ComponentHTML
-  , HTML
-  , input
-  , table
-  , tbody_
-  , td
-  , text
-  , th
-  , thead_
-  , tr_
-  )
-import Halogen.HTML.Events
-  ( onClick
-  , onDoubleClick
-  , onDragOver
-  , onDragStart
-  , onDrop
-  , onKeyDown
-  , onKeyUp
-  , onMouseDown
-  , onMouseOver
-  , onMouseUp
-  , onValueChange
-  , onWheel
-  )
-import Halogen.HTML.Properties
-  ( AutocompleteType(..)
-  , InputType(..)
-  , autocomplete
-  , class_
-  , classes
-  , disabled
-  , draggable
-  , id
-  , style
-  , tabIndex
-  , type_
-  , value
-  )
+import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
+import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
+import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, disabled, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 render :: forall cs m. AppState -> ComponentHTML Action cs m
@@ -192,7 +124,7 @@ renderBodyCell selected selection active cell cellValue =
         [ type_ InputText
         , tabIndex 0
         , autocomplete AutocompleteOff
-        , disabled $ not $ cell == selected && active
+        , readOnly $ not $ cell == selected && active
         , value $ foldMap show cellValue
         , onValueChange $ WriteCell cell <<< parseCellValue
         , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev)
