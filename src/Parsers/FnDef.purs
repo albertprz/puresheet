@@ -3,11 +3,12 @@ module App.Parsers.FnDef (fnDef, fnBody) where
 import FatPrelude
 
 import App.Components.Table.Cell (Column(..), Row(..), buildCell)
-import App.Parsers.Common (argListOf, cellValue, token, var, varOp)
+import App.Parsers.Common (argListOf, cellValue, isToken, token, var, varOp)
 import App.Parsers.Pattern (pattern')
 import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
+import App.Utils.Common (spyShow)
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (is, someSepBy, (<|>), (|*), (|+), (|?))
+import Bookhound.ParserCombinators (someSepBy, (<|>), (|*), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote, upper)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (posInt)
@@ -23,7 +24,7 @@ fnDef = defer \_ -> withError "Function definition"
   <*> fnBody
 
 fnBody :: Parser FnBody
-fnBody = whereExpr <|> openForm
+fnBody = spyShow <$> (whereExpr <|> openForm)
   where
   fnApply = defer \_ -> FnApply <$> fnForm <*> argListOf openForm
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps varOp
@@ -34,19 +35,20 @@ fnBody = whereExpr <|> openForm
     ((/\) <$> openForm <*> varOp)
   opSection = defer \_ -> leftOpSection <|> rightOpSection
   whereExpr = defer \_ -> WhereExpr <$> openForm
-    <* is "where"
+    <* isToken "where"
     <*> withinContext fnDef
   condExpr = defer \_ -> CondExpr <$>
-    (is "cond" *> (withinContext $ guardedFnBody $ is "->"))
-  switchExpr = defer \_ -> SwitchExpr <$> (is "switch" *> withinParens openForm)
+    (isToken "cond" *> (withinContext $ guardedFnBody $ isToken "->"))
+  switchExpr = defer \_ -> SwitchExpr
+    <$> (isToken "switch" *> withinParens openForm)
     <*>
       withinContext caseBinding
   listRange = defer \_ -> withinSquareBrackets $ ListRange
-    <$> (openForm <* is "..")
+    <$> (openForm <* isToken "..")
     <*> openForm
   matrixRange = defer \_ -> withinSquareBrackets $ withinSquareBrackets
     $ MatrixRange
-    <$> (cell <* is "..")
+    <$> (cell <* isToken "..")
     <*> cell
   list = defer \_ -> List <$> listOf openForm
   fnOp = defer \_ -> FnOp <$> (quote *> varOp)
@@ -54,23 +56,24 @@ fnBody = whereExpr <|> openForm
     FnVar' <<< Var' <$> var
   -- <|> FnVar' <<< Ctor' <$> ctor
   cell = buildCell <$> (Column <$> upper) <*> (Row <$> posInt)
-  infixArgForm = defer \_ -> complexInfixForm
-    <|> withinParens complexInfixForm
-    <|> singleForm
-  openForm = defer \_ -> singleForm <|> complexForm
+  infixArgForm = defer \_ ->
+    complexInfixForm
+      <|> withinParens complexInfixForm
+      <|> singleForm
+  openForm = defer \_ -> complexForm <|> singleForm
     <|> withinParens (complexForm <|> singleForm)
   fnForm = defer \_ -> fnVar <|> fnOp <|> withinParens (fnApply <|> complexForm)
   singleForm = defer \_ -> fnApply
-    <|> fnOp
-    <|> fnVar
-    <|> CellValue'
-    <$> cellValue
-    <|> Cell'
-    <$> cell
     <|> matrixRange
     <|> listRange
     <|> list
     <|> opSection
+    <|> Cell'
+    <$> cell
+    <|> fnOp
+    <|> fnVar
+    <|> CellValue'
+    <$> cellValue
   complexForm = defer \_ -> infixFnApply <|> complexInfixForm
   complexInfixForm = defer \_ ->
     condExpr
@@ -79,7 +82,7 @@ fnBody = whereExpr <|> openForm
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding <$> pattern' <*> maybeGuardedFnBody
-  (is "->")
+  (isToken "->")
 
 maybeGuardedFnBody :: forall a. Parser a -> Parser MaybeGuardedFnBody
 maybeGuardedFnBody sep = Guarded <$> (|+) (guardedFnBody sep)
@@ -92,18 +95,19 @@ guardedFnBody sep = GuardedFnBody <$> guard <* sep <*>
   fnBody
 
 guard :: Parser Guard
-guard = defer \_ -> Otherwise <$ (is "?" *> token (is "otherwise")) <|> Guard
+guard = defer \_ -> Otherwise <$ (isToken "?" *> token (isToken "otherwise"))
+  <|> Guard
   <$>
-    (is "?" *> someSepBy comma patternGuard)
+    (isToken "?" *> someSepBy comma patternGuard)
 
 patternGuard :: Parser PatternGuard
-patternGuard = defer \_ -> PatternGuard <$> (pattern' <* is "<-")
+patternGuard = defer \_ -> PatternGuard <$> (pattern' <* isToken "<-")
   <*> fnBody
   <|> SimpleGuard
   <$> fnBody
 
 statements :: forall a. Parser a -> Parser (Array a)
-statements parser = defer \_ -> fold <$> someSepBy (is "|")
+statements parser = defer \_ -> fold <$> someSepBy (isToken "|")
   (maybeToArray <$> (|?) parser)
 
 withinContext :: forall a. Parser a -> Parser (Array a)

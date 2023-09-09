@@ -7,6 +7,7 @@
   , "colors"
   , "console"
   , "control"
+  , "debug"
   , "effect"
   , "either"
   , "enums"

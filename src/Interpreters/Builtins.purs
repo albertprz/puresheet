@@ -5,6 +5,7 @@ module App.Interpreters.Builtins
 
 import App.SyntaxTrees.FnDef
 
+import App.Interpreters.Common (nonNullObj)
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import Data.Array as Array
 import Data.Array.NonEmpty (toArray)
@@ -12,6 +13,7 @@ import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
+import Data.Set as Set
 import Data.String.CodeUnits as String
 import FatPrelude (Map, arr2, bimap, drop', dropEnd', slice', take', takeEnd', ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
@@ -20,39 +22,39 @@ import Prelude as Prelude
 builtinFnsMap :: Map Var BuiltinFnInfo
 builtinFnsMap = unsafePartial $ Map.fromFoldable
   $ bimap Var
-      ( \(fn /\ arity) -> { fn, arity }
+      ( \(fn /\ arity /\ nulls) ->
+          { fn, arity, defaultParams: Set.fromFoldable nulls }
       )
   <$>
-    [ ("emptyList" /\ (emptyList /\ A0))
-    , ("not" /\ (not /\ A1))
-    , ("neg" /\ (neg /\ A1))
-    , ("sum" /\ (sum /\ A1))
-    , ("product" /\ (product /\ A1))
-    , ("concat" /\ (concat /\ A1))
-    , ("and" /\ (and /\ A2))
-    , ("or" /\ (or /\ A2))
-    , ("eq" /\ (eq /\ A2))
-    , ("notEq" /\ (notEq /\ A2))
-    , ("gt" /\ (gt /\ A2))
-    , ("gtOrEq" /\ (gtOrEq /\ A2))
-    , ("lt" /\ (lt /\ A2))
-    , ("ltOrEq" /\ (ltOrEq /\ A2))
-    , ("add" /\ (add /\ A2))
-    , ("sub" /\ (sub /\ A2))
-    , ("mult" /\ (mult /\ A2))
-    , ("div" /\ (div /\ A2))
-    , ("mod" /\ (mod /\ A2))
-    , ("gcd" /\ (gcd /\ A2))
-    , ("lcm" /\ (lcm /\ A2))
-    , ("append" /\ (append /\ A2))
-    , ("cons" /\ (cons /\ A2))
-    , ("snoc" /\ (snoc /\ A2))
-    , ("range" /\ (range /\ A2))
-    , ("take" /\ (take /\ A2))
-    , ("takeLast" /\ (takeLast /\ A2))
-    , ("drop" /\ (drop /\ A2))
-    , ("dropLast" /\ (dropLast /\ A2))
-    , ("slice" /\ (slice /\ A3))
+    [ ("not" /\ (not /\ A1 /\ []))
+    , ("neg" /\ (neg /\ A1 /\ []))
+    , ("sum" /\ (sum /\ A1 /\ []))
+    , ("product" /\ (product /\ A1 /\ []))
+    , ("concat" /\ (concat /\ A1 /\ []))
+    , ("and" /\ (and /\ A2 /\ [ 0, 1 ]))
+    , ("or" /\ (or /\ A2 /\ [ 0, 1 ]))
+    , ("add" /\ (add /\ A2 /\ [ 0, 1 ]))
+    , ("mult" /\ (mult /\ A2 /\ [ 0, 1 ]))
+    , ("gcd" /\ (gcd /\ A2 /\ [ 0, 1 ]))
+    , ("lcm" /\ (lcm /\ A2 /\ [ 0, 1 ]))
+    , ("append" /\ (append /\ A2 /\ [ 0, 1 ]))
+    , ("sub" /\ (sub /\ A2 /\ [ 0 ]))
+    , ("div" /\ (div /\ A2 /\ [ 0 ]))
+    , ("mod" /\ (mod /\ A2 /\ [ 0 ]))
+    , ("take" /\ (take /\ A2 /\ [ 0 ]))
+    , ("takeLast" /\ (takeLast /\ A2 /\ [ 0 ]))
+    , ("drop" /\ (drop /\ A2 /\ [ 0 ]))
+    , ("dropLast" /\ (dropLast /\ A2 /\ [ 0 ]))
+    , ("eq" /\ (eq /\ A2 /\ []))
+    , ("notEq" /\ (notEq /\ A2 /\ []))
+    , ("gt" /\ (gt /\ A2 /\ []))
+    , ("gtOrEq" /\ (gtOrEq /\ A2 /\ []))
+    , ("lt" /\ (lt /\ A2 /\ []))
+    , ("ltOrEq" /\ (ltOrEq /\ A2 /\ []))
+    , ("cons" /\ (cons /\ A2 /\ []))
+    , ("snoc" /\ (snoc /\ A2 /\ []))
+    , ("range" /\ (range /\ A2 /\ []))
+    , ("slice" /\ (slice /\ A3 /\ []))
     ]
 
 operatorsMap :: Map VarOp OpInfo
@@ -80,16 +82,9 @@ operatorsMap = Map.fromFoldable
     , ("%" /\ ("mod" /\ P11 /\ L))
     ]
 
-emptyList :: Partial => Array Object -> Object
-emptyList [] = ListObj []
-
 -- Boolean Fns
 not :: Partial => Array Object -> Object
 not [ BoolObj x ] = BoolObj $ Prelude.not x
-
-neg :: Partial => Array Object -> Object
-neg [ IntObj x ] = IntObj $ Prelude.negate x
-neg [ FloatObj x ] = FloatObj $ Prelude.negate x
 
 and :: Partial => Array Object -> Object
 and [ BoolObj a, BoolObj b ] = BoolObj $ a && b
@@ -116,6 +111,10 @@ ltOrEq :: Partial => Array Object -> Object
 ltOrEq [ obj1, obj2 ] = BoolObj $ obj1 <= obj2
 
 -- Number Fns
+neg :: Partial => Array Object -> Object
+neg [ IntObj x ] = IntObj $ Prelude.negate x
+neg [ FloatObj x ] = FloatObj $ Prelude.negate x
+
 add :: Partial => Array Object -> Object
 add [ IntObj a, IntObj b ] = IntObj $ a + b
 add [ FloatObj a, FloatObj b ] = FloatObj $ a + b
@@ -142,10 +141,10 @@ lcm :: Partial => Array Object -> Object
 lcm [ IntObj a, IntObj b ] = IntObj $ Ring.lcm a b
 
 sum :: Partial => Array Object -> Object
-sum [ ListObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray xs
+sum [ ListObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray $ filter nonNullObj xs
 
 product :: Partial => Array Object -> Object
-product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray xs
+product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray $ filter nonNullObj xs
 
 -- List / String Fns
 append :: Partial => Array Object -> Object
@@ -154,11 +153,15 @@ append [ StringObj a, StringObj b ] = StringObj $ a <> b
 
 cons :: Partial => Array Object -> Object
 cons [ a, ListObj b ] = ListObj $ Array.cons a b
+cons [ NullObj, ListObj a ] = ListObj $ Array.cons NullObj a
 cons [ CharObj a, StringObj b ] = StringObj $ String.singleton a <> b
+cons [ NullObj, StringObj a ] = StringObj a
 
 snoc :: Partial => Array Object -> Object
 snoc [ ListObj a, b ] = ListObj $ Array.snoc a b
+snoc [ ListObj a, NullObj ] = ListObj $ Array.snoc a NullObj
 snoc [ StringObj a, CharObj b ] = StringObj $ a <> String.singleton b
+snoc [ StringObj a, NullObj ] = StringObj a
 
 concat :: Partial => Array Object -> Object
 concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs

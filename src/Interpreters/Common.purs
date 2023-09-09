@@ -8,8 +8,10 @@ import App.Interpreters.Builtins as Builtins
 import App.SyntaxTrees.Common (Var(..), VarOp)
 import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
+import App.Utils.Common (spyShow)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Map as Map
+import Data.Set as Set
 import Matrix (Matrix)
 import Matrix as Matrix
 import Partial.Unsafe (unsafeCrashWith)
@@ -30,7 +32,9 @@ evalFormula { column, row } body = do
   { columns, rows } <- get
   obj <- evalExprInApp body
   let
-    toCellMap cellMatrix = Map.fromFoldable
+    toCellMap cellMatrix =
+     Map.filter nonEmptyCellValue
+     $ Map.fromFoldable
       $ filterMap toCellPair
       $ Matrix.toIndexedArray cellMatrix
     toCellPair { x, y, value } =
@@ -97,15 +101,19 @@ evalExpr
   ( ListRange (Cell' { column: colX, row: rowX })
       (Cell' { column: colY, row: rowY })
   ) | rowX == rowY =
-  evalExpr $ List $ toArray $ (\column -> Cell' { column, row: rowX }) <$>
-    (colX .. colY)
+  evalExpr $ List $ toArray
+    $ (\column -> Cell' { column, row: rowX })
+    <$>
+      (colX .. colY)
 
 evalExpr
   ( ListRange (Cell' { column: colX, row: rowX })
       (Cell' { column: colY, row: rowY })
   ) | colX == colY =
-  evalExpr $ List $ (\row -> Cell' { row, column: colX }) <$>
+  evalExpr $ spyShow $ List $ (\row -> Cell' { row, column: colX }) <$>
     toArray (rowX .. rowY)
+
+evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr
   ( MatrixRange { column: colX, row: rowX }
@@ -119,12 +127,11 @@ evalExpr
       column <- toArray $ colX .. colY
       pure $ Cell' { column, row }
 
-evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
-
 evalExpr (List list) =
-  evalExpr $ foldl (FnApply (varFn "snoc") <.. arr2)
-    (FnApply (varFn "emptyList") [])
-    list
+  evalExpr $ spyShow
+    $ foldl (FnApply (varFn "snoc") <.. arr2)
+        (Object' $ ListObj [])
+    $ spyShow list
 
 evalExpr (FnVar' (Var' fn))
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap = pure $ BuiltinFnObj
@@ -139,7 +146,7 @@ evalExpr (FnOp fnOp) = do
 evalExpr (Cell' cell) =
   do
     { tableData } <- get
-    pure $ maybe (ListObj []) cellValueToObj $ Map.lookup cell
+    pure $ maybe NullObj cellValueToObj $ Map.lookup cell
       tableData
 
 evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
@@ -175,18 +182,27 @@ evalBuiltinFn
   => BuiltinFnInfo
   -> Array Object
   -> m Object
-evalBuiltinFn { fn, arity } args =
+evalBuiltinFn { fn, arity, defaultParams } args =
   if unappliedArgsNum == 0 then
-    pure $ fn args
+    pure $ fromMaybe' (\_ -> fn args) defaultResult
   else if unappliedArgsNum > 0 then
     pure $ BuiltinFnObj
       { fn: \newArgs -> fn (args <> newArgs)
       , arity: unsafeFromJust $ toEnum unappliedArgsNum
+      , defaultParams: Set.filter zeroOrPos
+          $ Set.map (_ - length args) defaultParams
       }
   else
     unsafeCrashWith "Too many arguments supplied to current function"
   where
   unappliedArgsNum = fromEnum arity - length args
+  defaultResult =
+    if NullObj `elem` args && not (null defaultParams) then
+      find
+        (_ /= NullObj)
+        (filterByIndexes defaultParams args)
+    else
+      Nothing
 
 nestInfixFns
   :: forall m
@@ -342,6 +358,7 @@ objectToCellValue = case _ of
   FloatObj x -> FloatVal x
   CharObj x -> CharVal x
   StringObj x -> StringVal x
+  NullObj -> StringVal ""
 
 extractBool :: Object -> Boolean
 extractBool (BoolObj x) = x
@@ -385,6 +402,19 @@ lookupArray :: forall k v. Ord k => Array k -> Map k v -> Array (k /\ v)
 lookupArray keys dict = keys `zip'` vals
   where
   vals = filterMap (_ `Map.lookup` dict) keys
+
+nonEmptyCellValue :: CellValue -> Boolean
+nonEmptyCellValue (StringVal "") = false
+nonEmptyCellValue _ = true
+
+nonNullObj :: Object -> Boolean
+nonNullObj NullObj = false
+nonNullObj _ = true
+
+filterByIndexes :: forall a f. Foldable f => f Int -> Array a -> Array a
+filterByIndexes idxs arr = fst <$>
+  filter (\(_ /\ idx) -> idx `elem` idxs)
+    (arr `zip'` toArray (0 .. (length arr - 1)))
 
 varFn :: String -> FnBody
 varFn = FnVar' <<< Var' <<< Var

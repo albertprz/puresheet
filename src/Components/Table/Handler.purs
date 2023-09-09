@@ -30,7 +30,7 @@ handleAction (WriteCell cell value) =
 handleAction (EvalFormula cell body) = do
   resultOpt <- traverse (evalFormula cell) body
   let result = fromMaybe Map.empty $ join resultOpt
-  logShow result
+  logShow resultOpt
   modify_ \st -> st
     { tableData = Map.union result st.tableData
     , activeInput = false

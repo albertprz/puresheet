@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (CellValue(..))
 import App.SyntaxTrees.Common (Ctor(..), Module(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
-import Bookhound.ParserCombinators (inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
+import Bookhound.ParserCombinators (class IsMatch, inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
@@ -40,7 +40,7 @@ ctor = Ctor <$> notReserved (withinParens (operator colon) <|> ident upper)
 
 varOp :: Parser VarOp
 varOp = VarOp <$> notReserved
-  ( wrapBackQuotes <$> withinBackQuotes (ident lower) <|>
+  ( (wrapBackQuotes <$> withinBackQuotes (ident lower)) <|>
       (operator opSymbol <|> simpleOperator)
   )
 
@@ -78,6 +78,9 @@ token :: forall a. Parser a -> Parser a
 token =
   withTransform (maybeWithin ((|+) lineComment) <<< maybeWithin spacing)
 
+isToken :: forall a. IsMatch a => a -> Parser a
+isToken = token <<< is
+
 qTerm :: forall a. Parser a -> Parser (Maybe Module /\ a)
 qTerm x = (/\) <$> (|?) (module'' <* dot) <*> x
 
@@ -104,7 +107,7 @@ notReserved = check "reserved"
   (_ `notElem` (reservedSymbols <> reservedKeyWords))
 
 withinBackQuotes :: forall b. Parser b -> Parser b
-withinBackQuotes = within (is '`')
+withinBackQuotes = within (isToken '`')
 
 opSymbolChars :: Array Char
 opSymbolChars =
@@ -157,4 +160,18 @@ reservedKeyWords =
 
 reservedSymbols :: Array String
 reservedSymbols =
-  [ "..", "::", "=", "\\", "|", "?", "<-", "->", "@", "~", "=>", "[", "]" ]
+  [ ".."
+  , "..."
+  , "::"
+  , "="
+  , "\\"
+  , "|"
+  , "?"
+  , "<-"
+  , "->"
+  , "@"
+  , "~"
+  , "=>"
+  , "["
+  , "]"
+  ]

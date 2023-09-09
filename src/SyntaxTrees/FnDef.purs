@@ -59,6 +59,7 @@ data Object
   | ListObj (Array Object)
   | FnObj FnInfo
   | BuiltinFnObj BuiltinFnInfo
+  | NullObj
 
 type FnInfo =
   { body :: FnBody
@@ -68,6 +69,7 @@ type FnInfo =
 type BuiltinFnInfo =
   { fn :: Array Object -> Object
   , arity :: Arity
+  , defaultParams :: Set Int
   }
 
 type OpInfo =
@@ -167,6 +169,7 @@ instance Show Object where
     (ListObj x) -> show x
     (FnObj x) -> show x
     (BuiltinFnObj _) -> "builtin Fn"
+    (NullObj) -> "null"
 
 instance Eq Object where
   eq (BoolObj x) (BoolObj y) = x == y
@@ -175,6 +178,9 @@ instance Eq Object where
   eq (CharObj x) (CharObj y) = x == y
   eq (StringObj x) (StringObj y) = x == y
   eq (ListObj x) (ListObj y) = x == y
+  eq NullObj NullObj = true
+  eq NullObj _ = false
+  eq _ NullObj = false
   eq x y = unsafeCrashWith
     ("Cannot check equality of: " <> show x <> " and " <> show y)
 
@@ -185,5 +191,6 @@ instance Ord Object where
   compare (CharObj x) (CharObj y) = compare x y
   compare (StringObj x) (StringObj y) = compare x y
   compare (ListObj x) (ListObj y) = compare x y
+  compare NullObj NullObj = EQ
   compare x y = unsafeCrashWith
     ("Cannot compare: " <> show x <> " and " <> show y)

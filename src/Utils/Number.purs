@@ -16,6 +16,12 @@ pos = (_ > zero)
 neg :: forall a. Ord a => Semiring a => a -> Boolean
 neg = (_ < zero)
 
+zeroOrPos :: forall a. Eq a => Semiring a => Ord a => a -> Boolean
+zeroOrPos = (_ >= zero)
+
+zeroOrNeg :: forall a. Eq a => Semiring a => Ord a => a -> Boolean
+zeroOrNeg = (_ <= zero)
+
 abs :: forall a. Ring a => Ord a => a -> a
 abs x
   | pos x = x

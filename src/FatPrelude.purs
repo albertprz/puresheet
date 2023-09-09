@@ -48,7 +48,7 @@ import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
 import App.Utils.Maybe (toMaybe, toMaybe', wrapMaybe) as MaybeUtils
 import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
-import App.Utils.Number (abs, coalesce, dec, inc, neg, pos) as NumberUtils
+import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as NumberUtils
 import App.Utils.String (newline, tab, wrap, wrapBackQuotes, wrapBoth, wrapQuotes) as StringUtils
 import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
 import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, foldM, intercalate, length, notElem, partition, range, scanl, scanr, (..)) as NonEmptyArray

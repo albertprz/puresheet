@@ -2,10 +2,10 @@ module App.Parsers.Pattern where
 
 import FatPrelude
 
-import App.Parsers.Common (cellValue, token, var)
+import App.Parsers.Common (cellValue, isToken, token, var)
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators (is, (<|>))
+import Bookhound.ParserCombinators ((<|>))
 import Bookhound.Parsers.Char (underscore)
 import Bookhound.Parsers.Collections (listOf)
 import Control.Lazy (defer)
@@ -15,11 +15,11 @@ pattern' = pattern''
   where
   -- ctor' = defer \_ -> CtorPattern <$> ctor <*> argListOf ctorElem
   -- nullaryCtor = defer \_ -> CtorPattern <$> ctor <*> pure []
-  alias = defer \_ -> AliasedPattern <$> (var <* is "@") <*> aliasElem
+  alias = defer \_ -> AliasedPattern <$> (var <* isToken "@") <*> aliasElem
   var' = defer \_ -> VarPattern <$> var
   cellValue' = defer \_ -> LitPattern <$> cellValue
   wildcard = defer \_ -> Wildcard <$ token underscore
-  spread = defer \_ -> Spread <$ token (is "..")
+  spread = defer \_ -> Spread <$ isToken "..."
   list = defer \_ -> ListPattern <$> listOf pattern'
   elem' = defer \_ -> cellValue'
     <|> var'
