@@ -78,7 +78,9 @@ handleAction (KeyPress Space ev) = withPrevent ev do
 handleAction (KeyPress Delete ev) =
   deleteCells ev
 
-handleAction (KeyPress Shift ev) = withPrevent ev $
+handleAction (KeyPress Shift ev) = prevent ev
+
+handleAction (KeyPress Control ev) = withPrevent ev $
   modify_ _ { selectionState = InProgressSelection }
 
 handleAction (KeyPress (CharKeyCode 'A') ev)
@@ -99,7 +101,7 @@ handleAction (KeyPress (CharKeyCode _) _) =
 handleAction (KeyPress (OtherKeyCode _) _) =
   pure unit
 
-handleAction (KeyRelease Shift ev) = withPrevent ev $
+handleAction (KeyRelease Control ev) = withPrevent ev $
   modify_ _ { selectionState = NotStartedSelection }
 
 handleAction (KeyRelease _ _) =
@@ -137,7 +139,7 @@ handleAction (HoverCell Start startCell ev) = withPrevent ev do
   modify_ _ { selectionState = InProgressSelection }
 
 handleAction (HoverCell End _ ev) =
-  when (not $ shiftKey ev) $
+  when (not $ ctrlKey ev) $
     modify_ _ { selectionState = NotStartedSelection }
 
 handleAction (HoverCell Over overCell ev) = withPrevent ev do

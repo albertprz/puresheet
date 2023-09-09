@@ -3,19 +3,20 @@ module App.Interpreters.Builtins
   , operatorsMap
   ) where
 
+import App.Interpreters.Object
 import App.SyntaxTrees.FnDef
 
-import App.Interpreters.Common (nonNullObj)
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import Data.Array as Array
 import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
+import Data.Foldable as Foldable
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
 import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (Map, arr2, bimap, drop', dropEnd', slice', take', takeEnd', ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, drop', dropEnd', filter, fromCharArray, fromMaybe, slice', take', takeEnd', toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -31,6 +32,12 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("sum" /\ (sum /\ A1 /\ []))
     , ("product" /\ (product /\ A1 /\ []))
     , ("concat" /\ (concat /\ A1 /\ []))
+    , ("transpose" /\ (transpose /\ A1 /\ []))
+    , ("head" /\ (head /\ A1 /\ []))
+    , ("tail" /\ (tail /\ A1 /\ []))
+    , ("init" /\ (init /\ A1 /\ []))
+    , ("last" /\ (last /\ A1 /\ []))
+    , ("length" /\ (length /\ A1 /\ []))
     , ("and" /\ (and /\ A2 /\ [ 0, 1 ]))
     , ("or" /\ (or /\ A2 /\ [ 0, 1 ]))
     , ("add" /\ (add /\ A2 /\ [ 0, 1 ]))
@@ -141,10 +148,13 @@ lcm :: Partial => Array Object -> Object
 lcm [ IntObj a, IntObj b ] = IntObj $ Ring.lcm a b
 
 sum :: Partial => Array Object -> Object
-sum [ ListObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray $ filter nonNullObj xs
+sum [ ListObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray $ filter nonNullObj
+  xs
 
 product :: Partial => Array Object -> Object
-product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray $ filter nonNullObj xs
+product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray $ filter
+  nonNullObj
+  xs
 
 -- List / String Fns
 append :: Partial => Array Object -> Object
@@ -166,26 +176,56 @@ snoc [ StringObj a, NullObj ] = StringObj a
 concat :: Partial => Array Object -> Object
 concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
 
+transpose :: Partial => Array Object -> Object
+transpose [ ListObj xs ] | Just xss <- traverse extractList xs =
+  ListObj $ (ListObj <$> Array.transpose xss)
+transpose [ ListObj xs ] | all isElement xs =
+  ListObj $ (ListObj <$> Array.transpose [ xs ])
+
 range :: Partial => Array Object -> Object
 range [ IntObj a, IntObj b ] = ListObj $ IntObj <$> toArray (a .. b)
 range [ CharObj a, CharObj b ] = ListObj $ CharObj <$> toArray (a .. b)
 
+head :: Partial => Array Object -> Object
+head [ ListObj a ] = fromMaybe NullObj $ Array.head a
+head [ StringObj a ] = fromMaybe NullObj $ CharObj <$>
+  (Array.head $ toCharArray a)
+
+tail :: Partial => Array Object -> Object
+tail [ ListObj a ] = fromMaybe NullObj $ ListObj <$> Array.tail a
+tail [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
+  (Array.tail $ toCharArray a)
+
+last :: Partial => Array Object -> Object
+last [ ListObj a ] = fromMaybe NullObj $ Array.last a
+last [ StringObj a ] = fromMaybe NullObj $ CharObj <$>
+  (Array.last $ toCharArray a)
+
+init :: Partial => Array Object -> Object
+init [ ListObj a ] = fromMaybe NullObj $ ListObj <$> Array.init a
+init [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
+  (Array.init $ toCharArray a)
+
+length :: Partial => Array Object -> Object
+length [ ListObj a ] = IntObj $ Foldable.length a
+length [ StringObj a ] = IntObj $ String.length a
+
 take :: Partial => Array Object -> Object
-take [ IntObj n, ListObj xs ] = ListObj $ take' n xs
+take [ IntObj n, ListObj xs ] = ListObj $ Array.take n xs
 take [ IntObj n, StringObj xs ] = StringObj $ String.take n xs
 
 takeLast :: Partial => Array Object -> Object
-takeLast [ IntObj n, ListObj xs ] = ListObj $ takeEnd' n xs
+takeLast [ IntObj n, ListObj xs ] = ListObj $ Array.takeEnd n xs
 takeLast [ IntObj n, StringObj xs ] = StringObj $ String.takeRight n xs
 
 drop :: Partial => Array Object -> Object
-drop [ IntObj n, ListObj xs ] = ListObj $ drop' n xs
+drop [ IntObj n, ListObj xs ] = ListObj $ Array.drop n xs
 drop [ IntObj n, StringObj xs ] = StringObj $ String.drop n xs
 
 dropLast :: Partial => Array Object -> Object
-dropLast [ IntObj n, ListObj xs ] = ListObj $ dropEnd' n xs
+dropLast [ IntObj n, ListObj xs ] = ListObj $ Array.dropEnd n xs
 dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
 
 slice :: Partial => Array Object -> Object
-slice [ IntObj n1, IntObj n2, ListObj xs ] = ListObj $ slice' n1 n2 xs
+slice [ IntObj n1, IntObj n2, ListObj xs ] = ListObj $ Array.slice n1 n2 xs
 slice [ IntObj n1, IntObj n2, StringObj xs ] = StringObj $ String.slice n1 n2 xs

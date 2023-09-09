@@ -100,6 +100,10 @@ parseKeyCode "Delete" = Delete
 parseKeyCode "Backspace" = Delete
 parseKeyCode "ShiftLeft" = Shift
 parseKeyCode "ShiftRight" = Shift
+parseKeyCode "ControlLeft" = Control
+parseKeyCode "ControlRight" = Control
+parseKeyCode "MetaLeft" = Control
+parseKeyCode "MetaRight" = Control
 parseKeyCode str
   | String.length str == 4
   , String.take 3 str == "Key"
@@ -125,6 +129,7 @@ data KeyCode
   | Space
   | Delete
   | Shift
+  | Control
   | CharKeyCode Char
   | OtherKeyCode String
 

@@ -5,6 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (Cell, CellValue(..), buildCell)
 import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
+import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
 import App.SyntaxTrees.Common (Var(..), VarOp)
 import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
@@ -12,7 +13,6 @@ import App.Utils.Common (spyShow)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Map as Map
 import Data.Set as Set
-import Matrix (Matrix)
 import Matrix as Matrix
 import Partial.Unsafe (unsafeCrashWith)
 
@@ -33,10 +33,10 @@ evalFormula { column, row } body = do
   obj <- evalExprInApp body
   let
     toCellMap cellMatrix =
-     Map.filter nonEmptyCellValue
-     $ Map.fromFoldable
-      $ filterMap toCellPair
-      $ Matrix.toIndexedArray cellMatrix
+      Map.filter nonEmptyCellValue
+        $ Map.fromFoldable
+        $ filterMap toCellPair
+        $ Matrix.toIndexedArray cellMatrix
     toCellPair { x, y, value } =
       (_ /\ value) <<< uncurry buildCell <$>
         bisequence
@@ -313,7 +313,7 @@ evalPatternBinding (ListPattern patterns) result
       resultsEnd = takeEnd' (length patternsEnd) results
 
 evalPatternBinding (ListPattern patterns) result
-  | Just results <- extractList (length patterns) result =
+  | Just results <- extractNList (length patterns) result =
       and <$> traverse (uncurry evalPatternBinding)
         (patterns `zip'` results)
 
@@ -330,51 +330,6 @@ registerLocalFn :: forall m. MonadState LocalFormulaCtx m => FnDef -> m Unit
 registerLocalFn (FnDef fnName params body) =
   modify_ \st ->
     st { fnsMap = Map.insert fnName { params, body } st.fnsMap }
-
-cellValueToObj :: CellValue -> Object
-cellValueToObj = case _ of
-  BoolVal x -> BoolObj x
-  IntVal x -> IntObj x
-  FloatVal x -> FloatObj x
-  CharVal x -> CharObj x
-  StringVal x -> StringObj x
-
-objectToCellValues :: Partial => Object -> Maybe (Matrix CellValue)
-objectToCellValues = Matrix.fromArray <<< cellValues
-  where
-  cellValues = case _ of
-    ListObj xs
-      | Just xss <- traverse extractShallowList xs ->
-          objectToCellValue <$$> xss
-    ListObj xs
-      | all isElement xs ->
-          [ objectToCellValue <$> xs ]
-    x -> [ [ objectToCellValue x ] ]
-
-objectToCellValue :: Partial => Object -> CellValue
-objectToCellValue = case _ of
-  BoolObj x -> BoolVal x
-  IntObj x -> IntVal x
-  FloatObj x -> FloatVal x
-  CharObj x -> CharVal x
-  StringObj x -> StringVal x
-  NullObj -> StringVal ""
-
-extractBool :: Object -> Boolean
-extractBool (BoolObj x) = x
-extractBool _ = unsafeCrashWith "guard expression does not return Bool"
-
-extractShallowList :: Object -> Maybe (Array Object)
-extractShallowList (ListObj xs) | all isElement xs = Just xs
-extractShallowList _ = Nothing
-
-isElement :: Object -> Boolean
-isElement (ListObj _) = false
-isElement _ = true
-
-extractList :: Int -> Object -> Maybe (Array Object)
-extractList n (ListObj xs) | length xs == n = Just xs
-extractList _ _ = Nothing
 
 unsafeLookupFn
   :: forall k v s m
@@ -407,10 +362,6 @@ nonEmptyCellValue :: CellValue -> Boolean
 nonEmptyCellValue (StringVal "") = false
 nonEmptyCellValue _ = true
 
-nonNullObj :: Object -> Boolean
-nonNullObj NullObj = false
-nonNullObj _ = true
-
 filterByIndexes :: forall a f. Foldable f => f Int -> Array a -> Array a
 filterByIndexes idxs arr = fst <$>
   filter (\(_ /\ idx) -> idx `elem` idxs)
@@ -421,3 +372,4 @@ varFn = FnVar' <<< Var' <<< Var
 
 argId :: String
 argId = "__arg__"
+
