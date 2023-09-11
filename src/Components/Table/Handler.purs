@@ -3,13 +3,16 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.HandlerHelpers (actOnCell, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
+import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Interpreters.Common (evalFormula)
-import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Parsers.FnDef (fnBody)
+import App.Utils.Dom (KeyCode(..), ctrlKey, getTarget, prevent, shiftKey, toMouseEvent, withPrevent)
+import Bookhound.Parser (runParser)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
+import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
@@ -27,17 +30,34 @@ handleAction (WriteCell cell value) =
     , activeInput = false
     }
 
-handleAction (WriteFormula cell formulaText) = do
-  modify_ \st -> st
-    { tableFormulas = Map.insert cell formulaText st.tableFormulas
-    }
--- resultOpt <- traverse (evalFormula cell) body
--- let result = fromMaybe Map.empty $ join resultOpt
--- logShow resultOpt
--- modify_ \st -> st
---   { tableData = Map.union result st.tableData
---   , activeInput = false
---   }
+handleAction (FormulaKeyPress Enter ev)
+  | ctrlKey ev = withPrevent ev do
+      formulaText <- liftEffect $ fromMaybe "" <$>
+        ( traverse HTMLTextAreaElement.value
+            $ HTMLTextAreaElement.fromEventTarget
+            =<< getTarget ev
+        )
+      let body = hush $ runParser fnBody formulaText
+      { selectedCell } <- get
+      result <- fromMaybe Map.empty <<< join <$> traverse
+        (evalFormula selectedCell)
+        body
+      if not null $ result then do
+        modify_ \st -> st
+          { tableData = Map.union result st.tableData
+          , tableFormulas = Map.insert selectedCell formulaText st.tableFormulas
+          }
+        actOnCell selectedCell focus Nothing
+      else
+        pure unit
+
+handleAction (FormulaKeyPress _ _) =
+  pure unit
+
+handleAction (FormulaFocusOut ev) =
+  liftEffect $ traverse_ (HTMLTextAreaElement.setValue "")
+    $ HTMLTextAreaElement.fromEventTarget
+    =<< getTarget ev
 
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
@@ -61,6 +81,11 @@ handleAction (KeyPress x ev) | x `elem` [ ArrowUp, CharKeyCode 'K' ] =
 
 handleAction (KeyPress x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
   cellArrowMove ev NextRow
+
+handleAction (KeyPress Enter ev)
+  | ctrlKey ev = withPrevent ev do
+      modify_ _ { activeInput = false }
+      actOnElemById "formula-box" focus
 
 handleAction (KeyPress Enter ev) = withPrevent ev do
   { selectedCell, activeInput } <- modify \st -> st

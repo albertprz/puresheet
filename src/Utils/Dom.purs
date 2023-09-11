@@ -8,7 +8,8 @@ import Web.DOM (Element, ParentNode)
 import Web.DOM.Element (getBoundingClientRect)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector, querySelector, querySelectorAll)
-import Web.Event.Event (Event, preventDefault)
+import Web.Event.Event (Event, preventDefault, target)
+import Web.Event.EventTarget (EventTarget)
 import Web.HTML (HTMLElement, Window, window)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -16,6 +17,7 @@ import Web.HTML.HTMLElement (toElement)
 import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window (innerHeight, innerWidth, scrollBy)
 import Web.HTML.Window as Window
+import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.InputEvent (InputEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
@@ -113,6 +115,9 @@ parseKeyCode str = OtherKeyCode str
 toEvent :: forall a. IsEvent a => a -> Event
 toEvent = unsafeCoerce
 
+getTarget :: forall a. IsEvent a => a -> Maybe EventTarget
+getTarget = target <<< toEvent
+
 toMouseEvent :: forall a. IsEvent a => a -> MouseEvent
 toMouseEvent = unsafeCoerce
 
@@ -150,6 +155,7 @@ instance ModKeyEvent MouseEvent where
 class IsEvent :: forall k. k -> Constraint
 class IsEvent a
 
+instance IsEvent FocusEvent
 instance IsEvent MouseEvent
 instance IsEvent KeyboardEvent
 instance IsEvent InputEvent

@@ -11,6 +11,7 @@ import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
 import Data.Foldable as Foldable
+import Data.Int (toNumber)
 import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
 import Data.Set as Set
@@ -124,19 +125,28 @@ neg [ FloatObj x ] = FloatObj $ Prelude.negate x
 add :: Partial => Array Object -> Object
 add [ IntObj a, IntObj b ] = IntObj $ a + b
 add [ FloatObj a, FloatObj b ] = FloatObj $ a + b
+add [ FloatObj a, IntObj b ] = FloatObj $ a + toNumber b
+add [ IntObj a, FloatObj b ] = FloatObj $ toNumber a + b
 
 sub :: Partial => Array Object -> Object
 sub [ IntObj a, IntObj b ] = IntObj $ a - b
 sub [ FloatObj a, FloatObj b ] = FloatObj $ a - b
+sub [ FloatObj a, IntObj b ] = FloatObj $ a - toNumber b
+sub [ IntObj a, FloatObj b ] = FloatObj $ toNumber a - b
 
 mult :: Partial => Array Object -> Object
 mult [ IntObj a, IntObj b ] = IntObj $ a * b
 mult [ FloatObj a, FloatObj b ] = FloatObj $ a * b
+mult [ FloatObj a, IntObj b ] = FloatObj $ a * toNumber b
+mult [ IntObj a, FloatObj b ] = FloatObj $ toNumber a * b
 
 div :: Partial => Array Object -> Object
 div [ IntObj a, IntObj b ] = IntObj $ a / b
 div [ FloatObj a, FloatObj b ] = FloatObj $ a / b
+div [ FloatObj a, IntObj b ] = FloatObj $ a / toNumber b
+div [ IntObj a, FloatObj b ] = FloatObj $ toNumber a / b
 
+-- Int Fns
 mod :: Partial => Array Object -> Object
 mod [ IntObj a, IntObj b ] = IntObj $ Ring.mod a b
 

@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..), SelectionState(..))
 import App.Components.Table.Handler (handleAction)
-import App.Components.Table.Models (Action(..), AppState)
+import App.Components.Table.Models (Action(..), AppState, FormulaState(..))
 import App.Components.Table.Renderer (render)
 import App.Interpreters.Builtins (operatorsMap)
 import Data.Map as Map
@@ -24,6 +24,7 @@ initialState :: forall a. a -> AppState
 initialState = const
   { selectedCell: { column: Column 'A', row: Row 1 }
   , activeInput: false
+  , formulaState: UnknownFormula
   , tableData: Map.fromFoldable
       [ { column: Column 'A', row: Row 1 } /\ StringVal "value"
       , { column: Column 'D', row: Row 1 } /\ StringVal "another value"

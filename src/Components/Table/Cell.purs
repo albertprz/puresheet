@@ -3,10 +3,11 @@ module App.Components.Table.Cell where
 import FatPrelude
 import Prim hiding (Row)
 
-import Bookhound.Parser (char, runParser)
-import Bookhound.ParserCombinators (is, (<|>))
-import Bookhound.Parsers.Char (upper)
-import Bookhound.Parsers.Number (double, int, posInt)
+import Bookhound.Parser (Parser, char, runParser)
+import Bookhound.ParserCombinators (is, (->>-), (<|>), (|?))
+import Bookhound.Parsers.Char (dash, dot, upper)
+import Bookhound.Parsers.Number (negInt, unsignedInt)
+import Bookhound.Utils.UnsafeRead (unsafeRead)
 import Data.Array as Array
 import Data.Map as Map
 import Data.Set as Set
@@ -20,20 +21,21 @@ parseColumn :: String -> Maybe Column
 parseColumn input = hush $ runParser (Column <$> upper) input
 
 parseRow :: String -> Maybe Row
-parseRow input = hush $ runParser (Row <$> posInt) input
+parseRow input = hush $ runParser (Row <$> unsignedInt) input
 
 parseCellValue :: String -> CellValue
 parseCellValue input = fromRight (StringVal input) $
   runParser cellValueP input
   where
   cellValueP =
-    FloatVal <$> double
+    FloatVal
+      <$> double
       <|> IntVal
       <$> int
-      <|> CharVal
-      <$> char
       <|> BoolVal
       <$> (true <$ is "true" <|> false <$ is "false")
+      <|> CharVal
+      <$> char
 
 getCell
   :: (Int -> Int)
@@ -329,6 +331,16 @@ swapMapKey (k1 /\ k2) dict =
 
 buildCell :: Column -> Row -> Cell
 buildCell column row = { column, row }
+
+int :: Parser Int
+int = unsignedInt <|> negInt
+
+double :: Parser Number
+double = unsafeRead
+  <$> (|?) dash
+  ->>- unsignedInt
+  ->>- dot
+  ->>- unsignedInt
 
 newtype Column = Column Char
 

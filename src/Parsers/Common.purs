@@ -2,12 +2,11 @@ module App.Parsers.Common where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellValue(..))
+import App.Components.Table.Cell (CellValue(..), double, int)
 import App.SyntaxTrees.Common (Ctor(..), Module(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (class IsMatch, inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)
-import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.String.CodeUnits (singleton) as String
@@ -15,9 +14,10 @@ import Data.String.Unsafe (char) as String
 
 cellValue :: Parser CellValue
 cellValue = token
-  $ (BoolVal <$> (true <$ is "true" <|> false <$ is "false"))
+  $
+    (FloatVal <$> double)
   <|> (IntVal <$> int)
-  <|> (FloatVal <$> double)
+  <|> (BoolVal <$> (true <$ is "true" <|> false <$ is "false"))
   <|> (CharVal <$> withinQuotes (charLit <|> charLitEscaped))
   <|>
     ( StringVal <$> withinDoubleQuotes
@@ -118,7 +118,6 @@ opSymbolChars =
   , '&'
   , '*'
   , '+'
-  , '.'
   , '/'
   , '<'
   , '='

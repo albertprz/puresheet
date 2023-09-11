@@ -30,7 +30,7 @@ evalFormula
   -> m (Maybe (Map Cell CellValue))
 evalFormula { column, row } body = do
   { columns, rows } <- get
-  obj <- evalExprInApp body
+  obj <- evalExprInApp (spyShow body)
   let
     toCellMap cellMatrix =
       Map.filter nonEmptyCellValue
@@ -110,7 +110,7 @@ evalExpr
   ( ListRange (Cell' { column: colX, row: rowX })
       (Cell' { column: colY, row: rowY })
   ) | colX == colY =
-  evalExpr $ spyShow $ List $ (\row -> Cell' { row, column: colX }) <$>
+  evalExpr $ List $ (\row -> Cell' { row, column: colX }) <$>
     toArray (rowX .. rowY)
 
 evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
@@ -128,10 +128,10 @@ evalExpr
       pure $ Cell' { column, row }
 
 evalExpr (List list) =
-  evalExpr $ spyShow
+  evalExpr
     $ foldl (FnApply (varFn "snoc") <.. arr2)
         (Object' $ ListObj [])
-    $ spyShow list
+        list
 
 evalExpr (FnVar' (Var' fn))
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap = pure $ BuiltinFnObj

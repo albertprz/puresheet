@@ -66,7 +66,7 @@ cellMove
   => a
   -> CellMove
   -> m Unit
-cellMove ev move = do
+cellMove _ move = do
   active <- gets _.activeInput
   when (not active) $ selectCell move
 
@@ -142,20 +142,18 @@ goToCell
   -> m Unit
 goToCell visibleCols visibleRows allColumns allRows origin target = do
   cols <- parseElems parseColumn visibleCols
-  rows <- parseElems parseRow visibleRows
   sequence_ $ adjustRows (length visibleRows - 1) target.row <$> maximum allRows
     <*> minimum allRows
-  liftEffect $ goToCellHelper cols rows allColumns origin target visibleCols
+  liftEffect $ goToCellHelper cols allColumns origin target visibleCols
 
 goToCellHelper
   :: Array Column
-  -> Array Row
   -> NonEmptyArray Column
   -> Cell
   -> Cell
   -> Array Element
   -> Effect Unit
-goToCellHelper cols rows allColumns origin { column, row } visibleCols
+goToCellHelper cols allColumns origin { column, row } visibleCols
 
   | last' cols == Just column && last allColumns /= origin.column = do
       width <- traverse scrollWidth $ head' visibleCols
@@ -165,10 +163,7 @@ goToCellHelper cols rows allColumns origin { column, row } visibleCols
       width <- traverse scrollWidth $ last' visibleCols
       scrollByX (-(coalesce width + 1.0)) =<< window
 
-  | not (elem row rows && elem column cols) =
-      actOnCell { column, row } focus Nothing
-
-  | otherwise = pure unit
+  | otherwise = actOnCell { column, row } focus Nothing
 
 adjustRows
   :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
@@ -213,8 +208,15 @@ actOnCell
   -> (HTMLElement -> Effect Unit)
   -> Maybe String
   -> m Unit
-actOnCell cell action subElem = do
-  element <- selectElement $ QuerySelector $ "td#"
-    <> showCell cell
-    <> foldMap (" " <> _) subElem
+actOnCell cell action subElem =
+  actOnElemById ("cell" <> showCell cell <> foldMap (" " <> _) subElem) action
+
+actOnElemById
+  :: forall m
+   . MonadEffect m
+  => String
+  -> (HTMLElement -> Effect Unit)
+  -> m Unit
+actOnElemById id action = do
+  element <- selectElement $ QuerySelector ("#" <> id)
   liftEffect $ traverse_ action element

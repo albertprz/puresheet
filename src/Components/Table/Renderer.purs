@@ -1,17 +1,15 @@
 module App.Components.Table.Renderer where
 
-import FatPrelude
+import FatPrelude hiding (div)
 import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
-import App.Parsers.FnDef (fnBody)
 import App.Utils.Dom (parseKeyCode)
-import Bookhound.Parser (runParser)
 import Data.Map as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, textarea, th, thead_, tr_)
-import Halogen.HTML.Events (onChange, onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusOut, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onValueInput, onWheel)
+import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusOut, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
@@ -28,13 +26,15 @@ render
   } =
   div [ class_ mainContainer ]
     [ textarea
-        [ tabIndex 0
+        [ id "formula-box"
+        , tabIndex 0
         , class_ formulaBox
         , style "resize: none"
         , value $ fold $ Map.lookup selectedCell tableFormulas
-        , onValueChange $ WriteFormula selectedCell
-        -- , onValueChange $ EvalFormula selectedCell <<< hush <<< runParser fnBody
-        --
+        , onFocusOut $ FormulaFocusOut
+        , onKeyDown \ev -> FormulaKeyPress
+            (parseKeyCode $ KeyboardEvent.code ev)
+            ev
         ]
     , table
         [ classes $ whenMonoid (selectionState == CopySelection)
@@ -127,7 +127,7 @@ renderBodyCell
   -> HTML i Action
 renderBodyCell selected selection active cell cellValue =
   td
-    [ id $ showCell cell
+    [ id $ "cell" <> showCell cell
     , tabIndex 0
     , classes $ bodyCellSelectionClasses selected selection cell
     , onClick $ ClickCell cell
