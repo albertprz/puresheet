@@ -27,14 +27,17 @@ handleAction (WriteCell cell value) =
     , activeInput = false
     }
 
-handleAction (EvalFormula cell body) = do
-  resultOpt <- traverse (evalFormula cell) body
-  let result = fromMaybe Map.empty $ join resultOpt
-  logShow resultOpt
+handleAction (WriteFormula cell formulaText) = do
   modify_ \st -> st
-    { tableData = Map.union result st.tableData
-    , activeInput = false
+    { tableFormulas = Map.insert cell formulaText st.tableFormulas
     }
+-- resultOpt <- traverse (evalFormula cell) body
+-- let result = fromMaybe Map.empty $ join resultOpt
+-- logShow resultOpt
+-- modify_ \st -> st
+--   { tableData = Map.union result st.tableData
+--   , activeInput = false
+--   }
 
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
@@ -47,16 +50,16 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
     { activeInput = not st.activeInput }
   actOnCell selectedCell focus $ toMaybe' activeInput "input"
 
-handleAction (KeyPress ArrowLeft ev) =
+handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn
 
-handleAction (KeyPress ArrowRight ev) =
+handleAction (KeyPress x ev) | x `elem` [ ArrowRight, CharKeyCode 'L' ] =
   cellArrowMove ev NextColumn
 
-handleAction (KeyPress ArrowUp ev) =
+handleAction (KeyPress x ev) | x `elem` [ ArrowUp, CharKeyCode 'K' ] =
   cellArrowMove ev PrevRow
 
-handleAction (KeyPress ArrowDown ev) =
+handleAction (KeyPress x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
   cellArrowMove ev NextRow
 
 handleAction (KeyPress Enter ev) = withPrevent ev do
@@ -64,19 +67,18 @@ handleAction (KeyPress Enter ev) = withPrevent ev do
     { activeInput = not st.activeInput }
   actOnCell selectedCell focus $ toMaybe' activeInput "input"
 
-handleAction (KeyPress Tab ev) =
-  withPrevent ev $ selectCell move
+handleAction (KeyPress Tab ev) = selectCell move
   where
   move
     | shiftKey ev = PrevCell
     | otherwise = NextCell
 
-handleAction (KeyPress Space ev) = withPrevent ev do
+handleAction (KeyPress Space _) = do
   { selectedCell } <- modify _ { activeInput = true }
   actOnCell selectedCell focus $ Just "input"
 
-handleAction (KeyPress Delete ev) =
-  deleteCells ev
+handleAction (KeyPress Delete _) =
+  deleteCells
 
 handleAction (KeyPress Shift ev) = prevent ev
 
@@ -93,21 +95,15 @@ handleAction (KeyPress (CharKeyCode 'V') ev)
   | ctrlKey ev = pasteCells ev
 
 handleAction (KeyPress (CharKeyCode 'X') ev)
-  | ctrlKey ev = copyCells ev *> deleteCells ev
+  | ctrlKey ev = copyCells ev *> deleteCells
 
-handleAction (KeyPress (CharKeyCode _) _) =
-  pure unit
-
-handleAction (KeyPress (OtherKeyCode _) _) =
+handleAction (KeyPress _ _) =
   pure unit
 
 handleAction (KeyRelease Control ev) = withPrevent ev $
   modify_ _ { selectionState = NotStartedSelection }
 
 handleAction (KeyRelease _ _) =
-  pure unit
-
-handleAction (InputKeyPress _ _) =
   pure unit
 
 handleAction (WheelScroll ev)

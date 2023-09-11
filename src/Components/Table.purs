@@ -28,6 +28,7 @@ initialState = const
       [ { column: Column 'A', row: Row 1 } /\ StringVal "value"
       , { column: Column 'D', row: Row 1 } /\ StringVal "another value"
       ]
+  , tableFormulas: Map.empty
   , columns: Column <$> 'A' .. 'Z'
   , rows: Row <$> 1 .. 100
   , multiSelection: NoSelection

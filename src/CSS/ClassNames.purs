@@ -32,6 +32,9 @@ atRightSelection = ClassName "at-right-selection"
 sheetCell :: ClassName
 sheetCell = ClassName "sheet-cell"
 
+formulaBox :: ClassName
+formulaBox = ClassName "formula-input"
+
 columnHeader :: ClassName
 columnHeader = ClassName "column-header"
 
@@ -43,3 +46,6 @@ rowHeader = ClassName "row-header"
 
 cornerHeader :: ClassName
 cornerHeader = ClassName "corner-header"
+
+mainContainer :: ClassName
+mainContainer = ClassName "main-container"

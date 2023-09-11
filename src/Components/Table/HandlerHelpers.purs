@@ -47,7 +47,7 @@ cellArrowMove
   => KeyboardEvent
   -> CellMove
   -> m Unit
-cellArrowMove ev move = withPrevent ev $
+cellArrowMove ev move =
   if (shiftKey ev) then
     modify_ \st -> st
       { multiSelection = computeNextSelection st.multiSelection st.selectedCell
@@ -66,7 +66,7 @@ cellMove
   => a
   -> CellMove
   -> m Unit
-cellMove ev move = withPrevent ev do
+cellMove ev move = do
   active <- gets _.activeInput
   when (not active) $ selectCell move
 
@@ -101,13 +101,11 @@ pasteCells ev = withPrevent ev do
     }
 
 deleteCells
-  :: forall m a
+  :: forall m
    . MonadEffect m
   => MonadState AppState m
-  => IsEvent a
-  => a
-  -> m Unit
-deleteCells ev = withPrevent ev $
+  => m Unit
+deleteCells =
   modify_ \st -> st
     { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells
         st.multiSelection

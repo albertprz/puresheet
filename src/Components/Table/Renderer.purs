@@ -3,15 +3,15 @@ module App.Components.Table.Renderer where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, inSelection, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Parsers.FnDef (fnBody)
 import App.Utils.Dom (parseKeyCode)
 import Bookhound.Parser (runParser)
 import Data.Map as Map
-import Halogen.HTML (ClassName, ComponentHTML, HTML, input, table, tbody_, td, text, th, thead_, tr_)
-import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
+import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, textarea, th, thead_, tr_)
+import Halogen.HTML.Events (onChange, onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusOut, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onValueInput, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
@@ -20,39 +20,53 @@ render
   { selectedCell
   , activeInput
   , tableData
+  , tableFormulas
   , columns
   , rows
   , multiSelection
   , selectionState
   } =
-  table
-    [ classes $ whenMonoid (selectionState == CopySelection) [ copySelection ]
-    , style "border-spacing: 0"
-    , onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
-    , onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
-    , onWheel WheelScroll
-    ]
-    [ thead_
-        [ tr_
-            $ toArray
-            $ renderHeaderCorner
-            : (renderColumnHeader selectedCell multiSelection <$> columns)
+  div [ class_ mainContainer ]
+    [ textarea
+        [ tabIndex 0
+        , class_ formulaBox
+        , style "resize: none"
+        , value $ fold $ Map.lookup selectedCell tableFormulas
+        , onValueChange $ WriteFormula selectedCell
+        -- , onValueChange $ EvalFormula selectedCell <<< hush <<< runParser fnBody
+        --
         ]
-    , tbody_ $ toArray $
-        do
-          row <- rows
-          pure $ tr_
-            $ toArray
-            $ renderRowHeader selectedCell multiSelection row
-            :
-              do
-                column <- columns
-                let
-                  cell = { column, row }
-                  cellValue = Map.lookup cell tableData
-                pure $ renderBodyCell selectedCell multiSelection activeInput
-                  cell
-                  cellValue
+    , table
+        [ classes $ whenMonoid (selectionState == CopySelection)
+            [ copySelection ]
+        , style "border-spacing: 0"
+        , onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
+        , onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
+        , onWheel WheelScroll
+        ]
+        [ thead_
+            [ tr_
+                $ toArray
+                $ renderHeaderCorner
+                : (renderColumnHeader selectedCell multiSelection <$> columns)
+            ]
+        , tbody_ $ toArray $
+            do
+              row <- rows
+              pure $ tr_
+                $ toArray
+                $ renderRowHeader selectedCell multiSelection row
+                :
+                  do
+                    column <- columns
+                    let
+                      cell = { column, row }
+                      cellValue = Map.lookup cell tableData
+                    pure $ renderBodyCell selectedCell multiSelection
+                      activeInput
+                      cell
+                      cellValue
+        ]
     ]
 
 renderRowHeader :: forall i. Cell -> MultiSelection -> Row -> HTML i Action
@@ -128,10 +142,7 @@ renderBodyCell selected selection active cell cellValue =
         , autocomplete AutocompleteOff
         , readOnly $ not $ cell == selected && active
         , value $ foldMap show cellValue
-        -- , onValueChange $ WriteCell cell <<< parseCellValue
-        , onValueChange $ EvalFormula cell <<< hush <<< runParser fnBody
-        , onKeyDown \ev -> InputKeyPress (parseKeyCode $ KeyboardEvent.code ev)
-            ev
+        , onValueChange $ WriteCell cell <<< parseCellValue
         ]
     ]
 

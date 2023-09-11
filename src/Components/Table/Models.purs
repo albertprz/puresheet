@@ -16,6 +16,7 @@ type AppState =
   { selectedCell :: Cell
   , activeInput :: Boolean
   , tableData :: Map Cell CellValue
+  , tableFormulas :: Map Cell String
   , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
@@ -32,13 +33,12 @@ type FormulaCtx =
 data Action
   = Initialize
   | WriteCell Cell CellValue
-  | EvalFormula Cell (Maybe FnBody)
+  | WriteFormula Cell String
   | ClickHeader Header MouseEvent
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
   | KeyPress KeyCode KeyboardEvent
   | KeyRelease KeyCode KeyboardEvent
-  | InputKeyPress KeyCode KeyboardEvent
   | WheelScroll WheelEvent
   | HoverCell EventTransition Cell MouseEvent
   | HoverHeader EventTransition Header MouseEvent

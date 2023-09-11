@@ -133,6 +133,8 @@ data KeyCode
   | CharKeyCode Char
   | OtherKeyCode String
 
+derive instance Eq KeyCode
+
 class ModKeyEvent a where
   shiftKey :: a -> Boolean
   ctrlKey :: a -> Boolean

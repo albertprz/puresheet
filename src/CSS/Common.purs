@@ -17,6 +17,9 @@ white = Color.white
 darkGrey :: Color
 darkGrey = hex "#526066"
 
+grey2 :: Color
+grey2 = hex "#bfbfbf"
+
 grey :: Color
 grey = hex "#cbcbcb"
 

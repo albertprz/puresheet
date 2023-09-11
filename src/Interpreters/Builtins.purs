@@ -3,10 +3,9 @@ module App.Interpreters.Builtins
   , operatorsMap
   ) where
 
-import App.Interpreters.Object
-import App.SyntaxTrees.FnDef
-
+import App.Interpreters.Object (extractList, isElement, nonNullObj)
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
+import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
 import Data.Array as Array
 import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
@@ -16,7 +15,7 @@ import Data.Map as Map
 import Data.Semigroup.Foldable (foldl1)
 import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, drop', dropEnd', filter, fromCharArray, fromMaybe, slice', take', takeEnd', toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, filter, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 

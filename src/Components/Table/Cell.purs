@@ -3,8 +3,11 @@ module App.Components.Table.Cell where
 import FatPrelude
 import Prim hiding (Row)
 
+import Bookhound.Parser (char, runParser)
+import Bookhound.ParserCombinators (is, (<|>))
+import Bookhound.Parsers.Char (upper)
+import Bookhound.Parsers.Number (double, int, posInt)
 import Data.Array as Array
-import Data.Int as Int
 import Data.Map as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
@@ -14,16 +17,23 @@ showCell :: Cell -> String
 showCell { column, row } = show column <> show row
 
 parseColumn :: String -> Maybe Column
-parseColumn elemId = case toCharArray elemId of
-  [ ch ] | isUpper ch -> Just $ Column ch
-  _ -> Nothing
+parseColumn input = hush $ runParser (Column <$> upper) input
 
 parseRow :: String -> Maybe Row
-parseRow elemId = Row <$> fromString elemId
+parseRow input = hush $ runParser (Row <$> posInt) input
 
 parseCellValue :: String -> CellValue
-parseCellValue str =
-  fromMaybe (StringVal str) (IntVal <$> Int.fromString str)
+parseCellValue input = fromRight (StringVal input) $
+  runParser cellValueP input
+  where
+  cellValueP =
+    FloatVal <$> double
+      <|> IntVal
+      <$> int
+      <|> CharVal
+      <$> char
+      <|> BoolVal
+      <$> (true <$ is "true" <|> false <$ is "false")
 
 getCell
   :: (Int -> Int)

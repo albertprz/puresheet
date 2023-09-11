@@ -2,12 +2,35 @@ module App.CSS.Table where
 
 import CSSPrelude
 
+import App.CSS.ClassNames (mainContainer)
 import Tecton.Rule as Rule
 
 css :: CSS
 css = do
+  mainContainerCss
+  formulaCss
   tableCss
   cellCss
+
+mainContainerCss :: CSS
+mainContainerCss = do
+
+  div &. mainContainer ? Rule.do
+    backgroundColor := white
+    display := inlineTable
+
+formulaCss :: CSS
+formulaCss = do
+
+  textarea &. formulaBox ? Rule.do
+    position := sticky
+    left := pct 25
+    width := vw 50
+    height := vh 12
+    margin := px 25
+    padding := px 20
+    borderColor := grey2
+    borderWidth := px 3
 
 tableCss :: CSS
 tableCss = do
