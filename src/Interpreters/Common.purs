@@ -65,11 +65,22 @@ evalExpr (FnApply fnExpr args) = do
   case fnObj of
     FnObj fnInfo -> evalFn fnInfo args
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
-    _ -> raiseError (show fnObj <> " is not a function")
+    _ -> raiseError ("Value '" <> show fnObj <> "' is not a function")
+
+evalExpr (InfixFnApply fnOps args) =
+  do
+    { operatorsMap } <- get
+    (\x -> evalExpr x) =<< nestInfixFns (lookupArray fnOps operatorsMap) args
 
 evalExpr (LeftOpSection fnOp body) =
   pure $ FnObj
     { body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
+    , params: [ Var argId ]
+    }
+
+evalExpr (RightOpSection body fnOp) =
+  pure $ FnObj
+    { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
     , params: [ Var argId ]
     }
 
@@ -86,12 +97,6 @@ evalExpr (SwitchExpr matchee cases) = do
   result <- evalExpr matchee
   except $ note (error "Unreachable pattern match") $
     findMap (evalCaseBinding st result) cases
-
-evalExpr (RightOpSection body fnOp) =
-  pure $ FnObj
-    { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
-    , params: [ Var argId ]
-    }
 
 evalExpr
   ( ListRange (Cell' { column: colX, row: rowX })
@@ -149,8 +154,6 @@ evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 
 evalExpr (Object' obj) = pure obj
 
-evalExpr _ = pure NullObj
-
 evalFn
   :: FnInfo
   -> Array FnBody
@@ -162,7 +165,7 @@ evalFn { body, params } args = do
   else if unappliedArgsNum > 0 then
     evalInContext st
       (Object' $ FnObj { body, params: takeEnd' unappliedArgsNum params })
-  else raiseError "Too many arguments supplied to current function"
+  else raiseError "TypeError: Too many arguments supplied to current function"
   where
   unappliedArgsNum = length params - length args
   evalInContext st expr = except $
@@ -178,7 +181,14 @@ evalBuiltinFn
   -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =
   if unappliedArgsNum == 0 then
-    pure $ fromMaybe' (\_ -> fn args) defaultResult
+    except
+      $ note
+          ( error
+              ( "TypeError: The combination of argument types is not allowed: "
+                  <> show args
+              )
+          )
+      $ fromMaybe' (\_ -> partialMaybe fn args) (pure <$> defaultResult)
   else if unappliedArgsNum > 0 then
     pure $ BuiltinFnObj
       { fn: \newArgs -> fn (args <> newArgs)
@@ -187,7 +197,7 @@ evalBuiltinFn { fn, arity, defaultParams } args =
           $ Set.map (_ - length args) defaultParams
       }
   else
-    raiseError $ "Too many arguments supplied to current function"
+    raiseError "TypeError: Too many arguments supplied to current function"
   where
   unappliedArgsNum = fromEnum arity - length args
   defaultResult =
@@ -263,7 +273,7 @@ evalPatternGuard (PatternGuard pattern body) = do
   (\x -> evalPatternBinding pattern x) =<< evalExpr body
 
 evalPatternGuard (SimpleGuard body) =
-  extractBool <$> evalExpr body
+  except <<< extractBool =<< evalExpr body
 
 evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
@@ -319,7 +329,7 @@ lookupFn
 lookupFn fnName fetchFnMap = do
   fnMap <- gets fetchFnMap
   except
-    $ note (error $ "Unknown function: " <> show fnName)
+    $ note (error $ "Unknown function: '" <> show fnName <> "'")
     $ Map.lookup fnName fnMap
 
 raiseEmptyError :: forall a. EvalM a

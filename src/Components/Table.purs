@@ -27,8 +27,10 @@ initialState = const
   , activeInput: false
   , formulaState: UnknownFormula
   , tableData: Map.fromFoldable
-      [ { column: Column 'A', row: Row 1 } /\ StringVal "value"
-      , { column: Column 'D', row: Row 1 } /\ StringVal "another value"
+      [ { column: Column 'A', row: Row 1 } /\ IntVal 1
+      , { column: Column 'B', row: Row 1 } /\ IntVal 2
+      , { column: Column 'C', row: Row 1 } /\ IntVal 3
+      , { column: Column 'D', row: Row 1 } /\ IntVal 4
       ]
   , tableFormulas: Map.empty
   , columns: Column <$> 'A' .. 'Z'

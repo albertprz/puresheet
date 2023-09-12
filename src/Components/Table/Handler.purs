@@ -8,6 +8,7 @@ import App.Components.Table.Models (Action(..), AppState, EventTransition(..), F
 import App.Interpreters.Common (evalFormula)
 import App.Parsers.FnDef (fnBody)
 import App.SyntaxTrees.FnDef (FnBody(..), Object(..))
+import App.Utils.Common (spyShow)
 import App.Utils.Dom (KeyCode(..), ctrlKey, getTarget, prevent, shiftKey, toMouseEvent, withPrevent)
 import Bookhound.Parser (runParser)
 import Control.Monad.Except.Trans (runExceptT)
@@ -42,12 +43,10 @@ handleAction (FormulaKeyPress Enter ev)
 
       let
         eitherBody = runParser fnBody formulaText
-        body = fromRight (Object' NullObj) eitherBody
+        body = fromRight (Object' NullObj) $ spyShow eitherBody
       { selectedCell } <- get
       eitherResult <- runExceptT (evalFormula selectedCell body)
-      let result = fromRight Map.empty eitherResult
-      logShow eitherBody
-      logShow eitherResult
+      let result = fromRight Map.empty $ spyShow eitherResult
       if (not null) result then do
         modify_ \st -> st
           { tableData = Map.union result st.tableData

@@ -6,7 +6,6 @@ import App.Components.Table.Cell (CellValue(..))
 import App.SyntaxTrees.FnDef (Object(..))
 import Matrix (Matrix)
 import Matrix as Matrix
-import Partial.Unsafe (unsafeCrashWith)
 
 cellValueToObj :: CellValue -> Object
 cellValueToObj = case _ of
@@ -37,9 +36,9 @@ objectToCellValue = case _ of
   StringObj x -> StringVal x
   NullObj -> StringVal ""
 
-extractBool :: Object -> Boolean
-extractBool (BoolObj x) = x
-extractBool _ = unsafeCrashWith "guard expression does not return Bool"
+extractBool :: Object -> Either Error Boolean
+extractBool (BoolObj x) = pure x
+extractBool _ = Left $ error "guard expression does not return Bool"
 
 extractShallowList :: Object -> Maybe (Array Object)
 extractShallowList (ListObj xs) | all isElement xs = Just xs
