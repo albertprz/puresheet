@@ -141,7 +141,7 @@ mult [ FloatObj a, IntObj b ] = FloatObj $ a * toNumber b
 mult [ IntObj a, FloatObj b ] = FloatObj $ toNumber a * b
 
 div :: Partial => Array Object -> Object
-div [ IntObj a, IntObj b ] = IntObj $ a / b
+div [ IntObj a, IntObj b ] = FloatObj $ toNumber a / toNumber b
 div [ FloatObj a, FloatObj b ] = FloatObj $ a / b
 div [ FloatObj a, IntObj b ] = FloatObj $ a / toNumber b
 div [ IntObj a, FloatObj b ] = FloatObj $ toNumber a / b

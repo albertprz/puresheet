@@ -7,8 +7,9 @@ import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
 import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
 import App.SyntaxTrees.Common (Var(..), VarOp)
-import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
+import App.Utils.Common (spyShow)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (ExceptT, except, runExceptT)
 import Data.Map as Map
@@ -62,7 +63,7 @@ evalExpr :: FnBody -> EvalM Object
 evalExpr (FnApply fnExpr args) = do
   fnObj <- evalExpr fnExpr
   argObjs <- traverse (\x -> evalExpr x) args
-  case fnObj of
+  case (spyShow fnObj) of
     FnObj fnInfo -> evalFn fnInfo args
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError ("Value '" <> show fnObj <> "' is not a function")
@@ -135,9 +136,11 @@ evalExpr (List list) =
         list
 
 evalExpr (FnVar' (Var' fn))
-  | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap = pure $ BuiltinFnObj
-      fnInfo
-  | otherwise = FnObj <$> lookupFn fn _.fnsMap
+  | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
+      evalExpr $ Object' $ BuiltinFnObj
+        fnInfo
+  | otherwise = (\x -> evalExpr <<< Object' <<< FnObj $ x) =<< lookupFn fn
+      _.fnsMap
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupFn fnOp _.operatorsMap
@@ -151,6 +154,10 @@ evalExpr (Cell' cell) =
       tableData
 
 evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
+
+evalExpr (Object' (FnObj { body, params: [] })) = evalExpr body
+
+evalExpr (Object' (BuiltinFnObj { fn, arity: A0 })) = pure $ fn []
 
 evalExpr (Object' obj) = pure obj
 
@@ -281,7 +288,7 @@ evalPatternBinding (VarPattern var) result =
   registerLocalFn (FnDef var [] $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
-  pure $ cellValueToObj cellValue == result
+  pure $ spyShow $ cellValueToObj cellValue == result
 
 evalPatternBinding (AliasedPattern var pattern) result =
   registerLocalFn (FnDef var [] $ Object' result) *>

@@ -19,7 +19,8 @@ fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
   $ FnDef
   <$> var
-  <*> (|*) var
+  <*> (pure <$> var <|> argListOf var)
+  <* isToken "="
   <*> fnBody
 
 fnBody :: Parser FnBody
@@ -49,8 +50,8 @@ fnBody = whereExpr <|> openForm
     $ MatrixRange
     <$> (cell <* isToken "..")
     <*> cell
-  list = defer \_ -> List <$> listOf openForm
-  fnOp = defer \_ -> FnOp <$> (quote *> varOp)
+  list = defer \_ -> List <$> (token (listOf openForm))
+  fnOp = defer \_ -> FnOp <$> (token quote *> varOp)
   fnVar = defer \_ ->
     FnVar' <<< Var' <$> var
   -- <|> FnVar' <<< Ctor' <$> ctor
@@ -63,16 +64,16 @@ fnBody = whereExpr <|> openForm
     <|> withinParens (complexForm <|> singleForm)
   fnForm = defer \_ -> fnVar <|> fnOp <|> withinParens (fnApply <|> complexForm)
   singleForm = defer \_ -> fnApply
+    <|> list
     <|> matrixRange
     <|> listRange
-    <|> list
     <|> opSection
+    <|> CellValue'
+    <$> cellValue
     <|> Cell'
     <$> cell
     <|> fnOp
     <|> fnVar
-    <|> CellValue'
-    <$> cellValue
   complexForm = defer \_ -> infixFnApply <|> complexInfixForm
   complexInfixForm = defer \_ ->
     condExpr
