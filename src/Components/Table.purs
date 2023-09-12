@@ -11,7 +11,8 @@ import App.Interpreters.Builtins (operatorsMap)
 import Data.Map as Map
 import Halogen as H
 
-component :: forall q i o m. MonadAff m => H.Component q i o m
+component
+  :: forall q i o m. MonadAff m => H.Component q i o m
 component =
   H.mkComponent
     { initialState

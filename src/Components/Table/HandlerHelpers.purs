@@ -3,31 +3,9 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell
-  ( Cell
-  , CellMove
-  , Column
-  , MultiSelection(..)
-  , Row(..)
-  , SelectionState(..)
-  , computeNextSelection
-  , deserializeSelectionValues
-  , getCellFromMove
-  , getTargetCells
-  , parseColumn
-  , parseRow
-  , serializeSelectionValues
-  , showCell
-  )
-import App.Components.Table.Models (AppState)
-import App.Utils.Dom
-  ( class IsEvent
-  , scrollByX
-  , selectAllVisibleElements
-  , selectElement
-  , shiftKey
-  , withPrevent
-  )
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Models (AppState, FormulaState(..))
+import App.Utils.Dom (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
 import Data.Map as Map
 import Promise.Aff as Promise
@@ -124,6 +102,7 @@ selectCell move = do
     { activeInput = false
     , multiSelection = NoSelection
     , selectedCell = getCellFromMove move st.columns st.rows st.selectedCell
+    , formulaState = UnknownFormula
     }
   visibleCols <- getVisibleCols
   visibleRows <- getVisibleRows

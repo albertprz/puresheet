@@ -35,6 +35,15 @@ sheetCell = ClassName "sheet-cell"
 formulaBox :: ClassName
 formulaBox = ClassName "formula-input"
 
+validFormula :: ClassName
+validFormula = ClassName "valid-formula"
+
+invalidFormula :: ClassName
+invalidFormula = ClassName "invalid-formula"
+
+unknownFormula :: ClassName
+unknownFormula = ClassName "unknown-formula"
+
 columnHeader :: ClassName
 columnHeader = ClassName "column-header"
 

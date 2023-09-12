@@ -6,7 +6,6 @@ import App.Components.Table.Cell (Column(..), Row(..), buildCell)
 import App.Parsers.Common (argListOf, cellValue, isToken, token, var, varOp)
 import App.Parsers.Pattern (pattern')
 import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
-import App.Utils.Common (spyShow)
 import Bookhound.Parser (Parser, withError)
 import Bookhound.ParserCombinators (someSepBy, (<|>), (|*), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote, upper)
@@ -24,7 +23,7 @@ fnDef = defer \_ -> withError "Function definition"
   <*> fnBody
 
 fnBody :: Parser FnBody
-fnBody = spyShow <$> (whereExpr <|> openForm)
+fnBody = whereExpr <|> openForm
   where
   fnApply = defer \_ -> FnApply <$> fnForm <*> argListOf openForm
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps varOp

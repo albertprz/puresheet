@@ -2,7 +2,6 @@ module App.CSS.Table where
 
 import CSSPrelude
 
-import App.CSS.ClassNames (mainContainer)
 import Tecton.Rule as Rule
 
 css :: CSS
@@ -31,6 +30,29 @@ formulaCss = do
     padding := px 20
     borderColor := grey2
     borderWidth := px 3
+    fontSize := px 18
+
+  textarea &. validFormula ? Rule.do
+    animationName := blinkerGreen
+    animationDelay := sec 0
+    animationDuration := sec 0.75
+    animationIterationCount := 4
+
+  textarea &. invalidFormula ? Rule.do
+    animationName := blinkerRed
+    animationDelay := sec 0
+    animationDuration := sec 0.75
+    animationIterationCount := 4
+
+  keyframes blinkerGreen ? do
+    pct 70
+      ? borderColor
+      := green
+
+  keyframes blinkerRed ? do
+    pct 70
+      ? borderColor
+      := red
 
 tableCss :: CSS
 tableCss = do
@@ -119,3 +141,8 @@ cellCss = do
     position := sticky
     left := px 0
 
+blinkerGreen :: KeyframesName
+blinkerGreen = KeyframesName "blinker-green"
+
+blinkerRed :: KeyframesName
+blinkerRed = KeyframesName "blinker-red"

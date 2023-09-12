@@ -3,10 +3,12 @@ module App.Components.Table.Models where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.CSS.ClassNames (invalidFormula, unknownFormula, validFormula)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
 import App.SyntaxTrees.Common (Var, VarOp)
 import App.SyntaxTrees.FnDef (FnInfo, OpInfo)
 import App.Utils.Dom (KeyCode)
+import Web.HTML (ClassName)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
@@ -54,5 +56,13 @@ data EventTransition
 
 data FormulaState
   = ValidFormula
-  | InValidFormula
+  | InvalidFormula
   | UnknownFormula
+
+derive instance Eq FormulaState
+
+formulaStateToClass :: FormulaState -> ClassName
+formulaStateToClass = case _ of
+  ValidFormula -> validFormula
+  InvalidFormula -> invalidFormula
+  UnknownFormula -> unknownFormula

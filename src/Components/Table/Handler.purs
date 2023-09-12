@@ -4,11 +4,13 @@ import FatPrelude
 
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
-import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
-import App.Interpreters.Common (evalFormula)
+import App.Components.Table.Models (Action(..), AppState, EventTransition(..), FormulaState(..))
+import App.Interpreters.Common2 (evalFormula)
 import App.Parsers.FnDef (fnBody)
+import App.SyntaxTrees.FnDef (FnBody(..), Object(..))
 import App.Utils.Dom (KeyCode(..), ctrlKey, getTarget, prevent, shiftKey, toMouseEvent, withPrevent)
 import Bookhound.Parser (runParser)
+import Control.Monad.Except.Trans (runExceptT)
 import Data.Map as Map
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
@@ -37,27 +39,37 @@ handleAction (FormulaKeyPress Enter ev)
             $ HTMLTextAreaElement.fromEventTarget
             =<< getTarget ev
         )
-      let body = hush $ runParser fnBody formulaText
+
+      let
+        eitherBody = runParser fnBody formulaText
+        body = fromRight (Object' NullObj) eitherBody
       { selectedCell } <- get
-      result <- fromMaybe Map.empty <<< join <$> traverse
-        (evalFormula selectedCell)
-        body
-      if not null $ result then do
+      eitherResult <- runExceptT (evalFormula selectedCell body)
+      let result = fromRight Map.empty eitherResult
+      logShow eitherBody
+      logShow eitherResult
+      if (not null) result then do
         modify_ \st -> st
           { tableData = Map.union result st.tableData
           , tableFormulas = Map.insert selectedCell formulaText st.tableFormulas
+          , formulaState = ValidFormula
           }
         actOnCell selectedCell focus Nothing
       else
-        pure unit
+        modify_ \st -> st
+          { formulaState = InvalidFormula
+          }
 
 handleAction (FormulaKeyPress _ _) =
-  pure unit
+  modify_ _ { formulaState = UnknownFormula }
 
 handleAction (FormulaFocusOut ev) =
-  liftEffect $ traverse_ (HTMLTextAreaElement.setValue "")
-    $ HTMLTextAreaElement.fromEventTarget
-    =<< getTarget ev
+  whenM ((ValidFormula /= _) <$> gets _.formulaState)
+
+    ( liftEffect $ traverse_ (HTMLTextAreaElement.setValue "")
+        $ HTMLTextAreaElement.fromEventTarget
+        =<< getTarget ev
+    )
 
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
@@ -234,3 +246,4 @@ handleAction (DragHeader Over _ ev) =
 
 handleAction (DragHeader _ _ _) =
   pure unit
+

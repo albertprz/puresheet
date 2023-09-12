@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
-import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
+import App.Components.Table.Models (Action(..), AppState, EventTransition(..), formulaStateToClass)
 import App.Utils.Dom (parseKeyCode)
 import Data.Map as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, textarea, th, thead_, tr_)
@@ -17,6 +17,7 @@ render :: forall cs m. AppState -> ComponentHTML Action cs m
 render
   { selectedCell
   , activeInput
+  , formulaState
   , tableData
   , tableFormulas
   , columns
@@ -28,7 +29,7 @@ render
     [ textarea
         [ id "formula-box"
         , tabIndex 0
-        , class_ formulaBox
+        , classes [ formulaBox, formulaStateToClass formulaState ]
         , style "resize: none"
         , value $ fold $ Map.lookup selectedCell tableFormulas
         , onFocusOut $ FormulaFocusOut
