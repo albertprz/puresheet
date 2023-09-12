@@ -10,10 +10,10 @@ import App.SyntaxTrees.Common (Var(..), VarOp)
 import App.SyntaxTrees.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
+import Control.Monad.Except (ExceptT, except, runExceptT)
 import Data.Map as Map
 import Data.Set as Set
 import Matrix as Matrix
-import Partial.Unsafe (unsafeCrashWith)
 
 type LocalFormulaCtx =
   { tableData :: Map Cell CellValue
@@ -21,12 +21,14 @@ type LocalFormulaCtx =
   , operatorsMap :: Map VarOp OpInfo
   }
 
+type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT Error m a
+
 evalFormula
   :: forall m
    . MonadState AppState m
   => Cell
   -> FnBody
-  -> m (Maybe (Map Cell CellValue))
+  -> ExceptT Error m (Map Cell CellValue)
 evalFormula { column, row } body = do
   { columns, rows } <- get
   obj <- evalExprInApp body
@@ -42,33 +44,28 @@ evalFormula { column, row } body = do
           ( getElemSat (_ + x) columns column /\
               getElemSat (_ + y) rows row
           )
-  pure $ toCellMap <$> join (partialMaybe objectToCellValues $ obj)
+  except $ note emptyError $ toCellMap <$> join
+    (partialMaybe objectToCellValues $ obj)
 
 evalExprInApp
-  :: forall m. MonadState AppState m => FnBody -> m Object
+  :: forall m. MonadState AppState m => FnBody -> ExceptT Error m Object
 evalExprInApp expr = do
   appState <- get
-  pure $ evalState (evalExpr expr)
+  except $ evalState (runExceptT $ evalExpr expr)
     { tableData: appState.tableData
     , fnsMap: appState.formulaCtx.fnsMap
     , operatorsMap: appState.formulaCtx.operatorsMap
     }
 
-evalExpr
-  :: forall m. MonadState LocalFormulaCtx m => FnBody -> m Object
+evalExpr :: FnBody -> EvalM Object
 
 evalExpr (FnApply fnExpr args) = do
   fnObj <- evalExpr fnExpr
-  argObjs <- traverse evalExpr args
+  argObjs <- traverse (\x -> evalExpr x) args
   case fnObj of
     FnObj fnInfo -> evalFn fnInfo args
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
-    _ -> unsafeCrashWith (show fnObj <> " is not a function")
-
-evalExpr (InfixFnApply fnOps args) =
-  do
-    { operatorsMap } <- get
-    evalExpr =<< nestInfixFns (lookupArray fnOps operatorsMap) args
+    _ -> raiseError (show fnObj <> " is not a function")
 
 evalExpr (LeftOpSection fnOp body) =
   pure $ FnObj
@@ -76,25 +73,25 @@ evalExpr (LeftOpSection fnOp body) =
     , params: [ Var argId ]
     }
 
-evalExpr (RightOpSection body fnOp) =
-  pure $ FnObj
-    { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
-    , params: [ Var argId ]
-    }
-
 evalExpr (WhereExpr fnBody bindings) =
-  traverse_ registerLocalFn bindings *> evalExpr fnBody
+  traverse_ (\x -> registerLocalFn x) bindings *> evalExpr fnBody
 
 evalExpr (CondExpr conds) = do
   st <- get
-  pure $ fromMaybe (unsafeCrashWith "Unreachable pattern match") $
+  except $ note (error "Unreachable pattern match") $
     findMap (evalGuardedFnBody st) conds
 
 evalExpr (SwitchExpr matchee cases) = do
   st <- get
   result <- evalExpr matchee
-  pure $ fromMaybe (unsafeCrashWith "Unreachable pattern match") $
+  except $ note (error "Unreachable pattern match") $
     findMap (evalCaseBinding st result) cases
+
+evalExpr (RightOpSection body fnOp) =
+  pure $ FnObj
+    { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
+    , params: [ Var argId ]
+    }
 
 evalExpr
   ( ListRange (Cell' { column: colX, row: rowX })
@@ -135,11 +132,11 @@ evalExpr (List list) =
 evalExpr (FnVar' (Var' fn))
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap = pure $ BuiltinFnObj
       fnInfo
-  | otherwise = FnObj <$> unsafeLookupFn fn _.fnsMap
+  | otherwise = FnObj <$> lookupFn fn _.fnsMap
 
 evalExpr (FnOp fnOp) = do
-  { fnName } <- unsafeLookupFn fnOp _.operatorsMap
-  fnInfo <- unsafeLookupFn fnName _.fnsMap
+  { fnName } <- lookupFn fnOp _.operatorsMap
+  fnInfo <- lookupFn fnName _.fnsMap
   pure $ FnObj fnInfo
 
 evalExpr (Cell' cell) =
@@ -152,12 +149,12 @@ evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 
 evalExpr (Object' obj) = pure obj
 
+evalExpr _ = pure NullObj
+
 evalFn
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => FnInfo
+  :: FnInfo
   -> Array FnBody
-  -> m Object
+  -> EvalM Object
 evalFn { body, params } args = do
   st <- get
   if unappliedArgsNum == 0 then
@@ -165,22 +162,20 @@ evalFn { body, params } args = do
   else if unappliedArgsNum > 0 then
     evalInContext st
       (Object' $ FnObj { body, params: takeEnd' unappliedArgsNum params })
-  else unsafeCrashWith "Too many arguments supplied to current function"
+  else raiseError "Too many arguments supplied to current function"
   where
   unappliedArgsNum = length params - length args
-  evalInContext st expr =
-    pure $ evalState (evalExpr expr)
+  evalInContext st expr = except $
+    evalState (runExceptT $ evalExpr expr)
       (st { fnsMap = Map.union argBindings st.fnsMap })
   argBindings = Map.fromFoldable
     $ rmap (\arg -> { body: arg, params: [] })
     <$> zip' params args
 
 evalBuiltinFn
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => BuiltinFnInfo
+  :: BuiltinFnInfo
   -> Array Object
-  -> m Object
+  -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =
   if unappliedArgsNum == 0 then
     pure $ fromMaybe' (\_ -> fn args) defaultResult
@@ -192,7 +187,7 @@ evalBuiltinFn { fn, arity, defaultParams } args =
           $ Set.map (_ - length args) defaultParams
       }
   else
-    unsafeCrashWith "Too many arguments supplied to current function"
+    raiseError $ "Too many arguments supplied to current function"
   where
   unappliedArgsNum = fromEnum arity - length args
   defaultResult =
@@ -204,11 +199,9 @@ evalBuiltinFn { fn, arity, defaultParams } args =
       Nothing
 
 nestInfixFns
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => Array (VarOp /\ OpInfo)
+  :: Array (VarOp /\ OpInfo)
   -> Array FnBody
-  -> m FnBody
+  -> EvalM FnBody
 nestInfixFns [ (_ /\ { fnName }) ] args = do
   pure $ FnApply (FnVar' $ Var' fnName) args
 
@@ -233,17 +226,15 @@ evalCaseBinding
   -> CaseBinding
   -> Maybe Object
 evalCaseBinding ctx matchee (CaseBinding pattern body) =
-  evalState action ctx
+  hush $ evalState action ctx
   where
-  action = ifM (evalPatternBinding pattern matchee)
-    (Just <$> evalMaybeGuardedFnBody body)
-    (pure Nothing)
+  action = runExceptT $ ifM (evalPatternBinding pattern matchee)
+    (evalMaybeGuardedFnBody body)
+    raiseEmptyError
 
 evalMaybeGuardedFnBody
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => MaybeGuardedFnBody
-  -> m Object
+  :: MaybeGuardedFnBody
+  -> EvalM Object
 evalMaybeGuardedFnBody (Guarded conds) =
   evalExpr $ CondExpr conds
 
@@ -255,39 +246,27 @@ evalGuardedFnBody
   -> GuardedFnBody
   -> Maybe Object
 evalGuardedFnBody ctx (GuardedFnBody guard body) =
-  evalState action ctx
+  hush $ evalState action ctx
   where
-  action = ifM (evalGuard guard)
-    (Just <$> evalExpr body)
-    (pure Nothing)
+  action = runExceptT $ ifM (evalGuard guard)
+    (evalExpr body)
+    raiseEmptyError
 
-evalGuard
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => Guard
-  -> m Boolean
-evalGuard (Guard guardPatterns) =
-  and <$> traverse evalPatternGuard guardPatterns
+evalGuard :: Guard -> EvalM Boolean
+evalGuard (Guard guardPatterns) = do
+  and <$> traverse (\x -> evalPatternGuard x) guardPatterns
 
 evalGuard Otherwise = pure true
 
-evalPatternGuard
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => PatternGuard
-  -> m Boolean
-evalPatternGuard (PatternGuard pattern body) =
-  evalPatternBinding pattern =<< evalExpr body
+evalPatternGuard :: PatternGuard -> EvalM Boolean
+evalPatternGuard (PatternGuard pattern body) = do
+  (\x -> evalPatternBinding pattern x) =<< evalExpr body
 
 evalPatternGuard (SimpleGuard body) =
   extractBool <$> evalExpr body
 
 evalPatternBinding
-  :: forall m
-   . MonadState LocalFormulaCtx m
-  => Pattern
-  -> Object
-  -> m Boolean
+  :: Pattern -> Object -> EvalM Boolean
 evalPatternBinding (VarPattern var) result =
   registerLocalFn (FnDef var [] $ Object' result) $> true
 
@@ -313,11 +292,11 @@ evalPatternBinding (ListPattern patterns) result
 
 evalPatternBinding (ListPattern patterns) result
   | Just results <- extractNList (length patterns) result =
-      and <$> traverse (uncurry evalPatternBinding)
+      and <$> traverse (\(x /\ y) -> evalPatternBinding x y)
         (patterns `zip'` results)
 
 evalPatternBinding (ListPattern _) _ =
-  pure false
+  lift $ pure false
 
 evalPatternBinding (Wildcard) _ =
   pure true
@@ -325,32 +304,32 @@ evalPatternBinding (Wildcard) _ =
 evalPatternBinding (Spread) _ =
   pure true
 
-registerLocalFn :: forall m. MonadState LocalFormulaCtx m => FnDef -> m Unit
+registerLocalFn :: FnDef -> EvalM Unit
 registerLocalFn (FnDef fnName params body) =
   modify_ \st ->
     st { fnsMap = Map.insert fnName { params, body } st.fnsMap }
 
-unsafeLookupFn
-  :: forall k v s m
-   . MonadState s m
-  => Show k
-  => Ord k
-  => k
-  -> (s -> Map k v)
-  -> m v
-unsafeLookupFn fnName =
-  map (fromMaybe (unsafeCrashWith $ "Unknown function: " <> show fnName))
-    <<< lookupFn fnName
-
 lookupFn
-  :: forall k v s m
-   . MonadState s m
-  => Show k
+  :: forall k v
+   . Show k
   => Ord k
   => k
-  -> (s -> Map k v)
-  -> m (Maybe v)
-lookupFn fnName fetchFnMap = Map.lookup fnName <$> gets fetchFnMap
+  -> (LocalFormulaCtx -> Map k v)
+  -> EvalM v
+lookupFn fnName fetchFnMap = do
+  fnMap <- gets fetchFnMap
+  except
+    $ note (error $ "Unknown function: " <> show fnName)
+    $ Map.lookup fnName fnMap
+
+raiseEmptyError :: forall a. EvalM a
+raiseEmptyError = except <<< Left $ emptyError
+
+raiseError :: forall a. String -> EvalM a
+raiseError x = except <<< Left <<< error $ x
+
+emptyError :: Error
+emptyError = error ""
 
 lookupArray :: forall k v. Ord k => Array k -> Map k v -> Array (k /\ v)
 lookupArray keys dict = keys `zip'` vals
@@ -371,4 +350,3 @@ varFn = FnVar' <<< Var' <<< Var
 
 argId :: String
 argId = "__arg__"
-
