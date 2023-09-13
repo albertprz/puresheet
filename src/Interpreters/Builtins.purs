@@ -6,6 +6,7 @@ module App.Interpreters.Builtins
 import App.Interpreters.Object (extractList, isElement, nonNullObj)
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
+import Bookhound.FatPrelude (elem)
 import Data.Array as Array
 import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
@@ -52,6 +53,7 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("takeLast" /\ (takeLast /\ A2 /\ [ 0 ]))
     , ("drop" /\ (drop /\ A2 /\ [ 0 ]))
     , ("dropLast" /\ (dropLast /\ A2 /\ [ 0 ]))
+    , ("contains" /\ (contains /\ A2 /\ []))
     , ("eq" /\ (eq /\ A2 /\ []))
     , ("notEq" /\ (notEq /\ A2 /\ []))
     , ("gt" /\ (gt /\ A2 /\ []))
@@ -190,6 +192,9 @@ transpose [ ListObj xs ] | Just xss <- traverse extractList xs =
   ListObj $ (ListObj <$> Array.transpose xss)
 transpose [ ListObj xs ] | all isElement xs =
   ListObj $ (ListObj <$> Array.transpose [ xs ])
+
+contains [ a, ListObj b ] = BoolObj $ elem a b
+contains [ CharObj a, StringObj b ] = BoolObj $ elem a (String.toCharArray b)
 
 range :: Partial => Array Object -> Object
 range [ IntObj a, IntObj b ] = ListObj $ IntObj <$> toArray (a .. b)

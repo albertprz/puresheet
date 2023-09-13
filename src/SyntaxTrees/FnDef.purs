@@ -108,6 +108,13 @@ data Associativity
   = L
   | R
 
+newtype Scope = Scope Int
+
+derive newtype instance Eq Scope
+derive newtype instance Ord Scope
+derive newtype instance Semiring Scope
+derive newtype instance Show Scope
+
 derive instance Eq Precedence
 derive instance Ord Precedence
 
@@ -167,8 +174,8 @@ instance Show Object where
     (CharObj x) -> show x
     (StringObj x) -> show x
     (ListObj x) -> show x
-    (FnObj x) -> show x
-    (BuiltinFnObj _) -> "builtin Fn"
+    (FnObj _) -> "[fn]"
+    (BuiltinFnObj _) -> "[builtin fn]"
     (NullObj) -> "null"
 
 instance Eq Object where
@@ -181,8 +188,7 @@ instance Eq Object where
   eq NullObj NullObj = true
   eq NullObj _ = false
   eq _ NullObj = false
-  eq x y = unsafeCrashWith
-    ("Cannot check equality of: " <> show x <> " and " <> show y)
+  eq _ _ = false
 
 instance Ord Object where
   compare (BoolObj x) (BoolObj y) = compare x y

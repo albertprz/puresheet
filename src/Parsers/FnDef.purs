@@ -7,7 +7,7 @@ import App.Parsers.Common (argListOf, cellValue, isToken, token, var, varOp)
 import App.Parsers.Pattern (pattern')
 import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (someSepBy, (<|>), (|*), (|+), (|?))
+import Bookhound.ParserCombinators (someSepBy, (<|>), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote, upper)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (posInt)
@@ -19,7 +19,7 @@ fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
   $ FnDef
   <$> var
-  <*> (pure <$> var <|> argListOf var)
+  <*> (argListOf var <|> pure [])
   <* isToken "="
   <*> fnBody
 

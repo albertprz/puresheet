@@ -1,0 +1,25 @@
+
+
+map(inc, [A1 .. D1]) where {
+    | inc (x) = x + 1
+    | map (f, xs) = switch (xs) {
+        | [] -> []
+        | xs -> f (head(xs)) +: map(f, tail(xs))
+    }
+}
+
+fib(10) where {
+    | fib(x) = switch (x) {
+        | 0 -> 0
+        | 1 -> 1
+        | _ -> fib (x - 1) + fib (x - 2)
+    }
+}
+
+f(5) where {
+    | f(x) = g(x + 1 + z) where {
+        | g(x) = 3 + x
+        | h(y) = x
+    }
+    | z = 3
+}

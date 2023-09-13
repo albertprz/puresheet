@@ -6,7 +6,7 @@ import Prim hiding (Row)
 import App.CSS.ClassNames (invalidFormula, unknownFormula, validFormula)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
 import App.SyntaxTrees.Common (Var, VarOp)
-import App.SyntaxTrees.FnDef (FnInfo, OpInfo)
+import App.SyntaxTrees.FnDef (FnInfo, OpInfo, Scope)
 import App.Utils.Dom (KeyCode)
 import Web.HTML (ClassName)
 import Web.HTML.Event.DragEvent (DragEvent)
@@ -30,7 +30,7 @@ type AppState =
   }
 
 type FormulaCtx =
-  { fnsMap :: Map Var FnInfo
+  { fnsMap :: Map (Scope /\ Var) FnInfo
   , operatorsMap :: Map VarOp OpInfo
   }
 

@@ -31,7 +31,7 @@ cellValue = token
 
 var :: Parser Var
 var = Var <$> notReserved
-  ( withinParens (operator opSymbol <|> simpleOperator <|> simpleOperatorFn) <|>
+  ( withinParens (operator opSymbol) <|>
       ident lower
   )
 
@@ -41,7 +41,7 @@ ctor = Ctor <$> notReserved (withinParens (operator colon) <|> ident upper)
 varOp :: Parser VarOp
 varOp = VarOp <$> notReserved
   ( (wrapBackQuotes <$> withinBackQuotes (ident lower)) <|>
-      (operator opSymbol <|> simpleOperator)
+      (operator opSymbol)
   )
 
 argListOf :: forall a. Parser a -> Parser (Array a)
@@ -58,12 +58,6 @@ ident start = token $ start ->>- ((|*) idChar)
 
 operator :: Parser Char -> Parser String
 operator start = token $ start ->>- ((|*) (opSymbol <|> colon))
-
-simpleOperator :: Parser String
-simpleOperator = token $ oneOf [ ":" ]
-
-simpleOperatorFn :: Parser String
-simpleOperatorFn = token $ oneOf [ ",", ",,", ",,," ]
 
 nonTokenIdent :: Parser Char -> Parser String
 nonTokenIdent start = start ->>- (|*) idChar
@@ -130,6 +124,7 @@ opSymbolChars =
   , '|'
   , '-'
   , '~'
+  , ':'
   ]
 
 reservedKeyWords :: Array String

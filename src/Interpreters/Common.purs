@@ -4,13 +4,15 @@ import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue(..), buildCell)
 import App.Components.Table.Models (AppState)
+import App.Interpreters.Builtins (operatorsMap)
 import App.Interpreters.Builtins as Builtins
 import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
-import App.SyntaxTrees.Common (Var(..), VarOp)
-import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTrees.Common (Var(..), VarOp(..))
+import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
-import App.Utils.Common (spyShow)
+import Bookhound.FatPrelude (findJust)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
+import CSSPrelude (scope)
 import Control.Monad.Except (ExceptT, except, runExceptT)
 import Data.Map as Map
 import Data.Set as Set
@@ -18,8 +20,9 @@ import Matrix as Matrix
 
 type LocalFormulaCtx =
   { tableData :: Map Cell CellValue
-  , fnsMap :: Map Var FnInfo
+  , fnsMap :: Map (Scope /\ Var) FnInfo
   , operatorsMap :: Map VarOp OpInfo
+  , scope :: Scope
   }
 
 type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT Error m a
@@ -56,6 +59,7 @@ evalExprInApp expr = do
     { tableData: appState.tableData
     , fnsMap: appState.formulaCtx.fnsMap
     , operatorsMap: appState.formulaCtx.operatorsMap
+    , scope: zero
     }
 
 evalExpr :: FnBody -> EvalM Object
@@ -63,10 +67,11 @@ evalExpr :: FnBody -> EvalM Object
 evalExpr (FnApply fnExpr args) = do
   fnObj <- evalExpr fnExpr
   argObjs <- traverse (\x -> evalExpr x) args
-  case (spyShow fnObj) of
+  case fnObj of
     FnObj fnInfo -> evalFn fnInfo args
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
-    _ -> raiseError ("Value '" <> show fnObj <> "' is not a function")
+    _ -> raiseError
+      ("Type Error: Value '" <> show fnObj <> "' is not a function")
 
 evalExpr (InfixFnApply fnOps args) =
   do
@@ -85,18 +90,24 @@ evalExpr (RightOpSection body fnOp) =
     , params: [ Var argId ]
     }
 
-evalExpr (WhereExpr fnBody bindings) =
-  traverse_ (\x -> registerLocalFn x) bindings *> evalExpr fnBody
+evalExpr (WhereExpr fnBody bindings) = do
+  st <- get
+  except $ evalState
+    ( runExceptT
+        $ traverse (\x -> registerLocalFn x st.scope) bindings
+        *> evalExpr fnBody
+    )
+    st
 
 evalExpr (CondExpr conds) = do
   st <- get
-  except $ note (error "Unreachable pattern match") $
+  except $ note (error "Match Error: Unreachable pattern match") $
     findMap (evalGuardedFnBody st) conds
 
 evalExpr (SwitchExpr matchee cases) = do
   st <- get
   result <- evalExpr matchee
-  except $ note (error "Unreachable pattern match") $
+  except $ note (error "Match Error: Unreachable pattern match") $
     findMap (evalCaseBinding st result) cases
 
 evalExpr
@@ -137,15 +148,14 @@ evalExpr (List list) =
 
 evalExpr (FnVar' (Var' fn))
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
-      evalExpr $ Object' $ BuiltinFnObj
-        fnInfo
-  | otherwise = (\x -> evalExpr <<< Object' <<< FnObj $ x) =<< lookupFn fn
-      _.fnsMap
+      evalBuiltinFn fnInfo []
+  | otherwise = do
+      { scope } <- get
+      (_ `evalFn` []) =<< lookupFn fn
 
 evalExpr (FnOp fnOp) = do
-  { fnName } <- lookupFn fnOp _.operatorsMap
-  fnInfo <- lookupFn fnName _.fnsMap
-  pure $ FnObj fnInfo
+  { fnName } <- lookupOperator fnOp
+  evalExpr (FnVar' $ Var' fnName)
 
 evalExpr (Cell' cell) =
   do
@@ -155,9 +165,11 @@ evalExpr (Cell' cell) =
 
 evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 
-evalExpr (Object' (FnObj { body, params: [] })) = evalExpr body
+evalExpr (Object' (FnObj fnInfo@{ params: [] })) =
+  evalFn fnInfo []
 
-evalExpr (Object' (BuiltinFnObj { fn, arity: A0 })) = pure $ fn []
+evalExpr (Object' (BuiltinFnObj fnInfo@{ arity: A0 })) =
+  evalBuiltinFn fnInfo []
 
 evalExpr (Object' obj) = pure obj
 
@@ -177,10 +189,14 @@ evalFn { body, params } args = do
   unappliedArgsNum = length params - length args
   evalInContext st expr = except $
     evalState (runExceptT $ evalExpr expr)
-      (st { fnsMap = Map.union argBindings st.fnsMap })
-  argBindings = Map.fromFoldable
+      ( st
+          { fnsMap = Map.union (argBindings st.scope) st.fnsMap
+          , scope = inc st.scope
+          }
+      )
+  argBindings scope = Map.fromFoldable
     $ rmap (\arg -> { body: arg, params: [] })
-    <$> zip' params args
+    <$> zip' ((\x -> (scope /\ x)) <$> params) args
 
 evalBuiltinFn
   :: BuiltinFnInfo
@@ -284,14 +300,16 @@ evalPatternGuard (SimpleGuard body) =
 
 evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
-evalPatternBinding (VarPattern var) result =
-  registerLocalFn (FnDef var [] $ Object' result) $> true
+evalPatternBinding (VarPattern var) result = do
+  { scope } <- get
+  registerLocalFn (FnDef var [] $ Object' result) scope $> true
 
 evalPatternBinding (LitPattern cellValue) result =
-  pure $ spyShow $ cellValueToObj cellValue == result
+  pure $ cellValueToObj cellValue == result
 
-evalPatternBinding (AliasedPattern var pattern) result =
-  registerLocalFn (FnDef var [] $ Object' result) *>
+evalPatternBinding (AliasedPattern var pattern) result = do
+  { scope } <- get
+  registerLocalFn (FnDef var [] $ Object' result) scope *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ListPattern patterns) result
@@ -321,23 +339,30 @@ evalPatternBinding (Wildcard) _ =
 evalPatternBinding (Spread) _ =
   pure true
 
-registerLocalFn :: FnDef -> EvalM Unit
-registerLocalFn (FnDef fnName params body) =
+registerLocalFn :: FnDef -> Scope -> EvalM Unit
+registerLocalFn (FnDef fnName params body) scope =
   modify_ \st ->
-    st { fnsMap = Map.insert fnName { params, body } st.fnsMap }
+    st
+      { fnsMap = Map.insert (scope /\ fnName) { params, body } st.fnsMap
+      , scope = scope
+      }
 
-lookupFn
-  :: forall k v
-   . Show k
-  => Ord k
-  => k
-  -> (LocalFormulaCtx -> Map k v)
-  -> EvalM v
-lookupFn fnName fetchFnMap = do
-  fnMap <- gets fetchFnMap
+lookupFn :: Var -> EvalM FnInfo
+lookupFn fnName = do
+  { fnsMap, scope: (Scope scope) } <- get
   except
-    $ note (error $ "Unknown function: '" <> show fnName <> "'")
-    $ Map.lookup fnName fnMap
+    $ note (error $ "Lexical Error: Unknown function: '" <> show fnName <> "'")
+    $ findJust
+    $ (\x -> Map.lookup (x /\ fnName) fnsMap)
+    <<< Scope
+    <$> (scope .. zero)
+
+lookupOperator :: VarOp -> EvalM OpInfo
+lookupOperator opName = do
+  { operatorsMap } <- get
+  except
+    $ note (error $ "Lexical Error: Unknown operator: '" <> show opName <> "'")
+    $ Map.lookup opName operatorsMap
 
 raiseEmptyError :: forall a. EvalM a
 raiseEmptyError = except <<< Left $ emptyError
