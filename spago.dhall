@@ -28,6 +28,7 @@
   , "tecton"
   , "tecton-halogen"
   , "transformers"
+  , "tree-rose"
   , "tuples"
   , "typelevel-prelude"
   , "unsafe-coerce"

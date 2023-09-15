@@ -115,6 +115,9 @@ derive newtype instance Ord Scope
 derive newtype instance Semiring Scope
 derive newtype instance Show Scope
 
+instance Range Scope where
+  range (Scope a) (Scope b) = Scope <$> (a .. b)
+
 derive instance Eq Precedence
 derive instance Ord Precedence
 

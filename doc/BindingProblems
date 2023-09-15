@@ -23,3 +23,10 @@ f(5) where {
     }
     | z = 3
 }
+
+f(5) where {
+    | f(x) = g(x + 1) where {
+        | g(x) = 3 + x
+        | h(y) = x
+    }
+}

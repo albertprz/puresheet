@@ -62,13 +62,15 @@ handleAction (FormulaKeyPress Enter ev)
 handleAction (FormulaKeyPress _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
-handleAction (FormulaFocusOut ev) =
-  whenM ((ValidFormula /= _) <$> gets _.formulaState)
+handleAction (FormulaFocusOut _) = pure unit
 
-    ( liftEffect $ traverse_ (HTMLTextAreaElement.setValue "")
-        $ HTMLTextAreaElement.fromEventTarget
-        =<< getTarget ev
-    )
+-- handleAction (FormulaFocusOut ev) =
+--   whenM ((ValidFormula /= _) <$> gets _.formulaState)
+
+--     ( liftEffect $ traverse_ (HTMLTextAreaElement.setValue "")
+--         $ HTMLTextAreaElement.fromEventTarget
+--         =<< getTarget ev
+--     )
 
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
