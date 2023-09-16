@@ -17,6 +17,7 @@
   , "halogen"
   , "integers"
   , "js-promise-aff"
+  , "lists"
   , "matrices"
   , "maybe"
   , "ordered-collections"

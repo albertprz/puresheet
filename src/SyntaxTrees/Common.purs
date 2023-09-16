@@ -29,4 +29,3 @@ newtype Module = Module (Array String)
 derive instance Eq Module
 instance Show Module where
   show (Module x) = intercalate "." x
-

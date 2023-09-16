@@ -48,25 +48,26 @@ render
         [ thead_
             [ tr_
                 $ toArray
-                $ renderHeaderCorner
-                : (renderColumnHeader selectedCell multiSelection <$> columns)
+                $ cons renderHeaderCorner
+                    (renderColumnHeader selectedCell multiSelection <$> columns)
             ]
         , tbody_ $ toArray $
             do
               row <- rows
               pure $ tr_
                 $ toArray
-                $ renderRowHeader selectedCell multiSelection row
-                :
-                  do
-                    column <- columns
-                    let
-                      cell = { column, row }
-                      cellValue = Map.lookup cell tableData
-                    pure $ renderBodyCell selectedCell multiSelection
-                      activeInput
-                      cell
-                      cellValue
+                $ cons
+                    (renderRowHeader selectedCell multiSelection row)
+                    ( do
+                        column <- columns
+                        let
+                          cell = { column, row }
+                          cellValue = Map.lookup cell tableData
+                        pure $ renderBodyCell selectedCell multiSelection
+                          activeInput
+                          cell
+                          cellValue
+                    )
         ]
     ]
 

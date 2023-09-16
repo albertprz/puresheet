@@ -64,6 +64,7 @@ data Object
 type FnInfo =
   { body :: FnBody
   , params :: Array Var
+  , scope :: Scope
   }
 
 type BuiltinFnInfo =

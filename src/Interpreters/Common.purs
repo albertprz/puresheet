@@ -7,16 +7,18 @@ import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
 import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
 import App.SyntaxTrees.Common (Var(..), VarOp)
-import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope)
+import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
+import App.Utils.Common (spyShow)
 import Bookhound.FatPrelude (findJust)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (ExceptT, except, runExceptT)
 import Data.Array as Array
+import Data.List as List
 import Data.Map as Map
 import Data.Set as Set
 import Data.Tree (Forest, Tree, appendChild, mkTree, showTree)
-import Data.Tree.Zipper (Loc, children, findFromRoot, fromTree, siblings, value)
+import Data.Tree.Zipper (Loc, children, findFromRoot, fromTree, insertAfter, insertChild, modifyNode, siblings, toTree, up, value)
 import Debug (spy)
 import Matrix as Matrix
 
@@ -25,7 +27,7 @@ type LocalFormulaCtx =
   , fnsMap :: Map (Scope /\ Var) FnInfo
   , operatorsMap :: Map VarOp OpInfo
   , scope :: Scope
-  , scopeTree :: Tree Scope
+  , scopeLoc :: Loc Scope
   }
 
 type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT Error m a
@@ -63,7 +65,7 @@ evalExprInApp expr = do
     , fnsMap: appState.formulaCtx.fnsMap
     , operatorsMap: appState.formulaCtx.operatorsMap
     , scope: zero
-    , scopeTree: mkLeaf zero
+    , scopeLoc: fromTree $ mkLeaf zero
     }
 
 evalExpr :: FnBody -> EvalM Object
@@ -82,23 +84,39 @@ evalExpr (InfixFnApply fnOps args) =
     { operatorsMap } <- get
     (\x -> evalExpr x) =<< nestInfixFns (lookupArray fnOps operatorsMap) args
 
-evalExpr (LeftOpSection fnOp body) =
+evalExpr (LeftOpSection fnOp body) = do
+  { scope } <- get
   pure $ FnObj
     { body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
     , params: [ Var argId ]
+    , scope
     }
 
-evalExpr (RightOpSection body fnOp) =
+evalExpr (RightOpSection body fnOp) = do
+  { scope } <- get
   pure $ FnObj
     { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
     , params: [ Var argId ]
+    , scope
     }
 
 evalExpr (WhereExpr fnBody bindings) = do
-  traverse_ (\x -> registerLocalFn x) bindings
-  { scope, scopeTree } <- get
+  { scope: Scope scope } <- get
+  { scopeLoc } <- get
   spy
-    ( "after registering in scope " <> show scope <> showTree scopeTree
+    ( "before registering in scope " <> show scope <> ": \n"
+        <> showTree (toTree scopeLoc)
+    ) $ pure unit
+  let scopes = Scope <<< (_ + scope) <$> toArray (1 .. length bindings)
+  traverse_ (\(n /\ x) -> registerLocalFn n x) (scopes `zip'` bindings)
+  modify_ \st -> st
+    { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
+        st.scopeLoc
+    }
+  { scopeLoc } <- get
+  spy
+    ( "after registering in scope " <> show scope <> ": \n"
+        <> showTree (toTree scopeLoc)
         <> show fnBody
         <> show
           bindings
@@ -183,19 +201,25 @@ evalFn
   :: FnInfo
   -> Array FnBody
   -> EvalM Object
-evalFn { body, params } args = do
+evalFn { body, params, scope } args = do
+  let x = spyShow { body, params, scope }
   modify_ \st -> st
-    { fnsMap = Map.union (argBindings $ inc st.scope) st.fnsMap }
+    { fnsMap = Map.union argBindings st.fnsMap
+    , scope = scope
+    , scopeLoc = goToNode scope st.scopeLoc
+    }
   if unappliedArgsNum == 0 then
     evalExpr body
   else if unappliedArgsNum > 0 then
     evalExpr
-      (Object' $ FnObj { body, params: takeEnd' unappliedArgsNum params })
+      ( Object' $ FnObj
+          { body, params: takeEnd' unappliedArgsNum params, scope }
+      )
   else raiseError "TypeError: Too many arguments supplied to current function"
   where
   unappliedArgsNum = length params - length args
-  argBindings scope = Map.fromFoldable
-    $ rmap (\arg -> { body: arg, params: [] })
+  argBindings = Map.fromFoldable
+    $ rmap (\arg -> { body: arg, params: [], scope })
     <$> zip' ((\x -> (scope /\ x)) <$> params) args
 
 evalBuiltinFn
@@ -301,13 +325,13 @@ evalPatternGuard (SimpleGuard body) =
 evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
 evalPatternBinding (VarPattern var) result =
-  registerLocalFn (FnDef var [] $ Object' result) $> true
+  registerLocalFn zero (FnDef var [] $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
   pure $ cellValueToObj cellValue == result
 
 evalPatternBinding (AliasedPattern var pattern) result =
-  registerLocalFn (FnDef var [] $ Object' result) *>
+  registerLocalFn zero (FnDef var [] $ Object' result) *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ListPattern patterns) result
@@ -337,25 +361,21 @@ evalPatternBinding Wildcard _ =
 evalPatternBinding Spread _ =
   pure true
 
-registerLocalFn :: FnDef -> EvalM Unit
-registerLocalFn (FnDef fnName params body) = do
-  newScope <- gets (inc <<< (_.scope))
+registerLocalFn :: Scope -> FnDef -> EvalM Unit
+registerLocalFn newScope (FnDef fnName params body) =
   modify_ \st ->
     st
-      { fnsMap = Map.insert (newScope /\ fnName) { params, body } st.fnsMap
-      , scope = newScope
-      , scopeTree = appendChild (mkLeaf newScope) st.scopeTree
+      { fnsMap = Map.insert (newScope /\ fnName)
+          { params, body, scope: newScope }
+          st.fnsMap
       }
-  { scope, fnsMap } <- get
-  spy ("At: " <> show (scope /\ fnName) <> " FnsMap: " <> show fnsMap) $ pure
-    unit
 
 lookupFn :: Var -> EvalM FnInfo
 lookupFn fnName = do
-  { fnsMap, scope: scope, scopeTree } <- get
+  { fnsMap, scope: scope, scopeLoc } <- get
   let
-    scopes = childrenValues scope scopeTree
-      <> siblingsValues scope scopeTree
+    scopes = childrenValues scope scopeLoc
+      <> siblingsValues scope scopeLoc
   except
     $ note (error $ "Lexical Error: Unknown function: '" <> show fnName <> "'")
 
@@ -399,18 +419,31 @@ varFn = FnVar' <<< Var' <<< Var
 argId :: String
 argId = "__arg__"
 
-siblingsValues :: forall a. Eq a => a -> Tree a -> Array a
+siblingsValues :: forall a. Eq a => a -> Loc a -> Array a
 siblingsValues = findValues siblings
 
-childrenValues :: forall a. Eq a => a -> Tree a -> Array a
+childrenValues :: forall a. Eq a => a -> Loc a -> Array a
 childrenValues = findValues children
 
-findValues :: forall a. Eq a => (Loc a -> Forest a) -> a -> Tree a -> Array a
-findValues findFn val tree =
-  Array.fromFoldable $ value <<< fromTree <$> (fold $ findFn <$> loc)
-  where
-  loc = findFromRoot val $ fromTree tree
+findValues :: forall a. Eq a => (Loc a -> Forest a) -> a -> Loc a -> Array a
+findValues findFn val loc =
+  Array.fromFoldable $ value <<< fromTree <$>
+    (foldMap findFn $ findFromRoot val loc)
+
+goToNode :: forall a. Eq a => a -> Loc a -> Loc a
+goToNode val loc =
+  fromMaybe loc $ findFromRoot val loc
 
 mkLeaf :: forall a. a -> Tree a
 mkLeaf val =
   mkTree val mempty
+
+appendChildren :: forall a. List (Tree a) -> Loc a -> Loc a
+appendChildren Nil tree = tree
+appendChildren (child : rest) loc =
+  fromMaybe loc $ up (go rest firstElem)
+  where
+  firstElem = insertChild child loc
+  go Nil elm = elm
+  go (child' : rest') elm = go rest' $ insertAfter child' elm
+
