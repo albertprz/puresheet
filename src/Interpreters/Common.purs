@@ -9,23 +9,21 @@ import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objec
 import App.SyntaxTrees.Common (Var(..), VarOp)
 import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
-import App.Utils.Common (spyShow)
-import Bookhound.FatPrelude (findJust)
+import Bookhound.FatPrelude (findJust, hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (ExceptT, except, runExceptT)
-import Data.Array as Array
 import Data.List as List
 import Data.Map as Map
 import Data.Set as Set
-import Data.Tree (Forest, Tree, appendChild, mkTree, showTree)
-import Data.Tree.Zipper (Loc, children, findFromRoot, fromTree, insertAfter, insertChild, modifyNode, siblings, toTree, up, value)
-import Debug (spy)
+import Data.Tree (Forest, Tree, mkTree)
+import Data.Tree.Zipper (Loc, children, findFromRoot, fromTree, insertAfter, insertChild, node, parents, siblings, toTree, up, value)
 import Matrix as Matrix
 
 type LocalFormulaCtx =
   { tableData :: Map Cell CellValue
   , fnsMap :: Map (Scope /\ Var) FnInfo
   , operatorsMap :: Map VarOp OpInfo
+  , argsMap :: Map (Scope /\ Var) FnInfo
   , scope :: Scope
   , scopeLoc :: Loc Scope
   }
@@ -64,6 +62,7 @@ evalExprInApp expr = do
     { tableData: appState.tableData
     , fnsMap: appState.formulaCtx.fnsMap
     , operatorsMap: appState.formulaCtx.operatorsMap
+    , argsMap: Map.empty
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero
     }
@@ -74,7 +73,7 @@ evalExpr (FnApply fnExpr args) = do
   fnObj <- evalExpr fnExpr
   argObjs <- traverse (\x -> evalExpr x) args
   case fnObj of
-    FnObj fnInfo -> evalFn fnInfo args
+    FnObj fnInfo -> evalFn fnInfo (Object' <$> argObjs)
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError
       ("Type Error: Value '" <> show fnObj <> "' is not a function")
@@ -100,29 +99,8 @@ evalExpr (RightOpSection body fnOp) = do
     , scope
     }
 
-evalExpr (WhereExpr fnBody bindings) = do
-  { scope: Scope scope } <- get
-  { scopeLoc } <- get
-  spy
-    ( "before registering in scope " <> show scope <> ": \n"
-        <> showTree (toTree scopeLoc)
-    ) $ pure unit
-  let scopes = Scope <<< (_ + scope) <$> toArray (1 .. length bindings)
-  traverse_ (\(n /\ x) -> registerLocalFn n x) (scopes `zip'` bindings)
-  modify_ \st -> st
-    { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
-        st.scopeLoc
-    }
-  { scopeLoc } <- get
-  spy
-    ( "after registering in scope " <> show scope <> ": \n"
-        <> showTree (toTree scopeLoc)
-        <> show fnBody
-        <> show
-          bindings
-    )
-    $ pure unit
-  evalExpr fnBody
+evalExpr (WhereExpr fnBody bindings) =
+  registerBindings bindings *> evalExpr fnBody
 
 evalExpr (CondExpr conds) = do
   st <- get
@@ -173,9 +151,9 @@ evalExpr (List list) =
 
 evalExpr (FnVar' (Var' fn))
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
-      evalBuiltinFn fnInfo []
-  | otherwise = do
-      (_ `evalFn` []) =<< lookupFn fn
+      pure $ BuiltinFnObj fnInfo
+  | otherwise =
+      (\x -> evalExpr <<< Object' <<< FnObj $ x) =<< lookupFn fn
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupOperator fnOp
@@ -202,14 +180,15 @@ evalFn
   -> Array FnBody
   -> EvalM Object
 evalFn { body, params, scope } args = do
-  let x = spyShow { body, params, scope }
-  modify_ \st -> st
-    { fnsMap = Map.union argBindings st.fnsMap
-    , scope = scope
-    , scopeLoc = goToNode scope st.scopeLoc
-    }
-  if unappliedArgsNum == 0 then
-    evalExpr body
+  ctx <- get
+  if unappliedArgsNum == 0 then do
+    except $ evalState (runExceptT $ evalExpr body)
+      ( ctx
+          { scope = scope
+          , argsMap = Map.union argBindings ctx.argsMap
+          , scopeLoc = goToNode scope ctx.scopeLoc
+          }
+      )
   else if unappliedArgsNum > 0 then
     evalExpr
       ( Object' $ FnObj
@@ -219,13 +198,10 @@ evalFn { body, params, scope } args = do
   where
   unappliedArgsNum = length params - length args
   argBindings = Map.fromFoldable
-    $ rmap (\arg -> { body: arg, params: [], scope })
+    $ rmap (\arg -> { body: arg, params: [], scope: scope })
     <$> zip' ((\x -> (scope /\ x)) <$> params) args
 
-evalBuiltinFn
-  :: BuiltinFnInfo
-  -> Array Object
-  -> EvalM Object
+evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =
   if unappliedArgsNum == 0 then
     except
@@ -244,11 +220,11 @@ evalBuiltinFn { fn, arity, defaultParams } args =
           $ Set.map (_ - length args) defaultParams
       }
   else
-    raiseError "TypeError: Too many arguments supplied to current function"
+    raiseError ("TypeError: Too many arguments supplied to current function")
   where
   unappliedArgsNum = fromEnum arity - length args
   defaultResult =
-    if NullObj `elem` args && not (null defaultParams) then
+    if NullObj `elem` args && hasSome defaultParams then
       find
         (_ /= NullObj)
         (filterByIndexes defaultParams args)
@@ -324,14 +300,16 @@ evalPatternGuard (SimpleGuard body) =
 
 evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
-evalPatternBinding (VarPattern var) result =
-  registerLocalFn zero (FnDef var [] $ Object' result) $> true
+evalPatternBinding (VarPattern var) result = do
+  { scope } <- get
+  registerLocalFn scope (FnDef var [] $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
   pure $ cellValueToObj cellValue == result
 
-evalPatternBinding (AliasedPattern var pattern) result =
-  registerLocalFn zero (FnDef var [] $ Object' result) *>
+evalPatternBinding (AliasedPattern var pattern) result = do
+  { scope } <- get
+  registerLocalFn scope (FnDef var [] $ Object' result) *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ListPattern patterns) result
@@ -361,6 +339,17 @@ evalPatternBinding Wildcard _ =
 evalPatternBinding Spread _ =
   pure true
 
+registerBindings :: Array FnDef -> EvalM Unit
+registerBindings bindings = do
+  { scope, scopeLoc } <- get
+  let (Scope maxScope) = fromMaybe scope $ maximum $ toTree scopeLoc
+  let scopes = Scope <<< (_ + maxScope) <$> toArray (1 .. length bindings)
+  traverse_ (\(n /\ x) -> registerLocalFn n x) (scopes `zip'` bindings)
+  modify_ \st -> st
+    { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
+        st.scopeLoc
+    }
+
 registerLocalFn :: Scope -> FnDef -> EvalM Unit
 registerLocalFn newScope (FnDef fnName params body) =
   modify_ \st ->
@@ -370,18 +359,25 @@ registerLocalFn newScope (FnDef fnName params body) =
           st.fnsMap
       }
 
+-- Scope resolution:
+-- 1. Children bindings
+-- 2. Fn args
+-- 3. Siblings bindings
+-- 4. Free variables (Closed over values)
 lookupFn :: Var -> EvalM FnInfo
 lookupFn fnName = do
-  { fnsMap, scope: scope, scopeLoc } <- get
+  { fnsMap, argsMap, scope: scope, scopeLoc } <- get
   let
-    scopes = childrenValues scope scopeLoc
-      <> siblingsValues scope scopeLoc
+    lookupVar n = Map.lookup (n /\ fnName) fnsMap
+    lookupArg n = Map.lookup (n /\ fnName) argsMap
+    childrenLookup = lookupVar <$> childrenValues scope scopeLoc
+    siblingsLookup = lookupVar <$> siblingsValues scope scopeLoc
+    argsLookup = lookupArg <$> nodeValues scope scopeLoc
+    freeVarsLookup = lookupArg <$> ancestorsValues scope scopeLoc
   except
-    $ note (error $ "Lexical Error: Unknown function: '" <> show fnName <> "'")
-
+    $ note (error $ "Lexical Error: Unknown value: '" <> show fnName <> "'")
     $ findJust
-    $ (\x -> Map.lookup (x /\ fnName) fnsMap)
-    <$> scopes
+        (childrenLookup <> argsLookup <> siblingsLookup <> freeVarsLookup)
 
 lookupOperator :: VarOp -> EvalM OpInfo
 lookupOperator opName = do
@@ -419,16 +415,22 @@ varFn = FnVar' <<< Var' <<< Var
 argId :: String
 argId = "__arg__"
 
-siblingsValues :: forall a. Eq a => a -> Loc a -> Array a
-siblingsValues = findValues siblings
+nodeValues :: forall a. Eq a => a -> Loc a -> List a
+nodeValues = findValues (pure <<< mkLeaf <<< value)
 
-childrenValues :: forall a. Eq a => a -> Loc a -> Array a
+childrenValues :: forall a. Eq a => a -> Loc a -> List a
 childrenValues = findValues children
 
-findValues :: forall a. Eq a => (Loc a -> Forest a) -> a -> Loc a -> Array a
-findValues findFn val loc =
-  Array.fromFoldable $ value <<< fromTree <$>
-    (foldMap findFn $ findFromRoot val loc)
+siblingsValues :: forall a. Eq a => a -> Loc a -> List a
+siblingsValues = findValues siblings
+
+ancestorsValues :: forall a. Eq a => a -> Loc a -> List a
+ancestorsValues val loc =
+  findValues (map node <<< parents) val loc
+
+findValues :: forall a. Eq a => (Loc a -> Forest a) -> a -> Loc a -> List a
+findValues findFn val loc = value <<< fromTree <$>
+  (foldMap findFn $ findFromRoot val loc)
 
 goToNode :: forall a. Eq a => a -> Loc a -> Loc a
 goToNode val loc =
@@ -446,4 +448,3 @@ appendChildren (child : rest) loc =
   firstElem = insertChild child loc
   go Nil elm = elm
   go (child' : rest') elm = go rest' $ insertAfter child' elm
-
