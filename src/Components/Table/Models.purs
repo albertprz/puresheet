@@ -40,10 +40,10 @@ data Action
   | ClickHeader Header MouseEvent
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
+  | FocusInCell Cell FocusEvent
   | KeyPress KeyCode KeyboardEvent
   | KeyRelease KeyCode KeyboardEvent
   | FormulaKeyPress KeyCode KeyboardEvent
-  | FormulaFocusOut FocusEvent
   | WheelScroll WheelEvent
   | HoverCell EventTransition Cell MouseEvent
   | HoverHeader EventTransition Header MouseEvent

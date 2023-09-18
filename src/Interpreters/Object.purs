@@ -3,6 +3,7 @@ module App.Interpreters.Object where
 import FatPrelude
 
 import App.Components.Table.Cell (CellValue(..))
+import App.Interpreters.Errors (EvalError(..), MatchError(..))
 import App.SyntaxTrees.FnDef (Object(..))
 import Matrix (Matrix)
 import Matrix as Matrix
@@ -36,9 +37,9 @@ objectToCellValue = case _ of
   StringObj x -> StringVal x
   NullObj -> StringVal ""
 
-extractBool :: Object -> Either Error Boolean
+extractBool :: Object -> Either EvalError Boolean
 extractBool (BoolObj x) = pure x
-extractBool _ = Left $ error "guard expression does not return Bool"
+extractBool _ = Left $ MatchError' InvalidGuard
 
 extractShallowList :: Object -> Maybe (Array Object)
 extractShallowList (ListObj xs) | all isElement xs = Just xs

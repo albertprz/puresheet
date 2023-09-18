@@ -3,6 +3,7 @@ module App.Utils.String where
 import Prelude
 
 import App.Utils.Monoid (whenMonoid)
+import Data.Foldable (intercalate)
 import Data.String as String
 
 newline :: String
@@ -10,6 +11,9 @@ newline = "\n"
 
 tab :: String
 tab = "\t"
+
+str :: forall a. Show a => String -> Array a -> String
+str sep xs = intercalate sep $ show <$> xs
 
 wrap :: String -> String -> String -> String
 wrap beg end x = whenMonoid (not $ String.null x) $ beg <> x <> end
@@ -25,3 +29,9 @@ wrapQuotes = wrapBoth "'"
 
 wrapBackQuotes :: String -> String
 wrapBackQuotes = wrapBoth "`"
+
+wrapParens :: String -> String
+wrapParens = wrap "(" ")"
+
+showParensCsv :: forall a. Show a => Array a -> String
+showParensCsv = wrapParens <<< str ", "

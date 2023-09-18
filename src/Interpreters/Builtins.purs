@@ -193,6 +193,7 @@ transpose [ ListObj xs ] | Just xss <- traverse extractList xs =
 transpose [ ListObj xs ] | all isElement xs =
   ListObj $ (ListObj <$> Array.transpose [ xs ])
 
+contains :: Partial => Array Object -> Object
 contains [ a, ListObj b ] = BoolObj $ elem a b
 contains [ CharObj a, StringObj b ] = BoolObj $ elem a (String.toCharArray b)
 

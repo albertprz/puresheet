@@ -102,7 +102,6 @@ selectCell move = do
     { activeInput = false
     , multiSelection = NoSelection
     , selectedCell = getCellFromMove move st.columns st.rows st.selectedCell
-    , formulaState = UnknownFormula
     }
   visibleCols <- getVisibleCols
   visibleRows <- getVisibleRows

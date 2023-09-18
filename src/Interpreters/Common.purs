@@ -5,6 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (Cell, CellValue(..), buildCell)
 import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
+import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), emptyError, raiseEmptyError, raiseError)
 import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
 import App.SyntaxTrees.Common (Var(..), VarOp)
 import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope(..))
@@ -28,14 +29,14 @@ type LocalFormulaCtx =
   , scopeLoc :: Loc Scope
   }
 
-type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT Error m a
+type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT EvalError m a
 
 evalFormula
   :: forall m
    . MonadState AppState m
   => Cell
   -> FnBody
-  -> ExceptT Error m (Map Cell CellValue)
+  -> ExceptT EvalError m (Map Cell CellValue)
 evalFormula { column, row } body = do
   { columns, rows } <- get
   obj <- evalExprInApp body
@@ -55,7 +56,7 @@ evalFormula { column, row } body = do
     (partialMaybe objectToCellValues $ obj)
 
 evalExprInApp
-  :: forall m. MonadState AppState m => FnBody -> ExceptT Error m Object
+  :: forall m. MonadState AppState m => FnBody -> ExceptT EvalError m Object
 evalExprInApp expr = do
   appState <- get
   except $ evalState (runExceptT $ evalExpr expr)
@@ -75,8 +76,7 @@ evalExpr (FnApply fnExpr args) = do
   case fnObj of
     FnObj fnInfo -> evalFn fnInfo (Object' <$> argObjs)
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
-    _ -> raiseError
-      ("Type Error: Value '" <> show fnObj <> "' is not a function")
+    _ -> raiseError $ TypeError' $ NotAFunction fnObj
 
 evalExpr (InfixFnApply fnOps args) =
   do
@@ -104,13 +104,13 @@ evalExpr (WhereExpr fnBody bindings) =
 
 evalExpr (CondExpr conds) = do
   st <- get
-  except $ note (error "Match Error: Unreachable pattern match") $
+  except $ note (MatchError' NonExhaustiveMatch) $
     findMap (evalGuardedFnBody st) conds
 
 evalExpr (SwitchExpr matchee cases) = do
   st <- get
   result <- evalExpr matchee
-  except $ note (error "Match Error: Unreachable pattern match") $
+  except $ note (MatchError' NonExhaustiveMatch) $
     findMap (evalCaseBinding st result) cases
 
 evalExpr
@@ -194,7 +194,7 @@ evalFn { body, params, scope } args = do
       ( Object' $ FnObj
           { body, params: takeEnd' unappliedArgsNum params, scope }
       )
-  else raiseError "TypeError: Too many arguments supplied to current function"
+  else raiseError $ TypeError' $ TooManyArguments $ length args
   where
   unappliedArgsNum = length params - length args
   argBindings = Map.fromFoldable
@@ -205,12 +205,7 @@ evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =
   if unappliedArgsNum == 0 then
     except
-      $ note
-          ( error
-              ( "TypeError: The combination of argument types is not allowed: "
-                  <> show args
-              )
-          )
+      $ note (TypeError' $ InvalidArgumentTypes args)
       $ fromMaybe' (\_ -> partialMaybe fn args) (pure <$> defaultResult)
   else if unappliedArgsNum > 0 then
     pure $ BuiltinFnObj
@@ -220,7 +215,7 @@ evalBuiltinFn { fn, arity, defaultParams } args =
           $ Set.map (_ - length args) defaultParams
       }
   else
-    raiseError ("TypeError: Too many arguments supplied to current function")
+    raiseError $ TypeError' $ TooManyArguments $ length args
   where
   unappliedArgsNum = fromEnum arity - length args
   defaultResult =
@@ -375,7 +370,7 @@ lookupFn fnName = do
     argsLookup = lookupArg <$> nodeValues scope scopeLoc
     freeVarsLookup = lookupArg <$> ancestorsValues scope scopeLoc
   except
-    $ note (error $ "Lexical Error: Unknown value: '" <> show fnName <> "'")
+    $ note (LexicalError' $ UnknownValue fnName)
     $ findJust
         (childrenLookup <> argsLookup <> siblingsLookup <> freeVarsLookup)
 
@@ -383,17 +378,8 @@ lookupOperator :: VarOp -> EvalM OpInfo
 lookupOperator opName = do
   { operatorsMap } <- get
   except
-    $ note (error $ "Lexical Error: Unknown operator: '" <> show opName <> "'")
+    $ note (LexicalError' $ UnknownOperator opName)
     $ Map.lookup opName operatorsMap
-
-raiseEmptyError :: forall a. EvalM a
-raiseEmptyError = except <<< Left $ emptyError
-
-raiseError :: forall a. String -> EvalM a
-raiseError x = except <<< Left <<< error $ x
-
-emptyError :: Error
-emptyError = error ""
 
 lookupArray :: forall k v. Ord k => Array k -> Map k v -> Array (k /\ v)
 lookupArray keys dict = keys `zip'` vals

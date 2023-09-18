@@ -9,7 +9,7 @@ import App.Components.Table.Models (Action(..), AppState, EventTransition(..), f
 import App.Utils.Dom (parseKeyCode)
 import Data.Map as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, textarea, th, thead_, tr_)
-import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusOut, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
+import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
@@ -32,7 +32,6 @@ render
         , classes [ formulaBox, formulaStateToClass formulaState ]
         , style "resize: none"
         , value $ fold $ Map.lookup selectedCell tableFormulas
-        , onFocusOut $ FormulaFocusOut
         , onKeyDown \ev -> FormulaKeyPress
             (parseKeyCode $ KeyboardEvent.code ev)
             ev
@@ -137,6 +136,7 @@ renderBodyCell selected selection active cell cellValue =
     , onMouseDown $ HoverCell Start cell
     , onMouseUp $ HoverCell End cell
     , onMouseOver $ HoverCell Over cell
+    , onFocusIn $ FocusInCell cell
     ]
     [ input
         [ type_ InputText

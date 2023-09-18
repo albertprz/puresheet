@@ -9,11 +9,12 @@ import App.Interpreters.Common (evalFormula)
 import App.Parsers.FnDef (fnBody)
 import App.SyntaxTrees.FnDef (FnBody(..), Object(..))
 import App.Utils.Common (spyShow)
-import App.Utils.Dom (KeyCode(..), ctrlKey, getTarget, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Utils.Dom (KeyCode(..), ctrlKey, getTarget, prevent, selectElement, shiftKey, toMouseEvent, withPrevent)
 import Bookhound.Parser (runParser)
 import Control.Monad.Except.Trans (runExceptT)
 import Data.Map as Map
 import Halogen as H
+import Web.DOM.ParentNode (QuerySelector(..))
 import Web.HTML.HTMLElement (focus)
 import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -62,16 +63,6 @@ handleAction (FormulaKeyPress Enter ev)
 handleAction (FormulaKeyPress _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
-handleAction (FormulaFocusOut _) = pure unit
-
--- handleAction (FormulaFocusOut ev) =
---   whenM ((ValidFormula /= _) <$> gets _.formulaState)
-
---     ( liftEffect $ traverse_ (HTMLTextAreaElement.setValue "")
---         $ HTMLTextAreaElement.fromEventTarget
---         =<< getTarget ev
---     )
-
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
   cellMove ev (OtherCell cell)
@@ -82,6 +73,13 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
   actOnCell selectedCell focus $ toMaybe' activeInput "input"
+
+handleAction (FocusInCell _ _) = do
+  {formulaState } <- get
+  when (formulaState == InvalidFormula) do
+    formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$> selectElement (QuerySelector "#formula-box")
+    liftEffect $ traverse_ (HTMLTextAreaElement.setValue "") formulaBox
+  modify_ _ {formulaState = UnknownFormula}
 
 handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn
