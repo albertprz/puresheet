@@ -4,8 +4,9 @@ import TestPrelude
 
 import App.Interpreters.Builtins as Builtins
 import App.Interpreters.Common (LocalFormulaCtx, evalExpr, mkLeaf)
-import App.Interpreters.Errors (EvalError)
+import App.Interpreters.Errors (EvalError(..), LexicalError(..))
 import App.Parsers.FnDef (fnBody)
+import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import App.SyntaxTrees.FnDef (FnBody, Object(..))
 import Bookhound.Parser (ParseError, runParser)
 import Control.Monad.Except (runExceptT)
@@ -14,20 +15,20 @@ import Data.Tree.Zipper (fromTree)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
-spec = describe "Interpreters.Common" $ do
+spec = describe "Interpreters.Common" do
 
-  describe "evalExpr" $ do
+  describe "evalExpr" do
 
-    describe "evaluates recursive functions:" $ do
+    describe "works for recursive functions" do
 
       it "Fibonacci" $
         runFnBody
           """
           fib(10) where {
               | fib(x) = switch (x) {
-                  | 0 -> 0
-                  | 1 -> 1
-                  | _ -> fib (x - 1) + fib (x - 2)
+                  | 0 => 0
+                  | 1 => 1
+                  | _ => fib (x - 1) + fib (x - 2)
               }
           }
           """ `shouldEqual` pure (IntObj 55)
@@ -38,11 +39,72 @@ spec = describe "Interpreters.Common" $ do
           map(square, [1 .. 4]) where {
               | square (x) = x * x
               | map (f, xs) = switch (xs) {
-                  | [] -> []
-                  | xs -> f (head (xs)) +: map(f, tail (xs))
+                  | [] => []
+                  | xs => f (head (xs)) +: map(f, tail (xs))
               }
           }
           """ `shouldEqual` pure (ListObj (IntObj <$> [ 1, 4, 9, 16 ]))
+
+    describe "looks for bindings in lexical scope" do
+
+      it "Successful lookup" $
+        runFnBody
+          """
+          f(5) where {
+              | f(x) = g(x + h(x) * z) where {
+                  | g(x) = 3 + x
+                  | h(y) = 2 * x
+              }
+              | z = 2
+          }
+          """ `shouldEqual` pure (IntObj 28)
+
+      it "Unaccesible nested binding" $
+        runFnBody
+          """
+          g(1) where {
+              | f(x) = g(x) where {
+                  | g(x) = 3
+              }
+          }
+          """ `shouldEqual` evalError (LexicalError' $ UnknownValue $ Var "g")
+
+      it "Unbound value" $
+        runFnBody
+          """
+          y
+          """ `shouldEqual` evalError (LexicalError' $ UnknownValue $ Var "y")
+
+      it "Unbound operator" $
+        runFnBody
+          """
+          1 -+ 2
+          """ `shouldEqual` evalError (LexicalError' $ UnknownOperator $ VarOp "-+")
+
+
+    describe "evaluates pattern and guard matches" do
+
+      it "Succesful pattern" $
+        runFnBody
+          """
+          switch ([1, 2, 3, 4, 5, 6]) {
+              | [x, y, ... , z] => [x, y, z]
+          }
+          """ `shouldEqual` pure (ListObj $ IntObj <$> [1, 2, 6])
+
+      it "Succesful guard" $
+        runFnBody
+          """
+          cond {
+              ? length(xs) == 0 => "empty"
+              ? length(xs) == 1 => "one elem"
+              ? length(xs) == 2 => "two elems"
+              ? true            => "any number of elems"
+          } where {
+              | xs = [1, 2]
+          }
+          """ `shouldEqual` pure (StringObj "two elems")
+
 
 runFnBody :: String -> Either RunError Object
 runFnBody = (lmap EvalError' <<< evalFnBody)

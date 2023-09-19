@@ -7,9 +7,10 @@ import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
 import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), emptyError, raiseEmptyError, raiseError)
 import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
-import App.SyntaxTrees.Common (Var(..), VarOp)
+import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
+import App.Utils.Common (spyShow)
 import Bookhound.FatPrelude (findJust, hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (ExceptT, except, runExceptT)
@@ -81,7 +82,15 @@ evalExpr (FnApply fnExpr args) = do
 evalExpr (InfixFnApply fnOps args) =
   do
     { operatorsMap } <- get
-    (\x -> evalExpr x) =<< nestInfixFns (lookupArray fnOps operatorsMap) args
+    let
+      noteUnknownOperator = except <<< note
+        ( LexicalError' $ UnknownOperator $ fromMaybe (VarOp "")
+            unknownOperator
+        )
+      unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
+    nestedExpr <- noteUnknownOperator
+      ((_ `nestInfixFns` args) =<< lookupArray fnOps operatorsMap)
+    evalExpr nestedExpr
 
 evalExpr (LeftOpSection fnOp body) = do
   { scope } <- get
@@ -229,24 +238,26 @@ evalBuiltinFn { fn, arity, defaultParams } args =
 nestInfixFns
   :: Array (VarOp /\ OpInfo)
   -> Array FnBody
-  -> EvalM FnBody
-nestInfixFns [ (_ /\ { fnName }) ] args = do
+  -> Maybe FnBody
+nestInfixFns [ (_ /\ { fnName }) ] args =
   pure $ FnApply (FnVar' $ Var' fnName) args
 
-nestInfixFns fnOps args = nestInfixFns newFns newArgs
-  where
-  (fnOp /\ { fnName, associativity }) = unsafeFromJust $ maximumBy
+nestInfixFns fnOps args = do
+  (fnOp /\ { fnName, associativity }) <- maximumBy
     (compare `on` (_.precedence <<< snd))
     fnOps
-  indexFn =
-    case associativity of
-      L -> findIndex'
-      R -> findLastIndex'
-  idx = unsafeFromJust $ indexFn ((_ == fnOp) <<< fst) fnOps
-  newFns = fold $ deleteAt' idx fnOps
-  redexArgs = sliceNext' 2 idx args
-  newArgs = fold $ deleteAt' (idx + 1) $ fold
-    $ updateAt' idx (FnApply (FnVar' $ Var' fnName) redexArgs) args
+  let
+    indexFn =
+      case associativity of
+        L -> findIndex'
+        R -> findLastIndex'
+  idx <- indexFn ((_ == fnOp) <<< fst) fnOps
+  let
+    newFns = fold $ deleteAt' idx fnOps
+    redexArgs = sliceNext' 2 idx args
+    newArgs = fold $ deleteAt' (idx + 1) $ fold
+      $ updateAt' idx (FnApply (FnVar' $ Var' fnName) redexArgs) args
+  nestInfixFns newFns newArgs
 
 evalCaseBinding
   :: LocalFormulaCtx
@@ -381,10 +392,10 @@ lookupOperator opName = do
     $ note (LexicalError' $ UnknownOperator opName)
     $ Map.lookup opName operatorsMap
 
-lookupArray :: forall k v. Ord k => Array k -> Map k v -> Array (k /\ v)
-lookupArray keys dict = keys `zip'` vals
+lookupArray :: forall k v. Ord k => Array k -> Map k v -> Maybe (Array (k /\ v))
+lookupArray keys dict = zip' keys <$> vals
   where
-  vals = filterMap (_ `Map.lookup` dict) keys
+  vals = traverse (_ `Map.lookup` dict) keys
 
 nonEmptyCellValue :: CellValue -> Boolean
 nonEmptyCellValue (StringVal "") = false

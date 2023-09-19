@@ -38,7 +38,7 @@ fnBody = whereExpr <|> openForm
     <* isToken "where"
     <*> withinContext fnDef
   condExpr = defer \_ -> CondExpr <$>
-    (isToken "cond" *> (withinContext $ guardedFnBody $ isToken "->"))
+    (isToken "cond" *> withinCurlyBrackets ((|+) (guardedFnBody (isToken "=>"))))
   switchExpr = defer \_ -> SwitchExpr
     <$> (isToken "switch" *> withinParens openForm)
     <*>
@@ -82,7 +82,7 @@ fnBody = whereExpr <|> openForm
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding <$> pattern' <*> maybeGuardedFnBody
-  (isToken "->")
+  (isToken "=>")
 
 maybeGuardedFnBody :: forall a. Parser a -> Parser MaybeGuardedFnBody
 maybeGuardedFnBody sep = Guarded <$> (|+) (guardedFnBody sep)

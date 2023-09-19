@@ -19,7 +19,7 @@ jobs:
           node-version: "12.x"
 
       - name: Cache PureScript dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
           path: |
@@ -27,7 +27,7 @@ jobs:
             output
 
       - name: Cache NPM dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-node-modules
         with:
@@ -44,5 +44,5 @@ jobs:
       - name: Build the project
         run: npm run build-ci
 
-      # - name: Run the tests
-      #   run: npm run test
+      - name: Run the tests
+        run: npm run test
