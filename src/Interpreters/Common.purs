@@ -5,12 +5,11 @@ import FatPrelude
 import App.Components.Table.Cell (Cell, CellValue(..), buildCell)
 import App.Components.Table.Models (AppState)
 import App.Interpreters.Builtins as Builtins
-import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), emptyError, raiseEmptyError, raiseError)
+import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), SerializationError(..), TypeError(..), raiseError, raiseError)
 import App.Interpreters.Object (cellValueToObj, extractBool, extractNList, objectToCellValues)
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..), Scope(..))
 import App.SyntaxTrees.Pattern (Pattern(..))
-import App.Utils.Common (spyShow)
 import Bookhound.FatPrelude (findJust, hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (ExceptT, except, runExceptT)
@@ -53,8 +52,9 @@ evalFormula { column, row } body = do
           ( getElemSat (_ + x) columns column /\
               getElemSat (_ + y) rows row
           )
-  except $ note emptyError $ toCellMap <$> join
-    (partialMaybe objectToCellValues $ obj)
+  except $ note (SerializationError' CellValueSerializationError)
+    $ toCellMap
+    <$> join (partialMaybe objectToCellValues $ obj)
 
 evalExprInApp
   :: forall m. MonadState AppState m => FnBody -> ExceptT EvalError m Object
@@ -113,14 +113,17 @@ evalExpr (WhereExpr fnBody bindings) =
 
 evalExpr (CondExpr conds) = do
   st <- get
-  except $ note (MatchError' NonExhaustiveMatch) $
-    findMap (evalGuardedFnBody st) conds
+  except $
+    findMapEither (MatchError' NonExhaustiveMatch)
+      (evalGuardedFnBody st)
+      conds
 
 evalExpr (SwitchExpr matchee cases) = do
   st <- get
   result <- evalExpr matchee
-  except $ note (MatchError' NonExhaustiveMatch) $
-    findMap (evalCaseBinding st result) cases
+  except $ findMapEither (MatchError' NonExhaustiveMatch)
+    (evalCaseBinding st result)
+    cases
 
 evalExpr
   ( ListRange (Cell' { column: colX, row: rowX })
@@ -263,13 +266,14 @@ evalCaseBinding
   :: LocalFormulaCtx
   -> Object
   -> CaseBinding
-  -> Maybe Object
+  -> Either EvalError Object
 evalCaseBinding ctx matchee (CaseBinding pattern body) =
-  hush $ evalState action ctx
+  evalState action ctx
   where
-  action = runExceptT $ ifM (evalPatternBinding pattern matchee)
-    (evalMaybeGuardedFnBody body)
-    raiseEmptyError
+  action = runExceptT
+    $ ifM (evalPatternBinding pattern matchee)
+        (evalMaybeGuardedFnBody body)
+        (raiseError $ MatchError' NonExhaustiveMatch)
 
 evalMaybeGuardedFnBody
   :: MaybeGuardedFnBody
@@ -283,13 +287,14 @@ evalMaybeGuardedFnBody (Standard body) =
 evalGuardedFnBody
   :: LocalFormulaCtx
   -> GuardedFnBody
-  -> Maybe Object
+  -> Either EvalError Object
 evalGuardedFnBody ctx (GuardedFnBody guard body) =
-  hush $ evalState action ctx
+  evalState action ctx
   where
-  action = runExceptT $ ifM (evalGuard guard)
-    (evalExpr body)
-    raiseEmptyError
+  action = runExceptT
+    $ ifM (evalGuard guard)
+        (evalExpr body)
+        (raiseError $ MatchError' NonExhaustiveMatch)
 
 evalGuard :: Guard -> EvalM Boolean
 evalGuard (Guard guardPatterns) = do

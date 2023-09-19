@@ -8,7 +8,7 @@ module FatPrelude
   , module FunctorUtils
   , module MaybeUtils
   , module CommonUtils
-  , module Foldable
+  , module FoldableUtils
   , module Traversable
   , module Bitraversable
   , module SemiFoldable
@@ -40,6 +40,7 @@ module FatPrelude
   , module Console
   , module PSCISupport
   , module PointFree
+  , module Foldable
   ) where
 
 import Prelude
@@ -47,6 +48,7 @@ import Prelude
 import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.Common (partialMaybe) as CommonUtils
+import App.Utils.Foldable as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
 import App.Utils.Maybe (toMaybe, toMaybe', wrapMaybe) as MaybeUtils
 import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils

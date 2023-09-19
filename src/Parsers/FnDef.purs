@@ -26,19 +26,21 @@ fnDef = defer \_ -> withError "Function definition"
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
   where
-  fnApply = defer \_ -> FnApply <$> fnForm <*> argListOf openForm
+  fnApply = defer \_ -> FnApply <$> token fnForm <*> argListOf openForm
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps varOp
     infixArgForm
   leftOpSection = defer \_ -> uncurry LeftOpSection <$> withinParens
-    ((/\) <$> varOp <*> openForm)
+    ((/\) <$> (isToken "_" *> varOp) <*> openForm)
   rightOpSection = defer \_ -> uncurry RightOpSection <$> withinParens
-    ((/\) <$> openForm <*> varOp)
+    ((/\) <$> openForm <*> (varOp <* isToken "_"))
   opSection = defer \_ -> leftOpSection <|> rightOpSection
   whereExpr = defer \_ -> WhereExpr <$> openForm
     <* isToken "where"
     <*> withinContext fnDef
   condExpr = defer \_ -> CondExpr <$>
-    (isToken "cond" *> withinCurlyBrackets ((|+) (guardedFnBody (isToken "=>"))))
+    ( isToken "cond" *> withinCurlyBrackets
+        ((|+) (guardedFnBody (isToken "=>")))
+    )
   switchExpr = defer \_ -> SwitchExpr
     <$> (isToken "switch" *> withinParens openForm)
     <*>
@@ -95,7 +97,7 @@ guardedFnBody sep = GuardedFnBody <$> guard <* sep <*>
   fnBody
 
 guard :: Parser Guard
-guard = defer \_ -> Otherwise <$ (isToken "?" *> token (isToken "otherwise"))
+guard = defer \_ -> Otherwise <$ (isToken "?" *> isToken "otherwise")
   <|> Guard
   <$>
     (isToken "?" *> someSepBy comma patternGuard)
