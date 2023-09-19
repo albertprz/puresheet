@@ -75,11 +75,12 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   actOnCell selectedCell focus $ toMaybe' activeInput "input"
 
 handleAction (FocusInCell _ _) = do
-  {formulaState } <- get
+  { formulaState } <- get
   when (formulaState == InvalidFormula) do
-    formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$> selectElement (QuerySelector "#formula-box")
+    formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$>
+      selectElement (QuerySelector "#formula-box")
     liftEffect $ traverse_ (HTMLTextAreaElement.setValue "") formulaBox
-  modify_ _ {formulaState = UnknownFormula}
+  modify_ _ { formulaState = UnknownFormula }
 
 handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn

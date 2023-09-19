@@ -24,6 +24,12 @@ data LexicalError
   = UnknownValue Var
   | UnknownOperator VarOp
 
+derive instance Eq EvalError
+
+derive instance Eq TypeError
+derive instance Eq MatchError
+derive instance Eq LexicalError
+
 instance Show EvalError where
   show (TypeError' x) = "Type Error: " <> show x
   show (MatchError' x) = "Match Error: " <> show x
