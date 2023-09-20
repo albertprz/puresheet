@@ -1,4 +1,4 @@
-module App.SyntaxTrees.Common where
+module App.SyntaxTree.Common where
 
 import FatPrelude
 import Prim hiding (Row)

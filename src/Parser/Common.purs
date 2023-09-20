@@ -1,9 +1,9 @@
-module App.Parsers.Common where
+module App.Parser.Common where
 
 import FatPrelude
 
 import App.Components.Table.Cell (CellValue(..), double, int)
-import App.SyntaxTrees.Common (Ctor(..), Module(..), Var(..), VarOp(..))
+import App.SyntaxTree.Common (Ctor(..), Module(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (class IsMatch, inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)

@@ -1,9 +1,9 @@
-module App.SyntaxTrees.Pattern where
+module App.SyntaxTree.Pattern where
 
 import FatPrelude
 
 import App.Components.Table.Cell (CellValue)
-import App.SyntaxTrees.Common (Var)
+import App.SyntaxTree.Common (Var)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 

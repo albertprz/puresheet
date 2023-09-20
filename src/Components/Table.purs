@@ -7,7 +7,7 @@ import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..),
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), AppState, FormulaState(..))
 import App.Components.Table.Renderer (render)
-import App.Interpreters.Builtins (operatorsMap)
+import App.Evaluator.Builtins (operatorsMap)
 import Data.Map as Map
 import Halogen as H
 

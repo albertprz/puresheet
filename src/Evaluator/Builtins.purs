@@ -1,11 +1,11 @@
-module App.Interpreters.Builtins
+module App.Evaluator.Builtins
   ( builtinFnsMap
   , operatorsMap
   ) where
 
-import App.Interpreters.Object (extractList, isElement, nonNullObj)
-import App.SyntaxTrees.Common (Var(..), VarOp(..))
-import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
+import App.Evaluator.Object (extractList, isElement, nonNullObj)
+import App.SyntaxTree.Common (Var(..), VarOp(..))
+import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
 import Bookhound.FatPrelude (elem)
 import Data.Array as Array
 import Data.Array.NonEmpty (toArray)

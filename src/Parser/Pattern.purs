@@ -1,9 +1,9 @@
-module App.Parsers.Pattern where
+module App.Parser.Pattern where
 
 import FatPrelude
 
-import App.Parsers.Common (cellValue, isToken, token, var)
-import App.SyntaxTrees.Pattern (Pattern(..))
+import App.Parser.Common (cellValue, isToken, token, var)
+import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators ((<|>))
 import Bookhound.Parsers.Char (underscore)

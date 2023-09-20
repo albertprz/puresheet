@@ -1,14 +1,14 @@
-module App.Interpreters.Formula where
+module App.Evaluator.Formula where
 
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue, buildCell)
 import App.Components.Table.Models (AppState)
-import App.Interpreters.Common (nonEmptyCellValue)
-import App.Interpreters.Errors (EvalError(..), SerializationError(..))
-import App.Interpreters.Expression (evalExpr)
-import App.Interpreters.Object (objectToCellValues)
-import App.SyntaxTrees.FnDef (FnBody, Object)
+import App.Evaluator.Common (nonEmptyCellValue)
+import App.Evaluator.Errors (EvalError(..), SerializationError(..))
+import App.Evaluator.Expression (evalExpr)
+import App.Evaluator.Object (objectToCellValues)
+import App.SyntaxTree.FnDef (FnBody, Object)
 import Control.Monad.Except (ExceptT, except, runExceptT)
 import Data.Map as Map
 import Data.Tree.Zipper (fromTree)

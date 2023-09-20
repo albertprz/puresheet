@@ -1,9 +1,9 @@
-module App.Interpreters.Errors where
+module App.Evaluator.Errors where
 
 import FatPrelude
 
-import App.SyntaxTrees.Common (Var, VarOp)
-import App.SyntaxTrees.FnDef (Object)
+import App.SyntaxTree.Common (Var, VarOp)
+import App.SyntaxTree.FnDef (Object)
 import Control.Monad.Except (ExceptT, except)
 
 data EvalError

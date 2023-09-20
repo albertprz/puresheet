@@ -1,22 +1,22 @@
-module Interpreters.CommonSpec where
+module Evaluator.ExpressionSpec where
 
 import TestPrelude
 
-import App.Interpreters.Builtins as Builtins
-import App.Interpreters.Common (LocalFormulaCtx)
-import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
-import App.Interpreters.Expression (evalExpr)
-import App.Parsers.FnDef (fnBody)
-import App.SyntaxTrees.Common (Var(..), VarOp(..))
-import App.SyntaxTrees.FnDef (FnBody, Object(..))
-import Bookhound.Parser (ParseError, runParser)
+import App.Evaluator.Builtins as Builtins
+import App.Evaluator.Common (LocalFormulaCtx)
+import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
+import App.Evaluator.Expression (evalExpr)
+import App.Parser.FnDef (fnBody)
+import App.SyntaxTree.Common (Var(..), VarOp(..))
+import App.SyntaxTree.FnDef (FnBody, Object(..))
+import Bookhound.Parsers (ParseError, runParser)
 import Control.Monad.Except (runExceptT)
 import Data.Map as Map
 import Data.Tree.Zipper (fromTree)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
-spec = describe "Interpreters.Expression" do
+spec = describe "Evaluator.Expression" do
 
   describe "evalExpr" do
 

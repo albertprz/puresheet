@@ -1,10 +1,10 @@
-module App.SyntaxTrees.FnDef where
+module App.SyntaxTree.FnDef where
 
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
-import App.SyntaxTrees.Common (Var, VarOp)
-import App.SyntaxTrees.Pattern (Pattern)
+import App.SyntaxTree.Common (Var, VarOp)
+import App.SyntaxTree.Pattern (Pattern)
 import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
 import Data.Generic.Rep (class Generic)

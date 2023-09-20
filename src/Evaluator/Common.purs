@@ -1,11 +1,11 @@
-module App.Interpreters.Common where
+module App.Evaluator.Common where
 
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue(..))
-import App.Interpreters.Errors (EvalError(..), LexicalError(..))
-import App.SyntaxTrees.Common (Var(..), VarOp)
-import App.SyntaxTrees.FnDef (FnBody(..), FnDef(..), FnInfo, FnVar(..), OpInfo, Scope(..))
+import App.Evaluator.Errors (EvalError(..), LexicalError(..))
+import App.SyntaxTree.Common (Var(..), VarOp)
+import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo, FnVar(..), OpInfo, Scope(..))
 import Bookhound.FatPrelude (findJust)
 import Control.Monad.Except (ExceptT, except)
 import Data.List as List

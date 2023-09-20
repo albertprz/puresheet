@@ -1,11 +1,11 @@
-module App.Parsers.FnDef (fnDef, fnBody) where
+module App.Parser.FnDef (fnDef, fnBody) where
 
 import FatPrelude
 
 import App.Components.Table.Cell (Column(..), Row(..), buildCell)
-import App.Parsers.Common (argListOf, cellValue, isToken, token, var, varOp)
-import App.Parsers.Pattern (pattern')
-import App.SyntaxTrees.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
+import App.Parser.Common (argListOf, cellValue, isToken, token, var, varOp)
+import App.Parser.Pattern (pattern')
+import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
 import Bookhound.ParserCombinators (someSepBy, (<|>), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote, upper)

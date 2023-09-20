@@ -1,14 +1,14 @@
-module App.Interpreters.Expression where
+module App.Evaluator.Expression where
 
 import FatPrelude
 
-import App.Interpreters.Builtins as Builtins
-import App.Interpreters.Common (EvalM, LocalFormulaCtx, argId, lookupFn, lookupOperator, registerBindings, registerLocalFn, varFn)
-import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
-import App.Interpreters.Object (cellValueToObj, extractBool, extractNList)
-import App.SyntaxTrees.Common (Var(..), VarOp(..))
-import App.SyntaxTrees.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
-import App.SyntaxTrees.Pattern (Pattern(..))
+import App.Evaluator.Builtins as Builtins
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, argId, lookupFn, lookupOperator, registerBindings, registerLocalFn, varFn)
+import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
+import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
+import App.SyntaxTree.Common (Var(..), VarOp(..))
+import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (except, runExceptT)

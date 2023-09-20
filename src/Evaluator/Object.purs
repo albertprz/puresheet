@@ -1,10 +1,10 @@
-module App.Interpreters.Object where
+module App.Evaluator.Object where
 
 import FatPrelude
 
 import App.Components.Table.Cell (CellValue(..))
-import App.Interpreters.Errors (EvalError(..), MatchError(..))
-import App.SyntaxTrees.FnDef (Object(..))
+import App.Evaluator.Errors (EvalError(..), MatchError(..))
+import App.SyntaxTree.FnDef (Object(..))
 import Matrix (Matrix)
 import Matrix as Matrix
 
