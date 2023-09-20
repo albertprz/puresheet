@@ -4,6 +4,7 @@ import FatPrelude hiding (div)
 import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
+import App.CSS.Ids (cellId, formulaBoxId)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..), formulaStateToClass)
 import App.Utils.Dom (parseKeyCode)
@@ -27,7 +28,7 @@ render
   } =
   div [ class_ mainContainer ]
     [ textarea
-        [ id "formula-box"
+        [ id formulaBoxId
         , tabIndex 0
         , classes [ formulaBox, formulaStateToClass formulaState ]
         , style "resize: none"
@@ -128,7 +129,7 @@ renderBodyCell
   -> HTML i Action
 renderBodyCell selected selection active cell cellValue =
   td
-    [ id $ "cell" <> showCell cell
+    [ id $ cellId <> showCell cell
     , tabIndex 0
     , classes $ bodyCellSelectionClasses selected selection cell
     , onClick $ ClickCell cell

@@ -32,6 +32,9 @@ lighterGrey = hex "#f2f2f2"
 red :: Color
 red = hex "#FF0000"
 
+lighterRed :: Color
+lighterRed = hex "#ffcccc"
+
 green :: Color
 green = hex "#009933"
 
@@ -40,3 +43,9 @@ lightGreen = hex "#4dff4d"
 
 lighterGreen :: Color
 lighterGreen = hex "#ccffcc"
+
+yellow :: Color
+yellow = hex "#b3b300"
+
+lighterYellow :: Color
+lighterYellow = hex "#ffffcc"

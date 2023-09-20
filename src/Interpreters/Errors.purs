@@ -33,7 +33,6 @@ derive instance Eq MatchError
 derive instance Eq LexicalError
 derive instance Eq SerializationError
 
-
 instance Show EvalError where
   show (LexicalError' x) = "Lexical Error: " <> show x
   show (MatchError' x) = "Match Error: " <> show x

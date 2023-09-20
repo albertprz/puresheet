@@ -21,6 +21,9 @@ type AppState =
   , formulaState :: FormulaState
   , tableData :: Map Cell CellValue
   , tableFormulas :: Map Cell String
+  -- , tableFormulas :: Map Cell FormulaId
+  -- , tableDependencies :: Map Cell (NonEmptySet FormulaId)
+  -- , formulasCache :: Map FormulaId Formula
   , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
@@ -48,6 +51,10 @@ data Action
   | HoverCell EventTransition Cell MouseEvent
   | HoverHeader EventTransition Header MouseEvent
   | DragHeader EventTransition Header DragEvent
+
+newtype FormulaId = FormulaId Int
+
+newtype Formula = Formula String
 
 data EventTransition
   = Start

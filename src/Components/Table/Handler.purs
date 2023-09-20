@@ -2,6 +2,7 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
+import App.CSS.Ids (formulaBoxId, inputName)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..), FormulaState(..))
@@ -36,12 +37,11 @@ handleAction (WriteCell cell value) =
 
 handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
-      formulaText <- liftEffect $ fromMaybe "" <$>
+      formulaText <- liftEffect $ fold <$>
         ( traverse HTMLTextAreaElement.value
             $ HTMLTextAreaElement.fromEventTarget
             =<< getTarget ev
         )
-
       let
         eitherBody = runParser fnBody formulaText
         body = fromRight (Object' NullObj) $ spyShow eitherBody
@@ -49,16 +49,14 @@ handleAction (FormulaKeyPress Enter ev)
       eitherResult <- runExceptT (evalFormula selectedCell body)
       let result = fromRight Map.empty $ spyShow eitherResult
       if (not null) result then do
+        actOnCell selectedCell focus Nothing
         modify_ \st -> st
           { tableData = Map.union result st.tableData
           , tableFormulas = Map.insert selectedCell formulaText st.tableFormulas
           , formulaState = ValidFormula
           }
-        actOnCell selectedCell focus Nothing
       else
-        modify_ \st -> st
-          { formulaState = InvalidFormula
-          }
+        modify_ _ { formulaState = InvalidFormula }
 
 handleAction (FormulaKeyPress _ _) =
   modify_ _ { formulaState = UnknownFormula }
@@ -72,15 +70,20 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   selectCell (OtherCell cell)
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  actOnCell selectedCell focus $ toMaybe' activeInput "input"
+  actOnCell selectedCell focus $ toMaybe' activeInput inputName
 
-handleAction (FocusInCell _ _) = do
-  { formulaState } <- get
-  when (formulaState == InvalidFormula) do
+handleAction (FocusInCell cell _) = do
+  { tableFormulas } <- get
+  let
+    formulaState =
+      if Map.member cell tableFormulas then
+        ValidFormula
+      else UnknownFormula
+  when (formulaState /= ValidFormula) do
     formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$>
-      selectElement (QuerySelector "#formula-box")
+      selectElement (QuerySelector $ "#" <> formulaBoxId)
     liftEffect $ traverse_ (HTMLTextAreaElement.setValue "") formulaBox
-  modify_ _ { formulaState = UnknownFormula }
+  modify_ _ { formulaState = formulaState }
 
 handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn
@@ -97,12 +100,12 @@ handleAction (KeyPress x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
 handleAction (KeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
       modify_ _ { activeInput = false }
-      actOnElemById "formula-box" focus
+      actOnElemById formulaBoxId focus
 
 handleAction (KeyPress Enter ev) = withPrevent ev do
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  actOnCell selectedCell focus $ toMaybe' activeInput "input"
+  actOnCell selectedCell focus $ toMaybe' activeInput inputName
 
 handleAction (KeyPress Tab ev) = selectCell move
   where
@@ -112,7 +115,7 @@ handleAction (KeyPress Tab ev) = selectCell move
 
 handleAction (KeyPress Space _) = do
   { selectedCell } <- modify _ { activeInput = true }
-  actOnCell selectedCell focus $ Just "input"
+  actOnCell selectedCell focus $ Just inputName
 
 handleAction (KeyPress Delete _) =
   deleteCells

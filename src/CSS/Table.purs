@@ -2,6 +2,7 @@ module App.CSS.Table where
 
 import CSSPrelude
 
+import App.CSS.Common (lighterRed, lighterYellow, yellow)
 import Tecton.Rule as Rule
 
 css :: CSS
@@ -32,17 +33,17 @@ formulaCss = do
     borderWidth := px 3
     fontSize := px 18
 
+  textarea &. unknownFormula ? Rule.do
+    backgroundColor := lighterYellow
+    borderColor := yellow
+
   textarea &. validFormula ? Rule.do
-    animationName := blinkerGreen
-    animationDelay := sec 0
-    animationDuration := sec 0.75
-    animationIterationCount := 4
+    backgroundColor := lighterGreen
+    borderColor := green
 
   textarea &. invalidFormula ? Rule.do
-    animationName := blinkerRed
-    animationDelay := sec 0
-    animationDuration := sec 0.75
-    animationIterationCount := 4
+    backgroundColor := lighterRed
+    borderColor := red
 
   keyframes blinkerGreen ? do
     pct 70

@@ -3,6 +3,7 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.CSS.Ids (cellId)
 import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
 import App.Components.Table.Models (AppState)
 import App.Utils.Dom (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
@@ -187,7 +188,7 @@ actOnCell
   -> Maybe String
   -> m Unit
 actOnCell cell action subElem =
-  actOnElemById ("cell" <> showCell cell <> foldMap (" " <> _) subElem) action
+  actOnElemById (cellId <> showCell cell <> foldMap (" " <> _) subElem) action
 
 actOnElemById
   :: forall m
