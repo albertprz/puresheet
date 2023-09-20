@@ -8,6 +8,7 @@ module FatPrelude
   , module FunctorUtils
   , module MaybeUtils
   , module CommonUtils
+  , module TreeUtils
   , module FoldableUtils
   , module Traversable
   , module Bitraversable
@@ -45,15 +46,16 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
+import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', lookupArray, maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', zipWith', (!!!), (..)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.Common (partialMaybe) as CommonUtils
-import App.Utils.Foldable as FoldableUtils
+import App.Utils.Foldable (filterByIndexes, findMapEither) as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
 import App.Utils.Maybe (toMaybe, toMaybe', wrapMaybe) as MaybeUtils
 import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as NumberUtils
 import App.Utils.String (newline, showParensCsv, str, tab, wrap, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as StringUtils
+import App.Utils.Tree (ancestorsValues, appendChildren, childrenValues, findValues, goToNode, mkLeaf, nodeValues, siblingsValues) as TreeUtils
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, catchJust, liftEither, liftMaybe, throwError, try, withResource) as MonadError
 import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
 import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, foldM, intercalate, length, notElem, partition, range, scanl, scanr, (..), (:)) as NonEmptyArray

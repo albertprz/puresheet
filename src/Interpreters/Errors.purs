@@ -25,15 +25,14 @@ data TypeError
   | NotAFunction Object
   | InvalidArgumentTypes (Array Object)
 
-
 data SerializationError = CellValueSerializationError
 
 derive instance Eq EvalError
-
 derive instance Eq TypeError
 derive instance Eq MatchError
 derive instance Eq LexicalError
 derive instance Eq SerializationError
+
 
 instance Show EvalError where
   show (LexicalError' x) = "Lexical Error: " <> show x

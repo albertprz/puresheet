@@ -20,10 +20,10 @@ objectToCellValues :: Partial => Object -> Maybe (Matrix CellValue)
 objectToCellValues = Matrix.fromArray <<< cellValues
   where
   cellValues = case _ of
-    ListObj xs
+    ArrayObj xs
       | Just xss <- traverse extractShallowList xs ->
           objectToCellValue <$$> xss
-    ListObj xs
+    ArrayObj xs
       | all isElement xs ->
           [ objectToCellValue <$> xs ]
     x -> [ [ objectToCellValue x ] ]
@@ -42,19 +42,19 @@ extractBool (BoolObj x) = pure x
 extractBool _ = Left $ MatchError' InvalidGuard
 
 extractShallowList :: Object -> Maybe (Array Object)
-extractShallowList (ListObj xs) | all isElement xs = Just xs
+extractShallowList (ArrayObj xs) | all isElement xs = Just xs
 extractShallowList _ = Nothing
 
 isElement :: Object -> Boolean
-isElement (ListObj _) = false
+isElement (ArrayObj _) = false
 isElement _ = true
 
 extractList :: Object -> Maybe (Array Object)
-extractList (ListObj xs) = Just xs
+extractList (ArrayObj xs) = Just xs
 extractList _ = Nothing
 
 extractNList :: Int -> Object -> Maybe (Array Object)
-extractNList n (ListObj xs) | length xs == n = Just xs
+extractNList n (ArrayObj xs) | length xs == n = Just xs
 extractNList _ _ = Nothing
 
 nonNullObj :: Object -> Boolean

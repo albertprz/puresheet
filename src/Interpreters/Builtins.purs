@@ -159,88 +159,88 @@ lcm :: Partial => Array Object -> Object
 lcm [ IntObj a, IntObj b ] = IntObj $ Ring.lcm a b
 
 sum :: Partial => Array Object -> Object
-sum [ ListObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray $ filter nonNullObj
+sum [ ArrayObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray $ filter nonNullObj
   xs
 
 product :: Partial => Array Object -> Object
-product [ ListObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray $ filter
+product [ ArrayObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray $ filter
   nonNullObj
   xs
 
 -- List / String Fns
 append :: Partial => Array Object -> Object
-append [ ListObj a, ListObj b ] = ListObj $ a <> b
+append [ ArrayObj a, ArrayObj b ] = ArrayObj $ a <> b
 append [ StringObj a, StringObj b ] = StringObj $ a <> b
 
 cons :: Partial => Array Object -> Object
-cons [ a, ListObj b ] = ListObj $ Array.cons a b
-cons [ NullObj, ListObj a ] = ListObj $ Array.cons NullObj a
+cons [ a, ArrayObj b ] = ArrayObj $ Array.cons a b
+cons [ NullObj, ArrayObj a ] = ArrayObj $ Array.cons NullObj a
 cons [ CharObj a, StringObj b ] = StringObj $ String.singleton a <> b
 cons [ NullObj, StringObj a ] = StringObj a
 
 snoc :: Partial => Array Object -> Object
-snoc [ ListObj a, b ] = ListObj $ Array.snoc a b
-snoc [ ListObj a, NullObj ] = ListObj $ Array.snoc a NullObj
+snoc [ ArrayObj a, b ] = ArrayObj $ Array.snoc a b
+snoc [ ArrayObj a, NullObj ] = ArrayObj $ Array.snoc a NullObj
 snoc [ StringObj a, CharObj b ] = StringObj $ a <> String.singleton b
 snoc [ StringObj a, NullObj ] = StringObj a
 
 concat :: Partial => Array Object -> Object
-concat [ ListObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
+concat [ ArrayObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
 
 transpose :: Partial => Array Object -> Object
-transpose [ ListObj xs ] | Just xss <- traverse extractList xs =
-  ListObj $ (ListObj <$> Array.transpose xss)
-transpose [ ListObj xs ] | all isElement xs =
-  ListObj $ (ListObj <$> Array.transpose [ xs ])
+transpose [ ArrayObj xs ] | Just xss <- traverse extractList xs =
+  ArrayObj $ (ArrayObj <$> Array.transpose xss)
+transpose [ ArrayObj xs ] | all isElement xs =
+  ArrayObj $ (ArrayObj <$> Array.transpose [ xs ])
 
 contains :: Partial => Array Object -> Object
-contains [ a, ListObj b ] = BoolObj $ elem a b
+contains [ a, ArrayObj b ] = BoolObj $ elem a b
 contains [ CharObj a, StringObj b ] = BoolObj $ elem a (String.toCharArray b)
 
 range :: Partial => Array Object -> Object
-range [ IntObj a, IntObj b ] = ListObj $ IntObj <$> toArray (a .. b)
-range [ CharObj a, CharObj b ] = ListObj $ CharObj <$> toArray (a .. b)
+range [ IntObj a, IntObj b ] = ArrayObj $ IntObj <$> toArray (a .. b)
+range [ CharObj a, CharObj b ] = ArrayObj $ CharObj <$> toArray (a .. b)
 
 head :: Partial => Array Object -> Object
-head [ ListObj a ] = fromMaybe NullObj $ Array.head a
+head [ ArrayObj a ] = fromMaybe NullObj $ Array.head a
 head [ StringObj a ] = fromMaybe NullObj $ CharObj <$>
   (Array.head $ toCharArray a)
 
 tail :: Partial => Array Object -> Object
-tail [ ListObj a ] = fromMaybe NullObj $ ListObj <$> Array.tail a
+tail [ ArrayObj a ] = fromMaybe NullObj $ ArrayObj <$> Array.tail a
 tail [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
   (Array.tail $ toCharArray a)
 
 last :: Partial => Array Object -> Object
-last [ ListObj a ] = fromMaybe NullObj $ Array.last a
+last [ ArrayObj a ] = fromMaybe NullObj $ Array.last a
 last [ StringObj a ] = fromMaybe NullObj $ CharObj <$>
   (Array.last $ toCharArray a)
 
 init :: Partial => Array Object -> Object
-init [ ListObj a ] = fromMaybe NullObj $ ListObj <$> Array.init a
+init [ ArrayObj a ] = fromMaybe NullObj $ ArrayObj <$> Array.init a
 init [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
   (Array.init $ toCharArray a)
 
 length :: Partial => Array Object -> Object
-length [ ListObj a ] = IntObj $ Foldable.length a
+length [ ArrayObj a ] = IntObj $ Foldable.length a
 length [ StringObj a ] = IntObj $ String.length a
 
 take :: Partial => Array Object -> Object
-take [ IntObj n, ListObj xs ] = ListObj $ Array.take n xs
+take [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.take n xs
 take [ IntObj n, StringObj xs ] = StringObj $ String.take n xs
 
 takeLast :: Partial => Array Object -> Object
-takeLast [ IntObj n, ListObj xs ] = ListObj $ Array.takeEnd n xs
+takeLast [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.takeEnd n xs
 takeLast [ IntObj n, StringObj xs ] = StringObj $ String.takeRight n xs
 
 drop :: Partial => Array Object -> Object
-drop [ IntObj n, ListObj xs ] = ListObj $ Array.drop n xs
+drop [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.drop n xs
 drop [ IntObj n, StringObj xs ] = StringObj $ String.drop n xs
 
 dropLast :: Partial => Array Object -> Object
-dropLast [ IntObj n, ListObj xs ] = ListObj $ Array.dropEnd n xs
+dropLast [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.dropEnd n xs
 dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
 
 slice :: Partial => Array Object -> Object
-slice [ IntObj n1, IntObj n2, ListObj xs ] = ListObj $ Array.slice n1 n2 xs
+slice [ IntObj n1, IntObj n2, ArrayObj xs ] = ArrayObj $ Array.slice n1 n2 xs
 slice [ IntObj n1, IntObj n2, StringObj xs ] = StringObj $ String.slice n1 n2 xs

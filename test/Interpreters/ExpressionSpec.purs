@@ -3,8 +3,9 @@ module Interpreters.CommonSpec where
 import TestPrelude
 
 import App.Interpreters.Builtins as Builtins
-import App.Interpreters.Common (LocalFormulaCtx, evalExpr, mkLeaf)
+import App.Interpreters.Common (LocalFormulaCtx)
 import App.Interpreters.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
+import App.Interpreters.Expression (evalExpr)
 import App.Parsers.FnDef (fnBody)
 import App.SyntaxTrees.Common (Var(..), VarOp(..))
 import App.SyntaxTrees.FnDef (FnBody, Object(..))
@@ -15,14 +16,14 @@ import Data.Tree.Zipper (fromTree)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
-spec = describe "Interpreters.Common" do
+spec = describe "Interpreters.Expression" do
 
   describe "evalExpr" do
 
     describe "works for recursive functions" do
 
       it "Fibonacci" $
-        runFnBody
+        runExpr
           """
           fib(10) where {
               | fib(x) = switch (x) {
@@ -35,22 +36,22 @@ spec = describe "Interpreters.Common" do
           (IntObj 55)
 
       it "Map" $
-        runFnBody
+        runExpr
           """
           map(square, [1 .. 4]) where {
               | square (x) = x * x
               | map (f, xs) = switch (xs) {
                   | [] => []
-                  | xs => f (head (xs)) +: map(f, tail (xs))
+                  | xs => map(f, init (xs)) :+ f (last (xs))
               }
           }
           """ `shouldEqual` pure
-          (ListObj (IntObj <$> [ 1, 4, 9, 16 ]))
+          (ArrayObj (IntObj <$> [ 1, 4, 9, 16 ]))
 
     describe "works for partially applied functions" do
 
       it "Curried function" $
-        runFnBody
+        runExpr
           """
           mult2(10) where {
               | mult2 = mult(2)
@@ -59,7 +60,7 @@ spec = describe "Interpreters.Common" do
           (IntObj 20)
 
       it "Operator section" $
-        runFnBody
+        runExpr
           """
           mult2(10) where {
               | mult2 = (_ * 2)
@@ -70,7 +71,7 @@ spec = describe "Interpreters.Common" do
     describe "looks for bindings in lexical scope" do
 
       it "Successful lookup" $
-        runFnBody
+        runExpr
           """
           f(5) where {
               | f(x) = g(x + h(x) * z) where {
@@ -83,7 +84,7 @@ spec = describe "Interpreters.Common" do
           (IntObj 28)
 
       it "Unaccesible nested binding" $
-        runFnBody
+        runExpr
           """
           g(1) where {
               | f(x) = g(x) where {
@@ -94,14 +95,14 @@ spec = describe "Interpreters.Common" do
           (LexicalError' $ UnknownValue $ Var "g")
 
       it "Unbound value" $
-        runFnBody
+        runExpr
           """
           y
           """ `shouldEqual` evalError
           (LexicalError' $ UnknownValue $ Var "y")
 
       it "Unbound operator" $
-        runFnBody
+        runExpr
           """
           1 -+ 2
           """ `shouldEqual` evalError
@@ -110,16 +111,16 @@ spec = describe "Interpreters.Common" do
     describe "evaluates pattern and guard matches" do
 
       it "Succesful pattern match" $
-        runFnBody
+        runExpr
           """
           switch ([1, 2, 3, 4, 5, 6]) {
               | [x, y, ... , z] => [x, y, z]
           }
           """ `shouldEqual` pure
-          (ListObj $ IntObj <$> [ 1, 2, 6 ])
+          (ArrayObj $ IntObj <$> [ 1, 2, 6 ])
 
       it "Succesful guard match" $
-        runFnBody
+        runExpr
           """
           cond {
               ? length(xs) == 0 => "empty"
@@ -133,7 +134,7 @@ spec = describe "Interpreters.Common" do
           (StringObj "two elems")
 
       it "Complex guard match" $
-        runFnBody
+        runExpr
           """
           cond {
               ? [x, y] <- xs, x > y => x
@@ -145,7 +146,7 @@ spec = describe "Interpreters.Common" do
           """ `shouldEqual` pure (IntObj 2)
 
       it "Guarded pattern match" $
-        runFnBody
+        runExpr
           """
           switch (xs) {
               | [x]                 => x
@@ -158,7 +159,7 @@ spec = describe "Interpreters.Common" do
           """ `shouldEqual` pure (IntObj 16)
 
       it "Non exhaustive pattern match" $
-        runFnBody
+        runExpr
           """
           switch ([1]) {
               | [] => []
@@ -166,7 +167,7 @@ spec = describe "Interpreters.Common" do
           (MatchError' NonExhaustiveMatch)
 
       it "Non boolean guard" $
-        runFnBody
+        runExpr
           """
           cond {
               ? 0 => true
@@ -177,38 +178,39 @@ spec = describe "Interpreters.Common" do
     describe "raises type errors on invalid function calls" do
 
       it "Too many arguments" $
-        runFnBody
+        runExpr
           """
           add(1, 2, 3)
           """ `shouldEqual` evalError
           (TypeError' $ TooManyArguments 3)
 
       it "Not a function" $
-        runFnBody
+        runExpr
           """
           f(1) where {
               | f = []
           }
           """ `shouldEqual` evalError
-          (TypeError' $ NotAFunction $ ListObj [])
+          (TypeError' $ NotAFunction $ ArrayObj [])
 
       it "Invalid argument types" $
-        runFnBody
+        runExpr
           """
           "hello" - "world"
           """ `shouldEqual` evalError
-          (TypeError' $ InvalidArgumentTypes
-            (StringObj <$> ["hello", "world"]))
+          ( TypeError' $ InvalidArgumentTypes
+              (StringObj <$> [ "hello", "world" ])
+          )
 
-runFnBody :: String -> Either RunError Object
-runFnBody = (lmap EvalError' <<< evalFnBody)
-  <=< (lmap ParseErrors' <<< parseFnBody)
+runExpr :: String -> Either RunError Object
+runExpr = (lmap EvalError' <<< evalExprInCtx)
+  <=< (lmap ParseErrors' <<< parseExpr)
 
-parseFnBody :: String -> Either (Array ParseError) FnBody
-parseFnBody exprText = runParser fnBody exprText
+parseExpr :: String -> Either (Array ParseError) FnBody
+parseExpr exprText = runParser fnBody exprText
 
-evalFnBody :: FnBody -> Either EvalError Object
-evalFnBody exprBody = do
+evalExprInCtx :: FnBody -> Either EvalError Object
+evalExprInCtx exprBody = do
   evalState (runExceptT (evalExpr exprBody)) formulaCtx
 
 formulaCtx :: LocalFormulaCtx

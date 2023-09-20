@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..), FormulaState(..))
-import App.Interpreters.Common (evalFormula)
+import App.Interpreters.Formula (evalFormula)
 import App.Parsers.FnDef (fnBody)
 import App.SyntaxTrees.FnDef (FnBody(..), Object(..))
 import App.Utils.Common (spyShow)

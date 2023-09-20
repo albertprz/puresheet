@@ -4,7 +4,7 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
-import App.Components.Table.Models (AppState, FormulaState(..))
+import App.Components.Table.Models (AppState)
 import App.Utils.Dom (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
 import Data.Map as Map

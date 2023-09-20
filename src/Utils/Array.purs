@@ -8,9 +8,12 @@ import Data.Array.NonEmpty (findIndex, head, last, length, mapMaybe, toArray, up
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Char (fromCharCode, toCharCode)
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Traversable (traverse)
 import Data.Tuple (Tuple)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 
 head' :: forall a. Array a -> Maybe a
 head' = Array.head
@@ -68,6 +71,11 @@ zip' = Array.zip
 
 zipWith' :: forall a b c. (a -> b -> c) -> Array a -> Array b -> Array c
 zipWith' = Array.zipWith
+
+lookupArray :: forall k v. Ord k => Array k -> Map k v -> Maybe (Array (k /\ v))
+lookupArray keys dict = zip' keys <$> vals
+  where
+  vals = traverse (_ `Map.lookup` dict) keys
 
 getNextElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
 getNextElemSat = getElemSat inc

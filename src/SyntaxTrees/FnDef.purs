@@ -56,7 +56,7 @@ data Object
   | FloatObj Number
   | CharObj Char
   | StringObj String
-  | ListObj (Array Object)
+  | ArrayObj (Array Object)
   | FnObj FnInfo
   | BuiltinFnObj BuiltinFnInfo
   | NullObj
@@ -177,7 +177,7 @@ instance Show Object where
     (FloatObj x) -> show x
     (CharObj x) -> show x
     (StringObj x) -> show x
-    (ListObj x) -> show x
+    (ArrayObj x) -> show x
     (FnObj _) -> "[fn]"
     (BuiltinFnObj _) -> "[builtin fn]"
     (NullObj) -> "null"
@@ -188,7 +188,7 @@ instance Eq Object where
   eq (FloatObj x) (FloatObj y) = x == y
   eq (CharObj x) (CharObj y) = x == y
   eq (StringObj x) (StringObj y) = x == y
-  eq (ListObj x) (ListObj y) = x == y
+  eq (ArrayObj x) (ArrayObj y) = x == y
   eq NullObj NullObj = true
   eq NullObj _ = false
   eq _ NullObj = false
@@ -200,7 +200,7 @@ instance Ord Object where
   compare (FloatObj x) (FloatObj y) = compare x y
   compare (CharObj x) (CharObj y) = compare x y
   compare (StringObj x) (StringObj y) = compare x y
-  compare (ListObj x) (ListObj y) = compare x y
+  compare (ArrayObj x) (ArrayObj y) = compare x y
   compare NullObj NullObj = EQ
   compare x y = unsafeCrashWith
     ("Cannot compare: " <> show x <> " and " <> show y)
