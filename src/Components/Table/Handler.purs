@@ -4,20 +4,13 @@ import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, inputName)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, initialize, pasteCells, selectAllCells, selectCell)
+import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..), FormulaState(..))
-import App.Evaluator.Formula (evalFormula)
-import App.Parser.FnDef (fnBody)
-import App.SyntaxTree.FnDef (FnBody(..), Object(..))
-import App.Utils.Common (spyShow)
-import App.Utils.Dom (KeyCode(..), ctrlKey, getTarget, prevent, selectElement, shiftKey, toMouseEvent, withPrevent)
-import Bookhound.Parser (runParser)
-import Control.Monad.Except.Trans (runExceptT)
+import App.Interpreter.Expression (runFormula)
+import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
 import Data.Map as Map
 import Halogen as H
-import Web.DOM.ParentNode (QuerySelector(..))
 import Web.HTML.HTMLElement (focus)
-import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
@@ -37,22 +30,17 @@ handleAction (WriteCell cell value) =
 
 handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
-      formulaText <- liftEffect $ fold <$>
-        ( traverse HTMLTextAreaElement.value
-            $ HTMLTextAreaElement.fromEventTarget
-            =<< getTarget ev
-        )
+      formulaText <- getFormulaBoxContents ev
+      st <- get
       let
-        eitherBody = runParser fnBody formulaText
-        body = fromRight (Object' NullObj) $ spyShow eitherBody
-      { selectedCell } <- get
-      eitherResult <- runExceptT (evalFormula selectedCell body)
-      let result = fromRight Map.empty $ spyShow eitherResult
+        eitherResult = runFormula st formulaText
+        result = fromRight Map.empty eitherResult
       if (not null) result then do
-        actOnCell selectedCell focus Nothing
-        modify_ \st -> st
+        actOnCell st.selectedCell focus Nothing
+        modify_ _
           { tableData = Map.union result st.tableData
-          , tableFormulas = Map.insert selectedCell formulaText st.tableFormulas
+          , tableFormulas = Map.insert st.selectedCell formulaText
+              st.tableFormulas
           , formulaState = ValidFormula
           }
       else
@@ -79,10 +67,7 @@ handleAction (FocusInCell cell _) = do
       if Map.member cell tableFormulas then
         ValidFormula
       else UnknownFormula
-  when (formulaState /= ValidFormula) do
-    formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$>
-      selectElement (QuerySelector $ "#" <> formulaBoxId)
-    liftEffect $ traverse_ (HTMLTextAreaElement.setValue "") formulaBox
+  when (formulaState /= ValidFormula) emptyFormulaBox
   modify_ _ { formulaState = formulaState }
 
 handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =

@@ -47,17 +47,18 @@ registerLocalFn newScope (FnDef fnName params body) =
 -- 1. Children bindings
 -- 2. Fn args
 -- 3. Siblings bindings
--- 4. Free variables (Closed over values)
+-- 4. Free variables (Closed over bindings + args)
 lookupFn :: Var -> EvalM FnInfo
 lookupFn fnName = do
   { fnsMap, argsMap, scope: scope, scopeLoc } <- get
   let
     lookupVar n = Map.lookup (n /\ fnName) fnsMap
     lookupArg n = Map.lookup (n /\ fnName) argsMap
+    lookupVarOrArg n = Map.lookup (n /\ fnName) (Map.union fnsMap argsMap)
     childrenLookup = lookupVar <$> childrenValues scope scopeLoc
     siblingsLookup = lookupVar <$> siblingsValues scope scopeLoc
     argsLookup = lookupArg <$> nodeValues scope scopeLoc
-    freeVarsLookup = lookupArg <$> ancestorsValues scope scopeLoc
+    freeVarsLookup = lookupVarOrArg <$> ancestorsValues scope scopeLoc
   except
     $ note (LexicalError' $ UnknownValue fnName)
     $ findJust

@@ -22,8 +22,8 @@ type AppState =
   , tableData :: Map Cell CellValue
   , tableFormulas :: Map Cell String
   -- , tableFormulas :: Map Cell FormulaId
-  -- , tableDependencies :: Map Cell (NonEmptySet FormulaId)
   -- , formulasCache :: Map FormulaId Formula
+  -- , tableDependencies :: Map Cell (NonEmptySet FormulaId)
   , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection

@@ -1,24 +1,22 @@
-module Evaluator.ExpressionSpec where
+module Interpreter.ExpressionSpec where
 
 import TestPrelude
 
 import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
-import App.Evaluator.Expression (evalExpr)
-import App.Parser.FnDef (fnBody)
+import App.Interpreter.Expression (RunError(..))
+import App.Interpreter.Expression as Interpreter
 import App.SyntaxTree.Common (Var(..), VarOp(..))
-import App.SyntaxTree.FnDef (FnBody, Object(..))
-import Bookhound.Parsers (ParseError, runParser)
-import Control.Monad.Except (runExceptT)
+import App.SyntaxTree.FnDef (Object(..))
 import Data.Map as Map
 import Data.Tree.Zipper (fromTree)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
-spec = describe "Evaluator.Expression" do
+spec = describe "Interpreter.Expression" do
 
-  describe "evalExpr" do
+  describe "runExpr" do
 
     describe "works for recursive functions" do
 
@@ -203,15 +201,10 @@ spec = describe "Evaluator.Expression" do
           )
 
 runExpr :: String -> Either RunError Object
-runExpr = (lmap EvalError' <<< evalExprInCtx)
-  <=< (lmap ParseErrors' <<< parseExpr)
+runExpr = Interpreter.runExpr formulaCtx
 
-parseExpr :: String -> Either (Array ParseError) FnBody
-parseExpr exprText = runParser fnBody exprText
-
-evalExprInCtx :: FnBody -> Either EvalError Object
-evalExprInCtx exprBody = do
-  evalState (runExceptT (evalExpr exprBody)) formulaCtx
+evalError :: forall a. EvalError -> Either RunError a
+evalError = Left <<< EvalError'
 
 formulaCtx :: LocalFormulaCtx
 formulaCtx =
@@ -223,15 +216,3 @@ formulaCtx =
   , scopeLoc: fromTree $ mkLeaf zero
   }
 
-evalError :: forall t80. EvalError -> Either RunError t80
-evalError = Left <<< EvalError'
-
-data RunError
-  = EvalError' EvalError
-  | ParseErrors' (Array ParseError)
-
-derive instance Eq RunError
-
-instance Show RunError where
-  show (EvalError' x) = show x
-  show (ParseErrors' x) = show x

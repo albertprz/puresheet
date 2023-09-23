@@ -3,10 +3,10 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.Ids (cellId)
+import App.CSS.Ids (cellId, formulaBoxId)
 import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
 import App.Components.Table.Models (AppState)
-import App.Utils.Dom (class IsEvent, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
+import App.Utils.Dom (class IsEvent, getTarget, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import Data.Array as Array
 import Data.Map as Map
 import Promise.Aff as Promise
@@ -16,6 +16,7 @@ import Web.DOM.Element (id, scrollWidth)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.HTML (HTMLElement, window)
 import Web.HTML.HTMLElement (focus)
+import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
 import Web.HTML.Window (navigator)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
@@ -199,3 +200,18 @@ actOnElemById
 actOnElemById id action = do
   element <- selectElement $ QuerySelector ("#" <> id)
   liftEffect $ traverse_ action element
+
+getFormulaBoxContents
+  :: forall m ev. MonadEffect m => IsEvent ev => ev -> m String
+getFormulaBoxContents ev =
+  liftEffect $ fold <$>
+    ( traverse HTMLTextAreaElement.value
+        $ HTMLTextAreaElement.fromEventTarget
+        =<< getTarget ev
+    )
+
+emptyFormulaBox :: forall m. Bind m => MonadEffect m => m Unit
+emptyFormulaBox = do
+  formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$>
+    selectElement (QuerySelector $ "#" <> formulaBoxId)
+  liftEffect $ traverse_ (HTMLTextAreaElement.setValue "") formulaBox
