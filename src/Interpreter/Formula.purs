@@ -3,19 +3,37 @@ module App.Interpreter.Formula where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
+import App.Components.Table.Formula (FormulaId, getDependencies)
 import App.Components.Table.Models (AppState)
 import App.Evaluator.Formula (evalFormula)
-import App.Interpreter.Expression (RunError, run)
+import App.Interpreter.Expression (RunError(..), run)
 import App.SyntaxTree.FnDef (FnBody(..), FnDef(..))
 import Data.Set as Set
+import Data.Set.NonEmpty (toSet)
+import Data.Tree (Forest)
 
-runFormula
-  :: AppState -> String -> Either RunError ((Map Cell CellValue) /\ Set Cell)
+type FormulaResult =
+  { result :: Map Cell CellValue
+  , affectedCells :: NonEmptySet Cell
+  , formulaCells :: Set Cell
+  , cellDeps :: Forest FormulaId
+  }
+
+runFormula :: AppState -> String -> Either RunError FormulaResult
 runFormula appState =
-  run
-    ( \body -> (\x -> (x /\ extractCells body))
-        <$> evalFormula appState body
-    )
+  (lmap DependencyError' <<< depsFn) <=< (run evalFn)
+  where
+  depsFn { result, affectedCells, formulaCells } =
+    { result, affectedCells, formulaCells, cellDeps: _ }
+      <$> getDependencies appState affectedCells formulaCells
+  evalFn body = evalFnHelper body
+    <$> evalFormula appState body
+  evalFnHelper body { result, affectedCells } =
+    { result
+    , affectedCells
+    , formulaCells: Set.difference (extractCells body)
+        (toSet affectedCells)
+    }
 
 extractCells :: FnBody -> Set Cell
 extractCells (FnApply fnExpr args) =

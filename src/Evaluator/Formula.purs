@@ -11,18 +11,26 @@ import App.Evaluator.Object (objectToCellValues)
 import App.SyntaxTree.FnDef (FnBody, Object)
 import Control.Monad.Except (runExceptT)
 import Data.Map as Map
+import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree.Zipper (fromTree)
 import Matrix as Matrix
 
 evalFormula
   :: AppState
   -> FnBody
-  -> Either EvalError (Map Cell CellValue)
+  -> Either EvalError
+       { result :: Map Cell CellValue
+       , affectedCells :: NonEmptySet Cell
+       }
 evalFormula appState body = do
-  result <- evalExprInApp appState body
+  objectResult <- evalExprInApp appState body
   note (SerializationError' CellValueSerializationError)
-    $ toCellMap
-    <$> join (partialMaybe objectToCellValues result)
+    $
+      ( \result -> { result, affectedCells: _ } <$>
+          (NonEmptySet.fromSet $ Map.keys result)
+      )
+    =<< toCellMap
+    <$> join (partialMaybe objectToCellValues objectResult)
   where
   { columns, rows, selectedCell: { column, row } } = appState
   toCellMap cellMatrix =

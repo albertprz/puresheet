@@ -35,14 +35,9 @@ handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
       formulaText <- getFormulaBoxContents ev
       st <- get
-      let
-        eitherResult = runFormula st formulaText
-        (result /\ formulaCells) = fromRight (Map.empty /\ Set.empty)
-          eitherResult
-        maybeAffectedCells = NonEmptySet.fromFoldable $ Map.keys result
-        formulaId = newFormulaId $ Map.keys st.formulaCache
-      case maybeAffectedCells of
-        Just affectedCells -> do
+      case runFormula st formulaText of
+        Right { result, affectedCells, formulaCells, cellDeps } -> do
+          let formulaId = newFormulaId $ Map.keys st.formulaCache
           actOnCell st.selectedCell focus Nothing
           modify_ _
             { tableData = Map.union result st.tableData
@@ -51,11 +46,15 @@ handleAction (FormulaKeyPress Enter ev)
             , tableDependencies = Map.unionWith (<>)
                 (toDependenciesMap formulaId formulaCells)
                 st.tableDependencies
-            , formulaCache = Map.insert formulaId { formulaText, affectedCells }
+            , formulaCache = Map.insert formulaId
+                { formulaText
+                , affectedCells
+                , startingCell: minimum1 affectedCells
+                }
                 st.formulaCache
             , formulaState = ValidFormula
             }
-        Nothing ->
+        Left _ ->
           modify_ _ { formulaState = InvalidFormula }
 
 handleAction (FormulaKeyPress _ _) =

@@ -33,7 +33,7 @@ mkLeaf :: forall a. a -> Tree a
 mkLeaf val =
   mkTree val mempty
 
-appendChildren :: forall a. List (Tree a) -> Loc a -> Loc a
+appendChildren :: forall a. Forest a -> Loc a -> Loc a
 appendChildren Nil tree = tree
 appendChildren (child : rest) loc =
   fromMaybe loc $ up (go rest firstElem)

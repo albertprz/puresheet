@@ -2,6 +2,7 @@ module App.Interpreter.Expression where
 
 import FatPrelude
 
+import App.Components.Table.Formula (DependencyError)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError)
 import App.Evaluator.Formula (evalExprInCtx)
@@ -18,10 +19,12 @@ run evalFn =
 
 data RunError
   = EvalError' EvalError
+  | DependencyError' DependencyError
   | ParseErrors' (Array ParseError)
 
 derive instance Eq RunError
 
 instance Show RunError where
   show (EvalError' x) = show x
+  show (DependencyError' x) = show x
   show (ParseErrors' x) = show x

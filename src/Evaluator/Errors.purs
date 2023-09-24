@@ -56,7 +56,7 @@ instance Show TypeError where
 
 instance Show SerializationError where
   show CellValueSerializationError =
-    "Could not serialize evaluation result to a matrix of cell values"
+    "Could not serialize evaluation result to a non-empty matrix of cell values"
 
 raiseError :: forall m a. Monad m => EvalError -> ExceptT EvalError m a
 raiseError x = except $ Left x
