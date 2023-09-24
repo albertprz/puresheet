@@ -6,9 +6,11 @@ import Prim hiding (Row)
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
 import App.CSS.Ids (cellId, formulaBoxId)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
-import App.Components.Table.Models (Action(..), AppState, EventTransition(..), formulaStateToClass)
+import App.Components.Table.Formula (formulaStateToClass)
+import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Utils.Dom (parseKeyCode)
-import Data.Map as Map
+import App.Utils.Map (lookup2) as Map
+import Data.Map (lookup) as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, textarea, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
@@ -21,6 +23,7 @@ render
   , formulaState
   , tableData
   , tableFormulas
+  , formulaCache
   , columns
   , rows
   , multiSelection
@@ -32,7 +35,8 @@ render
         , tabIndex 0
         , classes [ formulaBox, formulaStateToClass formulaState ]
         , style "resize: none"
-        , value $ fold $ Map.lookup selectedCell tableFormulas
+        , value $ foldMap _.formulaText $ Map.lookup2 selectedCell formulaCache
+            tableFormulas
         , onKeyDown \ev -> FormulaKeyPress
             (parseKeyCode $ KeyboardEvent.code ev)
             ev

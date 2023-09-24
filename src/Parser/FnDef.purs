@@ -7,7 +7,7 @@ import App.Parser.Common (argListOf, cellValue, isToken, token, var, varOp)
 import App.Parser.Pattern (pattern')
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (someSepBy, (<|>), (|+), (|?))
+import Bookhound.ParserCombinators (someSepBy, within, (<|>), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote, upper)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (posInt)
@@ -48,7 +48,7 @@ fnBody = whereExpr <|> openForm
   listRange = defer \_ -> withinSquareBrackets $ ListRange
     <$> (openForm <* isToken "..")
     <*> openForm
-  matrixRange = defer \_ -> withinSquareBrackets $ withinSquareBrackets
+  matrixRange = defer \_ -> withinSquareBrackets $ within (isToken "|")
     $ MatrixRange
     <$> (cell <* isToken "..")
     <*> cell

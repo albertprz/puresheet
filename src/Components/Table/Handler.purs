@@ -4,11 +4,14 @@ import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, inputName)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
+import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenciesMap)
 import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, selectAllCells, selectCell)
-import App.Components.Table.Models (Action(..), AppState, EventTransition(..), FormulaState(..))
-import App.Interpreter.Expression (runFormula)
+import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
+import App.Interpreter.Formula (runFormula)
 import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
 import Data.Map as Map
+import Data.Set as Set
+import Data.Set.NonEmpty as NonEmptySet
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -34,17 +37,26 @@ handleAction (FormulaKeyPress Enter ev)
       st <- get
       let
         eitherResult = runFormula st formulaText
-        result = fromRight Map.empty eitherResult
-      if (not null) result then do
-        actOnCell st.selectedCell focus Nothing
-        modify_ _
-          { tableData = Map.union result st.tableData
-          , tableFormulas = Map.insert st.selectedCell formulaText
-              st.tableFormulas
-          , formulaState = ValidFormula
-          }
-      else
-        modify_ _ { formulaState = InvalidFormula }
+        (result /\ formulaCells) = fromRight (Map.empty /\ Set.empty)
+          eitherResult
+        maybeAffectedCells = NonEmptySet.fromFoldable $ Map.keys result
+        formulaId = newFormulaId $ Map.keys st.formulaCache
+      case maybeAffectedCells of
+        Just affectedCells -> do
+          actOnCell st.selectedCell focus Nothing
+          modify_ _
+            { tableData = Map.union result st.tableData
+            , tableFormulas = Map.union (formulaId <$ result)
+                st.tableFormulas
+            , tableDependencies = Map.unionWith (<>)
+                (toDependenciesMap formulaId formulaCells)
+                st.tableDependencies
+            , formulaCache = Map.insert formulaId { formulaText, affectedCells }
+                st.formulaCache
+            , formulaState = ValidFormula
+            }
+        Nothing ->
+          modify_ _ { formulaState = InvalidFormula }
 
 handleAction (FormulaKeyPress _ _) =
   modify_ _ { formulaState = UnknownFormula }

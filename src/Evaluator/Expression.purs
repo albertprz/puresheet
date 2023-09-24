@@ -71,22 +71,6 @@ evalExpr (SwitchExpr matchee cases) = do
     (evalCaseBinding st result)
     cases
 
-evalExpr
-  ( ListRange (Cell' { column: colX, row: rowX })
-      (Cell' { column: colY, row: rowY })
-  ) | rowX == rowY =
-  evalExpr $ List $ toArray
-    $ (\column -> Cell' { column, row: rowX })
-    <$>
-      (colX .. colY)
-
-evalExpr
-  ( ListRange (Cell' { column: colX, row: rowX })
-      (Cell' { column: colY, row: rowY })
-  ) | colX == colY =
-  evalExpr $ List $ (\row -> Cell' { row, column: colX }) <$>
-    toArray (rowX .. rowY)
-
 evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr

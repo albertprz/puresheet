@@ -3,13 +3,14 @@ module App.Components.Table.Cell where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.Utils.Map (swapKey) as Map
 import Bookhound.Parser (Parser, char, runParser)
 import Bookhound.ParserCombinators (is, (->>-), (<|>), (|?))
 import Bookhound.Parsers.Char (dash, dot, upper)
 import Bookhound.Parsers.Number (negInt, unsignedInt)
 import Bookhound.Utils.UnsafeRead (unsafeRead)
 import Data.Array as Array
-import Data.Map as Map
+import Data.Map (fromFoldable, keys, lookup) as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
 import Data.String.Pattern (Pattern(..))
@@ -301,7 +302,7 @@ maxRowBounds = firstRow .. maxRow
 
 swapTableMapColumn :: forall v. Column -> Column -> Map Cell v -> Map Cell v
 swapTableMapColumn origin target tableDict =
-  foldl (flip swapMapKey) tableDict keysToSwap
+  foldl (flip Map.swapKey) tableDict keysToSwap
   where
   keysToSwap =
     Set.map (\row -> { column: origin, row } /\ { column: target, row })
@@ -312,7 +313,7 @@ swapTableMapColumn origin target tableDict =
 
 swapTableMapRow :: forall v. Row -> Row -> Map Cell v -> Map Cell v
 swapTableMapRow origin target tableDict =
-  foldl (flip swapMapKey) tableDict keysToSwap
+  foldl (flip Map.swapKey) tableDict keysToSwap
   where
   keysToSwap =
     Set.map (\column -> { column, row: origin } /\ { column, row: target })
@@ -320,14 +321,6 @@ swapTableMapRow origin target tableDict =
       $ Set.filter
           (\cell -> cell.row == origin || cell.row == target)
           (Map.keys tableDict)
-
-swapMapKey :: forall k v. Ord k => Tuple k k -> Map k v -> Map k v
-swapMapKey (k1 /\ k2) dict =
-  Map.alter (const v2) k1 $
-    Map.alter (const v1) k2 dict
-  where
-  v1 = Map.lookup k1 dict
-  v2 = Map.lookup k2 dict
 
 buildCell :: Column -> Row -> Cell
 buildCell column row = { column, row }

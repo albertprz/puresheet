@@ -2,17 +2,12 @@ module App.Interpreter.Expression where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell, CellValue)
-import App.Components.Table.Models (AppState)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError)
-import App.Evaluator.Formula (evalExprInCtx, evalFormula)
+import App.Evaluator.Formula (evalExprInCtx)
 import App.Parser.FnDef (fnBody)
 import App.SyntaxTree.FnDef (FnBody, Object)
 import Bookhound.Parser (ParseError, runParser)
-
-runFormula :: AppState -> String -> Either RunError (Map Cell CellValue)
-runFormula = run <<< evalFormula
 
 runExpr :: LocalFormulaCtx -> String -> Either RunError Object
 runExpr = run <<< evalExprInCtx

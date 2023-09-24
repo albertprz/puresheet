@@ -18,6 +18,7 @@ module FatPrelude
   , module Map
   , module Enum
   , module Set
+  , module NonEmptySet
   , module Maybe
   , module Either
   , module Bifunctor
@@ -46,7 +47,7 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', lookupArray, maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', zipWith', (!!!), (..)) as ArrayUtils
+import App.Utils.Array (class Range, arr2, deleteAt', distance, drop', dropEnd', findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, init', insertAt', last', lookupArray, maybeToArray, range, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', updateAt', zip', (!!!), (..)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Foldable (filterByIndexes, findMapEither) as FoldableUtils
@@ -73,6 +74,7 @@ import Data.Map (Map) as Map
 import Data.Maybe (Maybe(..), fromJust, fromMaybe, fromMaybe', isJust, isNothing, maybe, maybe', optional) as Maybe
 import Data.Semigroup.Foldable (intercalateMap) as SemiFoldable
 import Data.Set (Set) as Set
+import Data.Set.NonEmpty (NonEmptySet) as NonEmptySet
 import Data.String.CodeUnits (fromCharArray, toCharArray) as CodeUnits
 import Data.String.Common hiding (null) as String
 import Data.Traversable (class Traversable, Accum, mapAccumL, mapAccumR, scanl, scanr, sequence, sequenceDefault, sequence_, traverse, traverseDefault, traverse_) as Traversable

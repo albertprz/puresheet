@@ -4,8 +4,9 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..), SelectionState(..))
+import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.Handler (handleAction)
-import App.Components.Table.Models (Action(..), AppState, FormulaState(..))
+import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
 import App.Evaluator.Builtins (operatorsMap)
 import Data.Map as Map
@@ -32,7 +33,9 @@ initialState = const
       , { column: Column 'C', row: Row 1 } /\ IntVal 3
       , { column: Column 'D', row: Row 1 } /\ IntVal 4
       ]
+  , tableDependencies: Map.empty
   , tableFormulas: Map.empty
+  , formulaCache: Map.empty
   , columns: Column <$> 'A' .. 'Z'
   , rows: Row <$> 1 .. 100
   , multiSelection: NoSelection
