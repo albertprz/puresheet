@@ -4,8 +4,8 @@ import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, inputName)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenciesMap)
-import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, selectAllCells, selectCell)
+import App.Components.Table.Formula (FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
+import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, reCalculateCells, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Interpreter.Formula (runFormula)
 import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
@@ -35,7 +35,7 @@ handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
       formulaText <- getFormulaBoxContents ev
       st <- get
-      case runFormula st formulaText of
+      case runFormula st st.selectedCell formulaText of
         Right { result, affectedCells, formulaCells, cellDeps } -> do
           let formulaId = newFormulaId $ Map.keys st.formulaCache
           actOnCell st.selectedCell focus Nothing
@@ -54,6 +54,7 @@ handleAction (FormulaKeyPress Enter ev)
                 st.formulaCache
             , formulaState = ValidFormula
             }
+          reCalculateCells cellDeps
         Left _ ->
           modify_ _ { formulaState = InvalidFormula }
 
@@ -99,9 +100,11 @@ handleAction (KeyPress Enter ev)
       actOnElemById formulaBoxId focus
 
 handleAction (KeyPress Enter ev) = withPrevent ev do
-  { selectedCell, activeInput } <- modify \st -> st
+  st@{ selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
   actOnCell selectedCell focus $ toMaybe' activeInput inputName
+  traverse_ reCalculateCells $
+    getDependencies st (NonEmptySet.singleton selectedCell) Set.empty
 
 handleAction (KeyPress Tab ev) = selectCell move
   where

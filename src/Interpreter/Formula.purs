@@ -19,15 +19,15 @@ type FormulaResult =
   , cellDeps :: Forest FormulaId
   }
 
-runFormula :: AppState -> String -> Either RunError FormulaResult
-runFormula appState =
+runFormula :: AppState -> Cell -> String -> Either RunError FormulaResult
+runFormula appState cell =
   (lmap DependencyError' <<< depsFn) <=< (run evalFn)
   where
   depsFn { result, affectedCells, formulaCells } =
     { result, affectedCells, formulaCells, cellDeps: _ }
       <$> getDependencies appState affectedCells formulaCells
   evalFn body = evalFnHelper body
-    <$> evalFormula appState body
+    <$> evalFormula appState cell body
   evalFnHelper body { result, affectedCells } =
     { result
     , affectedCells

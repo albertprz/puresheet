@@ -5,10 +5,17 @@ import Prim hiding (Row)
 
 import App.CSS.Ids (cellId, formulaBoxId)
 import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Formula (FormulaId, getDependencies)
 import App.Components.Table.Models (AppState)
+import App.Interpreter.Formula (runFormula)
 import App.Utils.Dom (class IsEvent, getTarget, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
+import App.Utils.Map (updateJust) as Map
+import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Array as Array
-import Data.Map as Map
+import Data.Map (delete, keys, lookup, union) as Map
+import Data.Set as Set
+import Data.Set.NonEmpty as NonEmptySet
+import Data.Tree (Forest)
 import Promise.Aff as Promise
 import Web.Clipboard (Clipboard, clipboard, readText, writeText)
 import Web.DOM (Element)
@@ -73,18 +80,23 @@ copyCells ev = withPrevent ev do
 pasteCells
   :: forall m a. MonadAff m => MonadState AppState m => IsEvent a => a -> m Unit
 pasteCells ev = withPrevent ev do
+  st <- get
   clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
-  modify_ \st -> st
+  let
+    newValues =
+      deserializeSelectionValues st.selectedCell st.columns clipContents
+  modify_ _
     { tableData = Map.union
-        (deserializeSelectionValues st.selectedCell st.columns clipContents)
+        newValues
         st.tableData
     }
+  case NonEmptySet.fromSet (Map.keys newValues) of
+    Just cells ->
+      traverse_ reCalculateCells $ getDependencies st cells Set.empty
+    Nothing ->
+      pure unit
 
-deleteCells
-  :: forall m
-   . MonadEffect m
-  => MonadState AppState m
-  => m Unit
+deleteCells :: forall m. MonadEffect m => MonadState AppState m => m Unit
 deleteCells =
   modify_ \st -> st
     { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells
@@ -165,6 +177,29 @@ initialize = do
   modify_ _
     { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
   actOnCell selectedCell focus Nothing
+
+reCalculateCells
+  :: forall m. MonadState AppState m => Forest FormulaId -> m Unit
+reCalculateCells cellDeps =
+  (_ `traverse_` cellDeps) $ (traverse_ applyFormula)
+
+applyFormula :: forall m. MonadState AppState m => FormulaId -> m Unit
+applyFormula formulaId = do
+  st <- get
+  let
+    { formulaText, startingCell } =
+      unsafeFromJust $ Map.lookup formulaId st.formulaCache
+    eitherResult = runFormula st startingCell formulaText
+  case eitherResult of
+    Right { result, affectedCells } ->
+      modify_ _
+        { tableData = Map.union result st.tableData
+        , formulaCache = Map.updateJust (_ { affectedCells = affectedCells })
+            formulaId
+            st.formulaCache
+        }
+    Left _ ->
+      pure unit
 
 parseElems
   :: forall m a

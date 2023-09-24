@@ -17,12 +17,13 @@ import Matrix as Matrix
 
 evalFormula
   :: AppState
+  -> Cell
   -> FnBody
   -> Either EvalError
        { result :: Map Cell CellValue
        , affectedCells :: NonEmptySet Cell
        }
-evalFormula appState body = do
+evalFormula appState { column, row } body = do
   objectResult <- evalExprInApp appState body
   note (SerializationError' CellValueSerializationError)
     $
@@ -32,7 +33,7 @@ evalFormula appState body = do
     =<< toCellMap
     <$> join (partialMaybe objectToCellValues objectResult)
   where
-  { columns, rows, selectedCell: { column, row } } = appState
+  { columns, rows } = appState
   toCellMap cellMatrix =
     Map.filter nonEmptyCellValue
       $ Map.fromFoldable

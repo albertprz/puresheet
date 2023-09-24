@@ -21,3 +21,6 @@ swapKey (k1 /\ k2) dict =
 
 alterJust :: forall k v. Ord k => (Maybe v -> v) -> k -> Map k v -> Map k v
 alterJust fn = Map.alter (Just <<< fn)
+
+updateJust :: forall k v. Ord k => (v -> v) -> k -> Map k v -> Map k v
+updateJust fn = Map.update (Just <<< fn)
