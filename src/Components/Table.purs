@@ -25,6 +25,8 @@ component =
 initialState :: forall a. a -> AppState
 initialState = const
   { selectedCell: { column: Column 'A', row: Row 1 }
+  , formulaCell: { column: Column 'A', row: Row 1 }
+  , activeFormula: false
   , activeInput: false
   , formulaState: UnknownFormula
   , tableData: Map.fromFoldable

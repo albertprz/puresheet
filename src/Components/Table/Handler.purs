@@ -2,14 +2,15 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.CSS.Ids (formulaBoxId, inputName)
+import App.CSS.Ids (formulaBoxId, inputElement)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenciesMap)
 import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, refreshCells, refreshCellsFromDeps, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Interpreter.Formula (runFormula)
 import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
-import Data.Map as Map
+import App.Utils.Map (lookup2) as Map
+import Data.Map (insert, keys, member, union, unionWith) as Map
 import Data.Set as Set
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
@@ -35,7 +36,7 @@ handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
       formulaText <- getFormulaBoxContents ev
       st <- get
-      case runFormula st st.selectedCell formulaText of
+      case runFormula st st.formulaCell formulaText of
         Right { result, affectedCells, formulaCells, cellDeps } -> do
           let formulaId = newFormulaId $ Map.keys st.formulaCache
           actOnCell st.selectedCell focus Nothing
@@ -61,6 +62,13 @@ handleAction (FormulaKeyPress Enter ev)
 handleAction (FormulaKeyPress _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
+handleAction (FocusInFormula _) = do
+  modify_ \st -> st
+    { activeFormula = true
+    , formulaCell = maybe st.selectedCell _.startingCell $
+        Map.lookup2 st.selectedCell st.formulaCache st.tableFormulas
+    }
+
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
   cellMove ev (OtherCell cell)
@@ -70,7 +78,7 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   selectCell (OtherCell cell)
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  actOnCell selectedCell focus $ toMaybe' activeInput inputName
+  actOnCell selectedCell focus $ toMaybe' activeInput inputElement
 
 handleAction (FocusInCell cell _) = do
   { tableFormulas } <- get
@@ -80,7 +88,10 @@ handleAction (FocusInCell cell _) = do
         ValidFormula
       else UnknownFormula
   when (formulaState /= ValidFormula) emptyFormulaBox
-  modify_ _ { formulaState = formulaState }
+  modify_ _
+    { formulaState = formulaState
+    , activeFormula = false
+    }
 
 handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn
@@ -102,7 +113,7 @@ handleAction (KeyPress Enter ev)
 handleAction (KeyPress Enter ev) = withPrevent ev do
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  actOnCell selectedCell focus $ toMaybe' activeInput inputName
+  actOnCell selectedCell focus $ toMaybe' activeInput inputElement
 
 handleAction (KeyPress Tab ev) = selectCell move
   where
@@ -112,7 +123,7 @@ handleAction (KeyPress Tab ev) = selectCell move
 
 handleAction (KeyPress Space _) = do
   { selectedCell } <- modify _ { activeInput = true }
-  actOnCell selectedCell focus $ Just inputName
+  actOnCell selectedCell focus $ Just inputElement
 
 handleAction (KeyPress Delete _) =
   deleteCells

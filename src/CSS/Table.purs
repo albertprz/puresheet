@@ -8,7 +8,10 @@ import Tecton.Rule as Rule
 css :: CSS
 css = do
   mainContainerCss
+  formulaContainerCss
   formulaCss
+  selectedCellInputCss
+  formulaCellInputCss
   tableCss
   cellCss
 
@@ -19,12 +22,60 @@ mainContainerCss = do
     backgroundColor := white
     display := inlineTable
 
+formulaContainerCss :: CSS
+formulaContainerCss = do
+
+  div &. formulaContainer ? Rule.do
+    display := flex
+    flexDirection := row
+    alignItems := center
+
+selectedCellInputCss :: CSS
+selectedCellInputCss = do
+
+  input &. selectedCellInput ? Rule.do
+
+    position := sticky
+    left := pct 7.5
+    height := vh 1.5
+    width := vw 3
+    margin := px 25
+    padding := px 15
+    borderColor := green
+    borderWidth := px 3
+    fontSize := px 18
+    textAlign := center
+    outlineStyle := solid
+    outlineColor := green
+    outlineWidth := px 3
+    outlineOffset := px (-3)
+
+formulaCellInputCss :: CSS
+formulaCellInputCss = do
+
+  input &. formulaCellInput ? Rule.do
+
+    position := sticky
+    left := pct 85
+    height := vh 1.5
+    width := vw 3
+    margin := px 25
+    padding := px 15
+    borderColor := green
+    borderWidth := px 3
+    fontSize := px 18
+    textAlign := center
+    outlineStyle := solid
+    outlineColor := green
+    outlineWidth := px 3
+    outlineOffset := px (-3)
+
 formulaCss :: CSS
 formulaCss = do
 
   textarea &. formulaBox ? Rule.do
     position := sticky
-    left := pct 25
+    left := pct 23
     width := vw 50
     height := vh 12
     margin := px 25
@@ -44,16 +95,6 @@ formulaCss = do
   textarea &. invalidFormula ? Rule.do
     backgroundColor := lighterRed
     borderColor := red
-
-  keyframes blinkerGreen ? do
-    pct 70
-      ? borderColor
-      := green
-
-  keyframes blinkerRed ? do
-    pct 70
-      ? borderColor
-      := red
 
 tableCss :: CSS
 tableCss = do
@@ -141,9 +182,3 @@ cellCss = do
   th &. rowHeader ? Rule.do
     position := sticky
     left := px 0
-
-blinkerGreen :: KeyframesName
-blinkerGreen = KeyframesName "blinker-green"
-
-blinkerRed :: KeyframesName
-blinkerRed = KeyframesName "blinker-red"

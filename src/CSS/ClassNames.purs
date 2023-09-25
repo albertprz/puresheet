@@ -33,7 +33,7 @@ sheetCell :: ClassName
 sheetCell = ClassName "sheet-cell"
 
 formulaBox :: ClassName
-formulaBox = ClassName "formula-input"
+formulaBox = ClassName "formula-box"
 
 validFormula :: ClassName
 validFormula = ClassName "valid-formula"
@@ -58,3 +58,12 @@ cornerHeader = ClassName "corner-header"
 
 mainContainer :: ClassName
 mainContainer = ClassName "main-container"
+
+formulaContainer :: ClassName
+formulaContainer = ClassName "formula-container"
+
+selectedCellInput :: ClassName
+selectedCellInput = ClassName "selected-cell-input"
+
+formulaCellInput :: ClassName
+formulaCellInput = ClassName "formula-cell-input"

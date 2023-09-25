@@ -11,7 +11,7 @@ module CSSPrelude
 
 import Tecton
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, invalidFormula, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheet, sheetCell, strippedSheet, unknownFormula, validFormula) as ClassNames
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaContainer, inSelection, invalidFormula, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheet, sheetCell, strippedSheet, unknownFormula, validFormula) as ClassNames
 import App.CSS.Common (black, darkGrey, green, grey, grey2, hex, lightGreen, lightGrey, lighterGreen, lighterGrey, red, white) as Common
 import Data.Tuple (Tuple) as Tuple
 import Data.Tuple.Nested ((/\)) as Tuple.Nested

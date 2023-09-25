@@ -3,8 +3,8 @@ module App.Components.Table.Renderer where
 import FatPrelude hiding (div)
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, inSelection, mainContainer, rowHeader, selectedHeader, selectedSheetCell, sheetCell)
-import App.CSS.Ids (cellId, formulaBoxId)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
+import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, selectedCellInputId)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
@@ -19,6 +19,8 @@ import Web.UIEvent.KeyboardEvent as KeyboardEvent
 render :: forall cs m. AppState -> ComponentHTML Action cs m
 render
   { selectedCell
+  , formulaCell
+  , activeFormula
   , activeInput
   , formulaState
   , tableData
@@ -30,16 +32,33 @@ render
   , selectionState
   } =
   div [ class_ mainContainer ]
-    [ textarea
-        [ id formulaBoxId
-        , tabIndex 0
-        , classes [ formulaBox, formulaStateToClass formulaState ]
-        , style "resize: none"
-        , value $ foldMap _.formulaText $ Map.lookup2 selectedCell formulaCache
-            tableFormulas
-        , onKeyDown \ev -> FormulaKeyPress
-            (parseKeyCode $ KeyboardEvent.code ev)
-            ev
+    [ div [ class_ formulaContainer ]
+        [ input
+            [ id selectedCellInputId
+            , tabIndex 0
+            , classes [ selectedCellInput ]
+            , value $ showCell selectedCell
+            ]
+        , textarea
+            [ id formulaBoxId
+            , tabIndex 0
+            , classes [ formulaBox, formulaStateToClass formulaState ]
+            , style "resize: none"
+            , value $ foldMap _.formulaText $ Map.lookup2 selectedCell
+                formulaCache
+                tableFormulas
+            , onKeyDown \ev -> FormulaKeyPress
+                (parseKeyCode $ KeyboardEvent.code ev)
+                ev
+            , onFocusIn FocusInFormula
+            ]
+        , input
+            [ id formulaCellInputId
+            , tabIndex 0
+            , classes [ formulaCellInput ]
+            , type_ $ if activeFormula then InputText else InputHidden
+            , value $ showCell formulaCell
+            ]
         ]
     , table
         [ classes $ whenMonoid (selectionState == CopySelection)

@@ -16,6 +16,8 @@ import Web.UIEvent.WheelEvent (WheelEvent)
 
 type AppState =
   { selectedCell :: Cell
+  , formulaCell :: Cell
+  , activeFormula :: Boolean
   , activeInput :: Boolean
   , formulaState :: FormulaState
   , tableData :: Map Cell CellValue
@@ -45,6 +47,7 @@ data Action
   | KeyPress KeyCode KeyboardEvent
   | KeyRelease KeyCode KeyboardEvent
   | FormulaKeyPress KeyCode KeyboardEvent
+  | FocusInFormula FocusEvent
   | WheelScroll WheelEvent
   | HoverCell EventTransition Cell MouseEvent
   | HoverHeader EventTransition Header MouseEvent

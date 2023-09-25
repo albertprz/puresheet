@@ -6,5 +6,11 @@ formulaBoxId = "formula-box"
 cellId :: String
 cellId = "cell"
 
-inputName :: String
-inputName = "input"
+selectedCellInputId :: String
+selectedCellInputId = "selected-cell-input"
+
+formulaCellInputId :: String
+formulaCellInputId = "formula-cell-input"
+
+inputElement :: String
+inputElement = "input"
