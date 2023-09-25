@@ -31,8 +31,8 @@ runFormula appState cell =
   evalFnHelper body { result, affectedCells } =
     { result
     , affectedCells
-    , formulaCells: Set.difference (extractCells body)
-        (toSet affectedCells)
+    , formulaCells: Set.filter (_ `notElem` toSet affectedCells)
+        (extractCells body)
     }
 
 extractCells :: FnBody -> Set Cell

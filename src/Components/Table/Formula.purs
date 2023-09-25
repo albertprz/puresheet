@@ -30,7 +30,7 @@ getDependencies
 getDependencies ctx affectedCells formulaCells =
   children <$> dependenciesTreeHelper newCtx (fromTree $ mkLeaf formulaId)
   where
-  formulaId = fromMaybe zero $ maximum $ Map.keys ctx.formulaCache
+  formulaId = newFormulaId $ Map.keys ctx.formulaCache
   newCtx = ctx
     { formulaCache = Map.insert formulaId
         { formulaText: mempty
@@ -96,6 +96,7 @@ derive instance Eq FormulaState
 derive instance Eq FormulaId
 derive instance Ord FormulaId
 derive newtype instance Semiring FormulaId
+derive newtype instance Show FormulaId
 
 data DependencyError =
   CycleDependency

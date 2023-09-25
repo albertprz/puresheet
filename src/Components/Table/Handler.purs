@@ -25,11 +25,13 @@ handleAction
 handleAction Initialize =
   initialize
 
-handleAction (WriteCell cell value) =
-  modify_ \st -> st
+handleAction (WriteCell cell value) = do
+  st <- modify \st -> st
     { tableData = Map.insert cell value st.tableData
     , activeInput = false
     }
+  traverse_ reCalculateCells $
+    getDependencies st (NonEmptySet.singleton cell) Set.empty
 
 handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
@@ -100,11 +102,9 @@ handleAction (KeyPress Enter ev)
       actOnElemById formulaBoxId focus
 
 handleAction (KeyPress Enter ev) = withPrevent ev do
-  st@{ selectedCell, activeInput } <- modify \st -> st
+  { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
   actOnCell selectedCell focus $ toMaybe' activeInput inputName
-  traverse_ reCalculateCells $
-    getDependencies st (NonEmptySet.singleton selectedCell) Set.empty
 
 handleAction (KeyPress Tab ev) = selectCell move
   where
