@@ -4,14 +4,13 @@ import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, inputName)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.Formula (FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
-import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, reCalculateCells, selectAllCells, selectCell)
+import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenciesMap)
+import App.Components.Table.HandlerHelpers (actOnCell, actOnElemById, cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, getFormulaBoxContents, initialize, pasteCells, refreshCells, refreshCellsFromDeps, selectAllCells, selectCell)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Interpreter.Formula (runFormula)
 import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
 import Data.Map as Map
 import Data.Set as Set
-import Data.Set.NonEmpty as NonEmptySet
 import Halogen as H
 import Web.HTML.HTMLElement (focus)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -26,12 +25,11 @@ handleAction Initialize =
   initialize
 
 handleAction (WriteCell cell value) = do
-  st <- modify \st -> st
+  modify_ \st -> st
     { tableData = Map.insert cell value st.tableData
     , activeInput = false
     }
-  traverse_ reCalculateCells $
-    getDependencies st (NonEmptySet.singleton cell) Set.empty
+  refreshCells $ Set.singleton cell
 
 handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
@@ -56,7 +54,7 @@ handleAction (FormulaKeyPress Enter ev)
                 st.formulaCache
             , formulaState = ValidFormula
             }
-          reCalculateCells cellDeps
+          refreshCellsFromDeps cellDeps
         Left _ ->
           modify_ _ { formulaState = InvalidFormula }
 

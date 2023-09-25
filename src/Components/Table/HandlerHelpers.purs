@@ -90,20 +90,17 @@ pasteCells ev = withPrevent ev do
         newValues
         st.tableData
     }
-  case NonEmptySet.fromSet (Map.keys newValues) of
-    Just cells ->
-      traverse_ reCalculateCells $ getDependencies st cells Set.empty
-    Nothing ->
-      pure unit
+  refreshCells (Map.keys newValues)
 
 deleteCells :: forall m. MonadEffect m => MonadState AppState m => m Unit
-deleteCells =
-  modify_ \st -> st
-    { tableData = foldl (flip Map.delete) st.tableData $ join $ getTargetCells
-        st.multiSelection
-        st.selectedCell
-        st.columns
-    }
+deleteCells = do
+  st <- get
+  let
+    cellsToDelete =
+      join $ getTargetCells st.multiSelection st.selectedCell st.columns
+  modify_ _
+    { tableData = foldl (flip Map.delete) st.tableData cellsToDelete }
+  refreshCells $ Set.fromFoldable cellsToDelete
 
 getClipboard :: forall m. MonadEffect m => m Clipboard
 getClipboard = liftEffect $ clipboard =<< navigator =<< window
@@ -178,10 +175,18 @@ initialize = do
     { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
   actOnCell selectedCell focus Nothing
 
-reCalculateCells
+refreshCells :: forall m. MonadState AppState m => Set Cell -> m Unit
+refreshCells affectedCells = do
+  st <- get
+  traverse_ refreshCellsFromDeps $ cellDeps st
+  where
+  cellDeps st = join $ hush <<< (\x -> getDependencies st x Set.empty) <$>
+    NonEmptySet.fromSet affectedCells
+
+refreshCellsFromDeps
   :: forall m. MonadState AppState m => Forest FormulaId -> m Unit
-reCalculateCells cellDeps =
-  (_ `traverse_` cellDeps) $ (traverse_ applyFormula)
+refreshCellsFromDeps cellDeps =
+  traverse_ (traverse_ applyFormula) cellDeps
 
 applyFormula :: forall m. MonadState AppState m => FormulaId -> m Unit
 applyFormula formulaId = do
