@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
 import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, selectedCellInputId)
-import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCellValue, showCell)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCell, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Utils.Dom (parseKeyCode)
@@ -38,6 +38,10 @@ render
             , tabIndex 0
             , classes [ selectedCellInput ]
             , value $ showCell selectedCell
+            , onValueChange $ WriteSelectedCellInput <<< parseCell
+            , onKeyDown \ev -> SelectedCellInputKeyPress
+                (parseKeyCode $ KeyboardEvent.code ev)
+                ev
             ]
         , textarea
             [ id formulaBoxId
@@ -58,6 +62,10 @@ render
             , classes [ formulaCellInput ]
             , type_ $ if activeFormula then InputText else InputHidden
             , value $ showCell formulaCell
+            , onValueChange $ WriteFormulaCellInput <<< parseCell
+            , onKeyDown \ev -> FormulaCellInputKeyPress
+                (parseKeyCode $ KeyboardEvent.code ev)
+                ev
             ]
         ]
     , table

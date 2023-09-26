@@ -152,7 +152,7 @@ goToCellHelper cols allColumns origin { column, row } visibleCols
       width <- traverse scrollWidth $ last' visibleCols
       scrollByX (-(coalesce width + 1.0)) =<< window
 
-  | otherwise = actOnCell { column, row } focus Nothing
+  | otherwise = focusCell { column, row }
 
 adjustRows
   :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
@@ -173,7 +173,7 @@ initialize = do
   visibleRows <- parseElems parseRow =<< getVisibleRows
   modify_ _
     { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
-  actOnCell selectedCell focus Nothing
+  focusCell selectedCell
 
 refreshCells :: forall m. MonadState AppState m => Set Cell -> m Unit
 refreshCells affectedCells = do
@@ -221,14 +221,23 @@ getVisibleCols = selectAllVisibleElements $ QuerySelector "th.column-header"
 getVisibleRows :: forall m. MonadEffect m => m (Array Element)
 getVisibleRows = selectAllVisibleElements $ QuerySelector "th.row-header"
 
-actOnCell
+focusCell :: forall m. MonadEffect m => Cell -> m Unit
+focusCell = (_ `focusCellElem` Nothing)
+
+focusCellElem :: forall m. MonadEffect m => Cell -> Maybe String -> m Unit
+focusCellElem cell subElem = actOnCellElem cell focus subElem
+
+focusById :: forall m. MonadEffect m => String -> m Unit
+focusById = (_ `actOnElemById` focus)
+
+actOnCellElem
   :: forall m
    . MonadEffect m
   => Cell
   -> (HTMLElement -> Effect Unit)
   -> Maybe String
   -> m Unit
-actOnCell cell action subElem =
+actOnCellElem cell action subElem =
   actOnElemById (cellId <> showCell cell <> foldMap (" " <> _) subElem) action
 
 actOnElemById

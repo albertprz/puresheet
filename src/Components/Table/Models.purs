@@ -39,6 +39,8 @@ type FormulaCtx =
 
 data Action
   = Initialize
+  | WriteSelectedCellInput (Maybe Cell)
+  | WriteFormulaCellInput (Maybe Cell)
   | WriteCell Cell CellValue
   | ClickHeader Header MouseEvent
   | ClickCell Cell MouseEvent
@@ -47,6 +49,8 @@ data Action
   | KeyPress KeyCode KeyboardEvent
   | KeyRelease KeyCode KeyboardEvent
   | FormulaKeyPress KeyCode KeyboardEvent
+  | SelectedCellInputKeyPress KeyCode KeyboardEvent
+  | FormulaCellInputKeyPress KeyCode KeyboardEvent
   | FocusInFormula FocusEvent
   | WheelScroll WheelEvent
   | HoverCell EventTransition Cell MouseEvent

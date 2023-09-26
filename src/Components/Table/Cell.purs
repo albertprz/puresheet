@@ -15,28 +15,44 @@ import Data.Set as Set
 import Data.String.CodeUnits as String
 import Data.String.Pattern (Pattern(..))
 
-showCell :: Cell -> String
-showCell { column, row } = show column <> show row
-
 parseColumn :: String -> Maybe Column
-parseColumn input = hush $ runParser (Column <$> upper) input
+parseColumn = hush <<< runParser columnParser
 
 parseRow :: String -> Maybe Row
-parseRow input = hush $ runParser (Row <$> unsignedInt) input
+parseRow = hush <<< runParser rowParser
+
+parseCell :: String -> Maybe Cell
+parseCell = hush <<< runParser cellParser
 
 parseCellValue :: String -> CellValue
 parseCellValue input = fromRight (StringVal input) $
-  runParser cellValueP input
-  where
-  cellValueP =
-    FloatVal
-      <$> double
-      <|> IntVal
-      <$> int
-      <|> BoolVal
-      <$> (true <$ is "true" <|> false <$ is "false")
-      <|> CharVal
-      <$> char
+  runParser cellValueParser input
+
+rowParser :: Parser Row
+rowParser = Row <$> unsignedInt
+
+columnParser :: Parser Column
+columnParser = Column <$> upper
+
+cellParser :: Parser Cell
+cellParser = do
+  column <- columnParser
+  row <- rowParser
+  pure { column, row }
+
+cellValueParser :: Parser CellValue
+cellValueParser =
+  FloatVal
+    <$> double
+    <|> IntVal
+    <$> int
+    <|> BoolVal
+    <$> (true <$ is "true" <|> false <$ is "false")
+    <|> CharVal
+    <$> char
+
+showCell :: Cell -> String
+showCell { column, row } = show column <> show row
 
 getCell
   :: (Int -> Int)
