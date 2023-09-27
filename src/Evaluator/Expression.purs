@@ -71,8 +71,6 @@ evalExpr (SwitchExpr matchee cases) = do
     (evalCaseBinding st result)
     cases
 
-evalExpr (ArrayRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
-
 evalExpr
   ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
@@ -84,6 +82,21 @@ evalExpr
     pure $ do
       column <- toArray $ colX .. colY
       pure $ Cell' { column, row }
+
+evalExpr
+  ( CellArrayRange x@{ column: colX, row: rowX }
+      y@{ column: colY, row: rowY }
+  )
+  | rowX == rowY =
+      evalExpr $ Array' $ Cell' <<< { column: _, row: rowX }
+        <$> toArray (colX .. colY)
+  | colX == colY =
+      evalExpr $ Array' $ Cell' <<< { column: colX, row: _ }
+        <$> toArray (rowX .. rowY)
+  | otherwise =
+      raiseError $ TypeError' $ InvalidCellArrayRange x y
+
+evalExpr (ArrayRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr (Array' array) =
   evalExpr

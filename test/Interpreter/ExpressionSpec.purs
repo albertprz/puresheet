@@ -2,6 +2,7 @@ module Interpreter.ExpressionSpec where
 
 import TestPrelude
 
+import App.Components.Table.Cell (Column(..), Row(..))
 import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
@@ -65,6 +66,14 @@ spec = describe "Interpreter.Expression" do
           }
           """ `shouldEqual` pure
           (IntObj 20)
+
+    describe "applies precedence for infix operators" do
+      it "Infix arithmetic expression" do
+        runExpr
+          """
+          3 / 4 - 6 + 8 * 9
+          """ `shouldEqual` pure
+          (FloatObj 66.75)
 
     describe "looks for bindings in lexical scope" do
 
@@ -198,6 +207,15 @@ spec = describe "Interpreter.Expression" do
           """ `shouldEqual` evalError
           ( TypeError' $ InvalidArgumentTypes
               (StringObj <$> [ "hello", "world" ])
+          )
+      it "Invalid cell array range" $
+        runExpr
+          """
+          [| A1 .. B2 |]
+          """ `shouldEqual` evalError
+          ( TypeError' $ InvalidCellArrayRange
+              {column: Column 'A', row: Row 1}
+              {column: Column 'B', row: Row 2}
           )
 
 runExpr :: String -> Either RunError Object

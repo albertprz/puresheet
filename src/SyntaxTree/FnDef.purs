@@ -21,8 +21,9 @@ data FnBody
   | WhereExpr FnBody (Array FnDef)
   | CondExpr (Array GuardedFnBody)
   | SwitchExpr FnBody (Array CaseBinding)
-  | ArrayRange FnBody FnBody
   | CellMatrixRange Cell Cell
+  | CellArrayRange Cell Cell
+  | ArrayRange FnBody FnBody
   | Array' (Array FnBody)
   | FnVar' FnVar
   | FnOp VarOp

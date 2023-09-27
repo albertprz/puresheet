@@ -58,16 +58,26 @@ extractCells (CondExpr conds) =
 extractCells (SwitchExpr matchee cases) =
   extractCells matchee <> foldMap extractCellsFromCaseBinding cases
 
-extractCells (ArrayRange x y) =
-  extractCells x <> extractCells y
-
 extractCells
   ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
   ) = Set.fromFoldable do
-  row <- toArray $ rowX .. rowY
-  column <- toArray $ colX .. colY
+  row <- rowX .. rowY
+  column <- colX .. colY
   pure { column, row }
+
+extractCells
+  ( CellArrayRange { column: colX, row: rowX }
+      { column: colY, row: rowY }
+  )
+  | rowX == rowY =
+      Set.fromFoldable $ { column: _, row: rowX } <$> (colX .. colY)
+  | colX == colY =
+      Set.fromFoldable $ { column: colX, row: _ } <$> toArray (rowX .. rowY)
+  | otherwise = mempty
+
+extractCells (ArrayRange x y) =
+  extractCells x <> extractCells y
 
 extractCells (Array' array) =
   foldMap extractCells array

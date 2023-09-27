@@ -2,6 +2,7 @@ module App.Evaluator.Errors where
 
 import FatPrelude
 
+import App.Components.Table.Cell (Cell, showCell)
 import App.SyntaxTree.Common (Var, VarOp)
 import App.SyntaxTree.FnDef (Object)
 import Control.Monad.Except (ExceptT, except)
@@ -24,6 +25,7 @@ data TypeError
   = TooManyArguments Int
   | NotAFunction Object
   | InvalidArgumentTypes (Array Object)
+  | InvalidCellArrayRange Cell Cell
 
 data SerializationError = CellValueSerializationError
 
@@ -53,6 +55,11 @@ instance Show TypeError where
     " is not m function"
   show (InvalidArgumentTypes x) =
     "The combination of argument types is not allowed: " <> showParensCsv x
+  show (InvalidCellArrayRange x y) =
+    "Cell array ranges only work for cells in the same row / column: "
+      <> showCell x
+      <> " "
+      <> showCell y
 
 instance Show SerializationError where
   show CellValueSerializationError =
