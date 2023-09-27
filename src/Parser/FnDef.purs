@@ -45,14 +45,14 @@ fnBody = whereExpr <|> openForm
     <$> (isToken "switch" *> withinParens openForm)
     <*>
       withinContext caseBinding
-  listRange = defer \_ -> withinSquareBrackets $ ListRange
+  arrayRange = defer \_ -> withinSquareBrackets $ ArrayRange
     <$> (openForm <* isToken "..")
     <*> openForm
   matrixRange = defer \_ -> withinSquareBrackets $ within (isToken "|")
-    $ MatrixRange
+    $ CellMatrixRange
     <$> (cell <* isToken "..")
     <*> cell
-  list = defer \_ -> List <$> (token (listOf openForm))
+  array = defer \_ -> Array' <$> (token (listOf openForm))
   fnOp = defer \_ -> FnOp <$> (token quote *> varOp)
   fnVar = defer \_ ->
     FnVar' <<< Var' <$> var
@@ -66,9 +66,9 @@ fnBody = whereExpr <|> openForm
     <|> withinParens (complexForm <|> singleForm)
   fnForm = defer \_ -> fnVar <|> fnOp <|> withinParens (fnApply <|> complexForm)
   singleForm = defer \_ -> fnApply
-    <|> list
+    <|> array
     <|> matrixRange
-    <|> listRange
+    <|> arrayRange
     <|> opSection
     <|> CellValue'
     <$> cellValue

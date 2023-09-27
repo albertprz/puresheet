@@ -20,7 +20,7 @@ pattern' = pattern''
   cellValue' = defer \_ -> LitPattern <$> cellValue
   wildcard = defer \_ -> Wildcard <$ token underscore
   spread = defer \_ -> Spread <$ isToken "..."
-  list = defer \_ -> ListPattern <$> listOf pattern'
+  list = defer \_ -> ArrayPattern <$> listOf pattern'
   elem' = defer \_ -> cellValue'
     <|> var'
     <|> alias

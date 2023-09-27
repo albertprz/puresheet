@@ -71,13 +71,13 @@ evalExpr (SwitchExpr matchee cases) = do
     (evalCaseBinding st result)
     cases
 
-evalExpr (ListRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
+evalExpr (ArrayRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr
-  ( MatrixRange { column: colX, row: rowX }
+  ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
   ) =
-  evalExpr $ List (List <$> matrix)
+  evalExpr $ Array' (Array' <$> matrix)
   where
   matrix = do
     row <- toArray $ rowX .. rowY
@@ -85,11 +85,11 @@ evalExpr
       column <- toArray $ colX .. colY
       pure $ Cell' { column, row }
 
-evalExpr (List list) =
+evalExpr (Array' array) =
   evalExpr
     $ foldl (FnApply (varFn "snoc") <.. arr2)
         (Object' $ ArrayObj [])
-        list
+        array
 
 evalExpr (FnVar' (Var' fn))
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
@@ -253,12 +253,12 @@ evalPatternBinding (AliasedPattern var pattern) result = do
   registerLocalFn scope (FnDef var [] $ Object' result) *>
     evalPatternBinding pattern result
 
-evalPatternBinding (ListPattern patterns) result
+evalPatternBinding (ArrayPattern patterns) result
   | Just idx <- findIndex' (_ == Spread) patterns
   , length (filter (_ == Spread) patterns) == 1
   , ArrayObj results <- result =
       evalPatternBinding
-        (ListPattern $ patternsBegin <> patternsEnd)
+        (ArrayPattern $ patternsBegin <> patternsEnd)
         (ArrayObj $ resultsBegin <> resultsEnd)
       where
       { before, after } = splitAt' idx patterns
@@ -266,12 +266,12 @@ evalPatternBinding (ListPattern patterns) result
       resultsBegin = take' (length patternsBegin) results
       resultsEnd = takeEnd' (length patternsEnd) results
 
-evalPatternBinding (ListPattern patterns) result
+evalPatternBinding (ArrayPattern patterns) result
   | Just results <- extractNList (length patterns) result =
       and <$> traverse (\(x /\ y) -> evalPatternBinding x y)
         (patterns `zip'` results)
 
-evalPatternBinding (ListPattern _) _ =
+evalPatternBinding (ArrayPattern _) _ =
   lift $ pure false
 
 evalPatternBinding Wildcard _ =

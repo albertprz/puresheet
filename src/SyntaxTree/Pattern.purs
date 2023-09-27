@@ -13,7 +13,7 @@ data Pattern
     VarPattern Var
   | LitPattern CellValue
   | AliasedPattern Var Pattern
-  | ListPattern (Array Pattern)
+  | ArrayPattern (Array Pattern)
   | Wildcard
   | Spread
 
