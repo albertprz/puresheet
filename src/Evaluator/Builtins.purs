@@ -8,7 +8,6 @@ import App.SyntaxTree.Common (Var(..), VarOp(..))
 import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
 import Bookhound.FatPrelude (elem)
 import Data.Array as Array
-import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
 import Data.Foldable as Foldable
@@ -198,8 +197,8 @@ contains [ a, ArrayObj b ] = BoolObj $ elem a b
 contains [ CharObj a, StringObj b ] = BoolObj $ elem a (String.toCharArray b)
 
 range :: Partial => Array Object -> Object
-range [ IntObj a, IntObj b ] = ArrayObj $ IntObj <$> toArray (a .. b)
-range [ CharObj a, CharObj b ] = ArrayObj $ CharObj <$> toArray (a .. b)
+range [ IntObj a, IntObj b ] = ArrayObj $ IntObj <$> (a .. b)
+range [ CharObj a, CharObj b ] = ArrayObj $ CharObj <$> (a .. b)
 
 head :: Partial => Array Object -> Object
 head [ ArrayObj a ] = fromMaybe NullObj $ Array.head a

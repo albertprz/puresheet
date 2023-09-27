@@ -9,10 +9,11 @@ import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (Var(..), VarOp(..))
 import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
+import App.Utils.Map (lookupArray) as Map
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Monad.Except (except, runExceptT)
-import Data.Map as Map
+import Data.Map (fromFoldable, lookup, member, union) as Map
 import Data.Set as Set
 
 evalExpr :: FnBody -> EvalM Object
@@ -35,7 +36,7 @@ evalExpr (InfixFnApply fnOps args) =
         )
       unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
     nestedExpr <- noteUnknownOperator
-      ((_ `nestInfixFns` args) =<< lookupArray fnOps operatorsMap)
+      ((_ `nestInfixFns` args) =<< Map.lookupArray fnOps operatorsMap)
     evalExpr nestedExpr
 
 evalExpr (LeftOpSection fnOp body) = do
@@ -78,9 +79,9 @@ evalExpr
   evalExpr $ Array' (Array' <$> matrix)
   where
   matrix = do
-    row <- toArray $ rowX .. rowY
+    row <- rowX .. rowY
     pure $ do
-      column <- toArray $ colX .. colY
+      column <- colX .. colY
       pure $ Cell' { column, row }
 
 evalExpr
@@ -89,10 +90,10 @@ evalExpr
   )
   | rowX == rowY =
       evalExpr $ Array' $ Cell' <<< { column: _, row: rowX }
-        <$> toArray (colX .. colY)
+        <$> (colX .. colY)
   | colX == colY =
       evalExpr $ Array' $ Cell' <<< { column: colX, row: _ }
-        <$> toArray (rowX .. rowY)
+        <$> (rowX .. rowY)
   | otherwise =
       raiseError $ TypeError' $ InvalidCellArrayRange x y
 

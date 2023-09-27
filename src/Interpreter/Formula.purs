@@ -8,7 +8,8 @@ import App.Components.Table.Models (AppState)
 import App.Evaluator.Formula (evalFormula)
 import App.Interpreter.Expression (RunError(..), run)
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
-import Data.Set as Set
+import App.Utils.Set (fromUnfoldable) as Set
+import Data.Set (filter, singleton) as Set
 import Data.Set.NonEmpty (toSet)
 import Data.Tree (Forest)
 
@@ -61,7 +62,7 @@ extractCells (SwitchExpr matchee cases) =
 extractCells
   ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
-  ) = Set.fromFoldable do
+  ) = Set.fromUnfoldable do
   row <- rowX .. rowY
   column <- colX .. colY
   pure { column, row }
@@ -71,9 +72,9 @@ extractCells
       { column: colY, row: rowY }
   )
   | rowX == rowY =
-      Set.fromFoldable $ { column: _, row: rowX } <$> (colX .. colY)
+      Set.fromUnfoldable $ { column: _, row: rowX } <$> (colX .. colY)
   | colX == colY =
-      Set.fromFoldable $ { column: colX, row: _ } <$> toArray (rowX .. rowY)
+      Set.fromUnfoldable $ { column: colX, row: _ } <$> (rowX .. rowY)
   | otherwise = mempty
 
 extractCells (ArrayRange x y) =

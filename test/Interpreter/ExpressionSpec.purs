@@ -214,8 +214,8 @@ spec = describe "Interpreter.Expression" do
           [| A1 .. B2 |]
           """ `shouldEqual` evalError
           ( TypeError' $ InvalidCellArrayRange
-              {column: Column 'A', row: Row 1}
-              {column: Column 'B', row: Row 2}
+              { column: Column 'A', row: Row 1 }
+              { column: Column 'B', row: Row 2 }
           )
 
 runExpr :: String -> Either RunError Object

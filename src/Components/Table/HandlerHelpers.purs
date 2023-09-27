@@ -158,8 +158,8 @@ adjustRows
   :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
-  | currentRow + 1 > maxRow = modify_ _
-      { rows = Row <$> (currentRow - rowRange + 1) .. (currentRow + 1) }
+  | inc currentRow > maxRow = modify_ _
+      { rows = Row <$> (currentRow - inc rowRange) .. (inc currentRow) }
 
   | currentRow < minRow = modify_ _
       { rows = Row <$> currentRow .. (currentRow + rowRange) }

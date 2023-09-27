@@ -2,10 +2,17 @@ module App.Utils.Map where
 
 import Prelude
 
+import App.Utils.Array (zip')
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
+
+lookupArray :: forall k v. Ord k => Array k -> Map k v -> Maybe (Array (k /\ v))
+lookupArray keys dict = zip' keys <$> vals
+  where
+  vals = traverse (_ `Map.lookup` dict) keys
 
 lookup2
   :: forall k1 k2 v. Ord k1 => Ord k2 => k1 -> Map k2 v -> Map k1 k2 -> Maybe v

@@ -144,7 +144,7 @@ isColumnInSelection NoSelection _ = false
 isColumnInSelection AllSelection _ = true
 isColumnInSelection (RowsSelection _ _) _ = true
 isColumnInSelection (ColumnsSelection origin target) col =
-  elem col (origin .. target)
+  Array.elem col (origin .. target)
 isColumnInSelection (CellsSelection origin target) col =
   inRange origin.column target.column col
 
@@ -153,7 +153,7 @@ isRowInSelection NoSelection _ = false
 isRowInSelection AllSelection _ = true
 isRowInSelection (ColumnsSelection _ _) _ = true
 isRowInSelection (RowsSelection origin target) row =
-  elem row (origin .. target)
+  Array.elem row (origin .. target)
 isRowInSelection (CellsSelection origin target) row =
   inRange origin.row target.row row
 
@@ -161,9 +161,9 @@ isCellInSelection :: MultiSelection -> Cell -> Boolean
 isCellInSelection NoSelection _ = false
 isCellInSelection AllSelection _ = true
 isCellInSelection (ColumnsSelection origin target) cell =
-  elem cell.column (origin .. target)
+  Array.elem cell.column (origin .. target)
 isCellInSelection (RowsSelection origin target) cell =
-  elem cell.row (origin .. target)
+  Array.elem cell.row (origin .. target)
 isCellInSelection (CellsSelection origin target) { column, row } =
   inRange origin.row target.row row &&
     inRange origin.column target.column column
@@ -236,9 +236,8 @@ deserializeSelectionValues
   :: Cell -> NonEmptyArray Column -> String -> Map Cell CellValue
 deserializeSelectionValues selectedCell columns str = Map.fromFoldable
   do
-    rowValues /\ row <- Array.zip values $ toArray (selectedCell.row .. maxRow)
-    value /\ column <- Array.zip rowValues $ toArray
-      (selectedCell.column .. last columns)
+    rowValues /\ row <- zip' values (selectedCell.row .. maxRow)
+    value /\ column <- zip' rowValues (selectedCell.column .. last columns)
     pure $ { row, column } /\ parseCellValue value
   where
   values = split (Pattern tab) <$> split (Pattern newline) str

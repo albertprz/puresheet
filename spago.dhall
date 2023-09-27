@@ -32,6 +32,7 @@
   , "tree-rose"
   , "tuples"
   , "typelevel-prelude"
+  , "unfoldable"
   , "unsafe-coerce"
   , "web-clipboard"
   , "web-dom"

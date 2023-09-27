@@ -27,7 +27,7 @@ registerBindings :: Array FnDef -> EvalM Unit
 registerBindings bindings = do
   { scope, scopeLoc } <- get
   let (Scope maxScope) = fromMaybe scope $ maximum $ toTree scopeLoc
-  let scopes = Scope <<< (_ + maxScope) <$> toArray (1 .. length bindings)
+  let scopes = Scope <<< (_ + maxScope) <$> (1 .. length bindings)
   traverse_ (\(n /\ x) -> registerLocalFn n x) (scopes `zip'` bindings)
   modify_ \st -> st
     { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
