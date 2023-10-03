@@ -3,7 +3,7 @@ module App.SyntaxTree.FnDef where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
-import App.SyntaxTree.Common (Var, VarOp)
+import App.SyntaxTree.Common (QVar, QVarOp, Var)
 import App.SyntaxTree.Pattern (Pattern)
 import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
@@ -15,9 +15,9 @@ data FnDef = FnDef Var (Array Var) FnBody
 
 data FnBody
   = FnApply FnBody (Array FnBody)
-  | InfixFnApply (Array VarOp) (Array FnBody)
-  | LeftOpSection VarOp FnBody
-  | RightOpSection FnBody VarOp
+  | InfixFnApply (Array QVarOp) (Array FnBody)
+  | LeftOpSection QVarOp FnBody
+  | RightOpSection FnBody QVarOp
   | WhereExpr FnBody (Array FnDef)
   | CondExpr (Array GuardedFnBody)
   | SwitchExpr FnBody (Array CaseBinding)
@@ -25,15 +25,11 @@ data FnBody
   | CellArrayRange Cell Cell
   | ArrayRange FnBody FnBody
   | Array' (Array FnBody)
-  | FnVar' FnVar
-  | FnOp VarOp
+  | FnVar QVar
+  | FnOp QVarOp
   | Cell' Cell
   | CellValue' CellValue
   | Object' Object
-
-data FnVar = Var' Var
-
--- | Ctor' Ctor
 
 data CaseBinding = CaseBinding Pattern MaybeGuardedFnBody
 
@@ -75,7 +71,7 @@ type BuiltinFnInfo =
   }
 
 type OpInfo =
-  { fnName :: Var
+  { fnName :: QVar
   , precedence :: Precedence
   , associativity :: Associativity
   }
@@ -147,9 +143,6 @@ instance Show FnDef where
 derive instance Generic FnBody _
 instance Show FnBody where
   show x = genericShow x
-
-instance Show FnVar where
-  show (Var' var) = show var
 
 derive instance Generic CaseBinding _
 instance Show CaseBinding where

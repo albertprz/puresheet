@@ -8,9 +8,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
 data Pattern
-  =
-    -- CtorPattern Ctor (Array Pattern)
-    VarPattern Var
+  = VarPattern Var
   | LitPattern CellValue
   | AliasedPattern Var Pattern
   | ArrayPattern (Array Pattern)

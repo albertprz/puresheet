@@ -6,13 +6,12 @@ import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (EvalM, LocalFormulaCtx, argId, lookupFn, lookupOperator, registerBindings, registerLocalFn, varFn)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
-import App.SyntaxTree.Common (Var(..), VarOp(..))
-import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, FnVar(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTree.Common (QVarOp(..), Var(..), VarOp(..))
+import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import App.Utils.Map (lookupArray) as Map
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Control.Monad.Except (except, runExceptT)
 import Data.Map (fromFoldable, lookup, member, union) as Map
 import Data.Set as Set
 
@@ -31,7 +30,8 @@ evalExpr (InfixFnApply fnOps args) =
     { operatorsMap } <- get
     let
       noteUnknownOperator = except <<< note
-        ( LexicalError' $ UnknownOperator $ fromMaybe (VarOp "")
+        ( LexicalError' $ UnknownOperator $ fromMaybe
+            (QVarOp Nothing $ VarOp "")
             unknownOperator
         )
       unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
@@ -105,7 +105,7 @@ evalExpr (Array' array) =
         (Object' $ ArrayObj [])
         array
 
-evalExpr (FnVar' (Var' fn))
+evalExpr (FnVar fn)
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
       pure $ BuiltinFnObj fnInfo
   | otherwise =
@@ -113,7 +113,7 @@ evalExpr (FnVar' (Var' fn))
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupOperator fnOp
-  evalExpr (FnVar' $ Var' fnName)
+  evalExpr (FnVar fnName)
 
 evalExpr (Cell' cell) =
   do
@@ -155,7 +155,7 @@ evalFn { body, params, scope } args = do
   unappliedArgsNum = length params - length args
   argBindings = Map.fromFoldable
     $ rmap (\arg -> { body: arg, params: [], scope: scope })
-    <$> zip' ((\x -> (scope /\ x)) <$> params) args
+    <$> zip' ((scope /\ _) <$> params) args
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =
@@ -183,11 +183,11 @@ evalBuiltinFn { fn, arity, defaultParams } args =
       Nothing
 
 nestInfixFns
-  :: Array (VarOp /\ OpInfo)
+  :: Array (QVarOp /\ OpInfo)
   -> Array FnBody
   -> Maybe FnBody
 nestInfixFns [ (_ /\ { fnName }) ] args =
-  pure $ FnApply (FnVar' $ Var' fnName) args
+  pure $ FnApply (FnVar fnName) args
 
 nestInfixFns fnOps args = do
   (fnOp /\ { fnName, associativity }) <- maximumBy
@@ -203,7 +203,7 @@ nestInfixFns fnOps args = do
     newFns = fold $ deleteAt' idx fnOps
     redexArgs = sliceNext' 2 idx args
     newArgs = fold $ deleteAt' (idx + 1) $ fold
-      $ updateAt' idx (FnApply (FnVar' $ Var' fnName) redexArgs) args
+      $ updateAt' idx (FnApply (FnVar fnName) redexArgs) args
   nestInfixFns newFns newArgs
 
 evalCaseBinding

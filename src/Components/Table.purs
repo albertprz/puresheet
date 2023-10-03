@@ -46,5 +46,7 @@ initialState = const
   , formulaCtx:
       { fnsMap: Map.empty
       , operatorsMap
+      , aliasedModulesMap: Map.empty
+      , importedModulesMap: Map.empty
       }
   }

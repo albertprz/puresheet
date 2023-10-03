@@ -4,25 +4,23 @@ module App.Evaluator.Builtins
   ) where
 
 import App.Evaluator.Object (extractList, isElement, nonNullObj)
-import App.SyntaxTree.Common (Var(..), VarOp(..))
+import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
 import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
-import Bookhound.FatPrelude (elem)
 import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
 import Data.Foldable as Foldable
-import Data.Int (toNumber)
 import Data.Map as Map
-import Data.Semigroup.Foldable (foldl1)
 import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, filter, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, filter, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
-builtinFnsMap :: Map Var BuiltinFnInfo
+builtinFnsMap :: Map QVar BuiltinFnInfo
 builtinFnsMap = unsafePartial $ Map.fromFoldable
-  $ bimap Var
+  $
+    bimap (QVar Nothing <<< Var)
       ( \(fn /\ arity /\ nulls) ->
           { fn, arity, defaultParams: Set.fromFoldable nulls }
       )
@@ -65,11 +63,12 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("slice" /\ (slice /\ A3 /\ []))
     ]
 
-operatorsMap :: Map VarOp OpInfo
+operatorsMap :: Map QVarOp OpInfo
 operatorsMap = Map.fromFoldable
-  $ bimap VarOp
+  $
+    bimap (QVarOp Nothing <<< VarOp)
       ( \(fnName /\ precedence /\ associativity) ->
-          { fnName: Var fnName, precedence, associativity }
+          { fnName: QVar Nothing $ Var fnName, precedence, associativity }
       )
   <$>
     [ ("||" /\ ("or" /\ P2 /\ R))

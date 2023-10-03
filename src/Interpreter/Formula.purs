@@ -85,7 +85,7 @@ extractCells (Array' array) =
 
 extractCells (Cell' cell) = Set.singleton cell
 
-extractCells (FnVar' _) = mempty
+extractCells (FnVar _) = mempty
 
 extractCells (FnOp _) = mempty
 

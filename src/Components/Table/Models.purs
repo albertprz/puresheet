@@ -5,8 +5,8 @@ import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
 import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
-import App.SyntaxTree.Common (Var, VarOp)
-import App.SyntaxTree.FnDef (FnInfo, OpInfo, Scope)
+import App.SyntaxTree.Common (Module, QVar, QVarOp)
+import App.SyntaxTree.FnDef (FnInfo, OpInfo)
 import App.Utils.Dom (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
@@ -33,8 +33,10 @@ type AppState =
   }
 
 type FormulaCtx =
-  { fnsMap :: Map (Scope /\ Var) FnInfo
-  , operatorsMap :: Map VarOp OpInfo
+  { fnsMap :: Map QVar FnInfo
+  , operatorsMap :: Map QVarOp OpInfo
+  , aliasedModulesMap :: Map (Module /\ Module) (Set Module)
+  , importedModulesMap :: Map Module (Set Module)
   }
 
 data Action

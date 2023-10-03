@@ -32,9 +32,11 @@ addLookup :: Map (String, Int) -> String -> String -> Int
 addLookup (env, key1, key2) = 
    cond {
      ? Just (val1) <- lookup (env, key1)
-     , Just (val2) <- lookup (env, key2) = val1 + val2
+     , Just (val2) <- lookup (env, key2)
+       = val1 + val2
      ? otherwise = 0
-} 
+}
+
 
 -- Cell formula
 A1 - B1 * C1

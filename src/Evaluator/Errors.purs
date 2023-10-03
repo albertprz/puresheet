@@ -3,9 +3,8 @@ module App.Evaluator.Errors where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, showCell)
-import App.SyntaxTree.Common (Var, VarOp)
+import App.SyntaxTree.Common (QVar, QVarOp)
 import App.SyntaxTree.FnDef (Object)
-import Control.Monad.Except (ExceptT, except)
 
 data EvalError
   = TypeError' TypeError
@@ -14,8 +13,8 @@ data EvalError
   | SerializationError' SerializationError
 
 data LexicalError
-  = UnknownValue Var
-  | UnknownOperator VarOp
+  = UnknownValue QVar
+  | UnknownOperator QVarOp
 
 data MatchError
   = NonExhaustiveMatch
@@ -40,6 +39,9 @@ instance Show EvalError where
   show (MatchError' x) = "Match Error: " <> show x
   show (TypeError' x) = "Type Error: " <> show x
   show (SerializationError' x) = "Serialization Error: " <> show x
+
+instance Semigroup EvalError where
+  append x _ = x
 
 instance Show LexicalError where
   show (UnknownValue x) = "Unknown value " <> wrapQuotes (show x)

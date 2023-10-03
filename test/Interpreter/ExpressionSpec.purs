@@ -8,7 +8,7 @@ import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
 import App.Interpreter.Expression (RunError(..))
 import App.Interpreter.Expression as Interpreter
-import App.SyntaxTree.Common (Var(..), VarOp(..))
+import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (Object(..))
 import Data.Map as Map
 import Data.Tree.Zipper (fromTree)
@@ -99,21 +99,21 @@ spec = describe "Interpreter.Expression" do
               }
           }
           """ `shouldEqual` evalError
-          (LexicalError' $ UnknownValue $ Var "g")
+          (LexicalError' $ UnknownValue $ mkQVar "g")
 
       it "Unbound value" $
         runExpr
           """
           y
           """ `shouldEqual` evalError
-          (LexicalError' $ UnknownValue $ Var "y")
+          (LexicalError' $ UnknownValue $ mkQVar "y")
 
       it "Unbound operator" $
         runExpr
           """
           1 -+ 2
           """ `shouldEqual` evalError
-          (LexicalError' $ UnknownOperator $ VarOp "-+")
+          (LexicalError' $ UnknownOperator $ mkQVarOp "-+")
 
     describe "evaluates pattern and guard matches" do
 
@@ -218,6 +218,12 @@ spec = describe "Interpreter.Expression" do
               { column: Column 'B', row: Row 2 }
           )
 
+mkQVar :: String -> QVar
+mkQVar = QVar Nothing <<< Var
+
+mkQVarOp :: String -> QVarOp
+mkQVarOp = QVarOp Nothing <<< VarOp
+
 runExpr :: String -> Either RunError Object
 runExpr = Interpreter.runExpr formulaCtx
 
@@ -227,10 +233,11 @@ evalError = Left <<< EvalError'
 formulaCtx :: LocalFormulaCtx
 formulaCtx =
   { tableData: Map.empty
-  , fnsMap: Map.empty
+  , localFnsMap: Map.empty
   , argsMap: Map.empty
   , operatorsMap: Builtins.operatorsMap
   , scope: zero
   , scopeLoc: fromTree $ mkLeaf zero
+  , module': preludeModule
   }
 

@@ -8,8 +8,8 @@ import App.Evaluator.Common (LocalFormulaCtx, nonEmptyCellValue)
 import App.Evaluator.Errors (EvalError(..), SerializationError(..))
 import App.Evaluator.Expression (evalExpr)
 import App.Evaluator.Object (objectToCellValues)
+import App.SyntaxTree.Common (preludeModule)
 import App.SyntaxTree.FnDef (FnBody, Object)
-import Control.Monad.Except (runExceptT)
 import Data.Map as Map
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree.Zipper (fromTree)
@@ -53,7 +53,11 @@ evalExprInApp appState =
     { tableData: appState.tableData
     , fnsMap: appState.formulaCtx.fnsMap
     , operatorsMap: appState.formulaCtx.operatorsMap
+    , aliasedModulesMap: appState.formulaCtx.aliasedModulesMap
+    , importedModulesMap: appState.formulaCtx.importedModulesMap
+    , localFnsMap: Map.empty
     , argsMap: Map.empty
+    , module': preludeModule
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero
     }

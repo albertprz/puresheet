@@ -22,10 +22,13 @@ module FatPrelude
   , module NonEmptySet
   , module Maybe
   , module Either
+  , module MaybeT
+  , module ExceptT
   , module Bifunctor
   , module NonEmptyArray
   , module Tuple
   , module Tuple.Nested
+  , module Trans
   , module Type.Prelude
   , module Effect
   , module Aff
@@ -54,22 +57,25 @@ import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
 import App.Utils.Maybe (toMaybe, toMaybe', wrapMaybe) as MaybeUtils
-import App.Utils.Monoid (whenMonoid, whenMonoidAppend, (<>?)) as MonoidUtils
+import App.Utils.Monoid (whenMonoid, (<>?)) as MonoidUtils
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as NumberUtils
 import App.Utils.String (newline, showParensCsv, str, tab, wrap, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as StringUtils
 import App.Utils.Tree (ancestorsValues, appendChildren, childrenValues, findValues, goToNode, mkLeaf, nodeValues, siblingsValues) as TreeUtils
 import App.Utils.Unfoldable (class Range, range, (..)) as UnfoldableUtils
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, catchJust, liftEither, liftMaybe, throwError, try, withResource) as MonadError
-import Control.Monad.State (class MonadState, class MonadTrans, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, lift, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
-import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, fold1, foldM, foldMap1, foldl1, foldr1, fromFoldable, fromFoldable1, intercalate, length, notElem, partition, range, scanl, scanr, (..), (:)) as NonEmptyArray
+import Control.Monad.Except.Trans (ExceptT(..), except, mapExceptT, runExceptT, withExceptT) as ExceptT
+import Control.Monad.Maybe.Trans (MaybeT(..), mapMaybeT, runMaybeT) as MaybeT
+import Control.Monad.State (class MonadState, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
+import Control.Monad.Trans.Class (class MonadTrans, lift) as Trans
+import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, fold1, foldM, foldMap1, foldl1, foldr1, fromFoldable, fromFoldable1, fromNonEmpty, intercalate, length, notElem, partition, range, scanl, scanr, toNonEmpty, toUnfoldable, toUnfoldable1, (..), (:)) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor
-import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldMapDefaultL, bifoldMapDefaultR, bifoldl, bifoldlDefault, bifoldr, bifoldrDefault, bifor, bifor_, bisequence, bisequenceDefault, bisequence_, bitraverse, bitraverseDefault, bitraverse_, lfor, ltraverse, rfor, rtraverse) as Bitraversable
+import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldl, bifoldr, bifor, bifor_, bisequence, bisequence_, bitraverse, bitraverse_, lfor, ltraverse, rfor, rtraverse) as Bitraversable
 import Data.Char (fromCharCode, toCharCode) as Char
 import Data.Either (Either(..), blush, choose, either, fromLeft, fromLeft', fromRight, fromRight', hush, isLeft, isRight, note, note') as Either
-import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, defaultCardinality, defaultFromEnum, defaultPred, defaultSucc, defaultToEnum, downFrom, downFromIncluding, enumFromThenTo, enumFromTo, fromEnum, pred, succ, toEnum, toEnumWithDefaults, upFrom, upFromIncluding) as Enum
-import Data.Filterable (class Compactable, class Filterable, cleared, compact, eitherBool, filter, filterDefault, filterDefaultPartition, filterDefaultPartitionMap, filterMap, filterMapDefault, maybeBool, partition, partitionDefault, partitionDefaultFilter, partitionDefaultFilterMap, partitionMap, partitionMapDefault, separate) as Filterable
-import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldMapDefaultL, foldMapDefaultR, foldl, foldlDefault, foldr, foldrDefault, for_, indexl, indexr, intercalate, length, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
-import Data.Function (applyFlipped, applyN, compose, const, flip, identity, on, (#), ($), (<<<), (>>>)) as Function
+import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, downFrom, downFromIncluding, enumFromThenTo, enumFromTo, fromEnum, pred, succ, toEnum, toEnumWithDefaults, upFrom, upFromIncluding) as Enum
+import Data.Filterable (class Compactable, class Filterable, cleared, compact, eitherBool, filter, filterMap, maybeBool, partition, partitionMap, separate) as Filterable
+import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldl, foldr, for_, indexl, indexr, intercalate, length, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
+import Data.Function (applyN, const, flip, identity, on, (#), ($), (<<<), (>>>)) as Function
 import Data.Int (Parity(..), Radix, base36, binary, ceil, decimal, even, floor, fromNumber, fromString, fromStringAs, hexadecimal, octal, odd, parity, pow, quot, radix, rem, round, toNumber, toStringAs, trunc) as Int
 import Data.List (List(..), (:)) as List
 import Data.Map (Map) as Map
@@ -78,10 +84,10 @@ import Data.Semigroup.Foldable hiding (intercalate, maximum, maximumBy, minimum,
 import Data.Set (Set) as Set
 import Data.Set.NonEmpty (NonEmptySet) as NonEmptySet
 import Data.String.CodeUnits (fromCharArray, toCharArray) as CodeUnits
-import Data.String.Common hiding (null) as String
-import Data.Traversable (class Traversable, Accum, mapAccumL, mapAccumR, scanl, scanr, sequence, sequenceDefault, sequence_, traverse, traverseDefault, traverse_) as Traversable
+import Data.String.Common (joinWith, localeCompare, replace, replaceAll, split, toLower, toUpper, trim) as String
+import Data.Traversable (class Traversable, Accum, mapAccumL, mapAccumR, scanl, scanr, sequence, sequence_, traverse, traverse_) as Traversable
 import Data.Tuple (Tuple(..), curry, fst, snd, swap, uncurry) as Tuple
-import Data.Tuple.Nested (type (/\), Tuple1, Tuple2, Tuple3, Tuple4, Tuple5, curry1, curry2, curry3, curry4, curry5, get1, get2, get3, get4, get5, over1, over2, over3, over4, over5, tuple1, tuple2, tuple3, tuple4, tuple5, uncurry1, uncurry2, uncurry3, uncurry4, uncurry5, (/\)) as Tuple.Nested
+import Data.Tuple.Nested (type (/\), Tuple3, Tuple4, curry3, curry4, get1, get2, get3, get4, over1, over2, over3, over4, tuple3, tuple4, uncurry3, uncurry4, (/\)) as Tuple.Nested
 import Data.Unit (Unit, unit) as Unit
 import Effect (Effect, forE, foreachE, untilE, whileE)
 import Effect.Aff (Aff, attempt, bracket, cancelWith, catchError, delay, error, fiberCanceler, finally, forkAff, launchAff, launchAff_, message, never, nonCanceler, parallel, runAff, runAff_, sequential, supervise, throwError, try) as Aff
@@ -90,6 +96,6 @@ import Effect.Class (class MonadEffect, liftEffect) as EffClass
 import Effect.Class.Console hiding (error) as Console
 import Effect.Exception (Error, error, throw) as Exception
 import PSCI.Support (class Eval) as PSCISupport
-import PointFree (applySecond, applySecondFlipped, applyThird, applyThirdFlipped, compose2, compose2Flipped, compose2Second, compose2SecondFlipped, compose2Third, compose2ThirdFlipped, compose3, compose3Flipped, compose3Second, compose3SecondFlipped, composeSecond, composeSecondFlipped, composeThird, composeThirdFlipped, (#~), (#~~), (#~~~), (...>), (..>), (.>), (<.), (<..), (<...), (<~.), (<~..), (<~...), (<~~.), (<~~..), (<~~~.), (~$), (~...>), (~..>), (~.>), (~~$), (~~..>), (~~.>), (~~~$), (~~~.>))
+import PointFree ((#~), (#~~), (#~~~), (...>), (..>), (.>), (<.), (<..), (<...), (<~.), (<~..), (<~...), (<~~.), (<~~..), (<~~~.), (~$), (~...>), (~..>), (~.>), (~~$), (~~..>), (~~.>), (~~~$), (~~~.>))
 import Prim hiding (Row) as Prim
 import Type.Prelude (Proxy(..))
