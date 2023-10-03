@@ -45,7 +45,7 @@ registerLocalFn newScope (FnDef fnName params body) =
   modify_ \st ->
     st
       { localFnsMap = Map.insert (newScope /\ fnName)
-          { params, body, scope: newScope }
+          { id: Nothing, params, body, scope: newScope }
           st.localFnsMap
       }
 
@@ -77,11 +77,11 @@ lookupLocalFn fnName = do
         (childrenLookup <> argsLookup <> siblingsLookup <> freeVarsLookup)
 
 lookupModuleFn :: QVar -> EvalM FnInfo
-lookupModuleFn qVar@(QVar maybeMod fnName) = do
+lookupModuleFn qVar@(QVar fnModule fnName) = do
   { module', importedModulesMap, aliasedModulesMap, fnsMap } <- get
   let
-    modules = case maybeMod of
-      Just mod -> fromMaybe Set.empty $ Map.lookup (module' /\ mod)
+    modules = case fnModule of
+      Just alias -> fromMaybe Set.empty $ Map.lookup (module' /\ alias)
         aliasedModulesMap
       Nothing -> fromMaybe Set.empty $ Map.lookup module' importedModulesMap
     fns = flip QVar fnName <<< pure <$> Array.fromFoldable modules

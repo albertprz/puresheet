@@ -17,4 +17,4 @@ moduleDef = ModuleDef
 moduleImport :: Parser ModuleImport
 moduleImport = ModuleImport
   <$> module'
-  <*> ((|?) $ is "as" *> module')
+  <*> ((|?) (is "as" *> module'))

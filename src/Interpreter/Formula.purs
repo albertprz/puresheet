@@ -1,4 +1,4 @@
-module App.Interpreter.Formula where
+module App.Interpreter.Formula (runFormula) where
 
 import FatPrelude
 

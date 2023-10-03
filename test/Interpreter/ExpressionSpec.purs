@@ -233,11 +233,13 @@ evalError = Left <<< EvalError'
 formulaCtx :: LocalFormulaCtx
 formulaCtx =
   { tableData: Map.empty
+  , fnsMap: Map.empty
+  , operatorsMap: Builtins.operatorsMap
+  , aliasedModulesMap: Map.empty
+  , importedModulesMap: Map.empty
   , localFnsMap: Map.empty
   , argsMap: Map.empty
-  , operatorsMap: Builtins.operatorsMap
+  , module': preludeModule
   , scope: zero
   , scopeLoc: fromTree $ mkLeaf zero
-  , module': preludeModule
   }
-

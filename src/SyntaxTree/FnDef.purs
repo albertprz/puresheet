@@ -3,7 +3,7 @@ module App.SyntaxTree.FnDef where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
-import App.SyntaxTree.Common (QVar, QVarOp, Var)
+import App.SyntaxTree.Common (Module, QVar, QVarOp, Var)
 import App.SyntaxTree.Pattern (Pattern)
 import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
@@ -59,7 +59,8 @@ data Object
   | NullObj
 
 type FnInfo =
-  { body :: FnBody
+  { id :: Maybe { fnModule :: Module, fnName :: Var }
+  , body :: FnBody
   , params :: Array Var
   , scope :: Scope
   }

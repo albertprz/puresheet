@@ -14,6 +14,7 @@ import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Map (fromFoldable, lookup, member, union) as Map
 import Data.Set as Set
+import Data.Tree.Zipper (fromTree)
 
 evalExpr :: FnBody -> EvalM Object
 
@@ -36,13 +37,14 @@ evalExpr (InfixFnApply fnOps args) =
         )
       unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
     nestedExpr <- noteUnknownOperator
-      ((_ `nestInfixFns` args) =<< Map.lookupArray fnOps operatorsMap)
+      (flip nestInfixFns args =<< Map.lookupArray fnOps operatorsMap)
     evalExpr nestedExpr
 
 evalExpr (LeftOpSection fnOp body) = do
   { scope } <- get
   pure $ FnObj
-    { body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
+    { id: Nothing
+    , body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
     , params: [ Var argId ]
     , scope
     }
@@ -50,7 +52,8 @@ evalExpr (LeftOpSection fnOp body) = do
 evalExpr (RightOpSection body fnOp) = do
   { scope } <- get
   pure $ FnObj
-    { body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
+    { id: Nothing
+    , body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
     , params: [ Var argId ]
     , scope
     }
@@ -135,26 +138,34 @@ evalFn
   :: FnInfo
   -> Array FnBody
   -> EvalM Object
-evalFn { body, params, scope } args = do
+evalFn { body, params, scope, id: fnId } args = do
   ctx <- get
+  let
+    newCtx = case fnId of
+      Just { fnModule } -> ctx
+        { argsMap = Map.union argBindings ctx.argsMap
+        , module' = fnModule
+        , scope = zero
+        , scopeLoc = fromTree $ mkLeaf zero
+        }
+      Nothing -> ctx
+        { argsMap = Map.union argBindings ctx.argsMap
+        , scope = scope
+        , scopeLoc = goToNode scope ctx.scopeLoc
+        }
+
   if unappliedArgsNum == 0 then do
-    except $ evalState (runExceptT $ evalExpr body)
-      ( ctx
-          { scope = scope
-          , argsMap = Map.union argBindings ctx.argsMap
-          , scopeLoc = goToNode scope ctx.scopeLoc
-          }
-      )
+    except $ evalState (runExceptT $ evalExpr body) newCtx
   else if unappliedArgsNum > 0 then
     evalExpr
       ( Object' $ FnObj
-          { body, params: takeEnd' unappliedArgsNum params, scope }
+          { id: Nothing, body, params: takeEnd' unappliedArgsNum params, scope }
       )
   else raiseError $ TypeError' $ TooManyArguments $ length args
   where
   unappliedArgsNum = length params - length args
   argBindings = Map.fromFoldable
-    $ rmap (\arg -> { body: arg, params: [], scope: scope })
+    $ rmap (\arg -> { id: Nothing, body: arg, params: [], scope })
     <$> zip' ((scope /\ _) <$> params) args
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
