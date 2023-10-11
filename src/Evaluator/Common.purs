@@ -6,6 +6,7 @@ import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp, Var(..))
 import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo, OpInfo, Scope(..))
+import App.Utils.Common (spyShow)
 import Bookhound.FatPrelude (findJust)
 import Control.Alternative ((<|>))
 import Data.Array as Array
@@ -50,8 +51,11 @@ registerLocalFn newScope (FnDef fnName params body) =
       }
 
 lookupFn :: QVar -> EvalM FnInfo
-lookupFn qVar@(QVar Nothing var) =
-  lookupLocalFn var <|> lookupModuleFn qVar
+lookupFn qVar@(QVar Nothing var) = do
+  let x = spyShow (qVar)
+  result <- lookupLocalFn var <|> lookupModuleFn qVar
+  let y = "successful lookup"
+  pure result
 
 lookupFn qVar = lookupModuleFn qVar
 
@@ -83,7 +87,9 @@ lookupModuleFn qVar@(QVar fnModule fnName) = do
     modules = case fnModule of
       Just alias -> fromMaybe Set.empty $ Map.lookup (module' /\ alias)
         aliasedModulesMap
-      Nothing -> fromMaybe Set.empty $ Map.lookup module' importedModulesMap
+      Nothing -> Set.insert module' $ fromMaybe Set.empty $ Map.lookup
+        module'
+        importedModulesMap
     fns = flip QVar fnName <<< pure <$> Array.fromFoldable modules
   except
     $ note (LexicalError' $ UnknownValue qVar)

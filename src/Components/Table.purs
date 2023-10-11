@@ -43,10 +43,8 @@ initialState = const
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing
-  , formulaCtx:
-      { fnsMap: Map.empty
-      , operatorsMap
-      , aliasedModulesMap: Map.empty
-      , importedModulesMap: Map.empty
-      }
+  , fnsMap: Map.empty
+  , operatorsMap
+  , aliasedModulesMap: Map.empty
+  , importedModulesMap: Map.empty
   }

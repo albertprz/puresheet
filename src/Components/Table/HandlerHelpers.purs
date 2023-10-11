@@ -1,6 +1,8 @@
 module App.Components.Table.HandlerHelpers where
 
 import FatPrelude
+import Foreign
+import Foreign.Index
 import Prim hiding (Row)
 
 import App.CSS.Ids (cellId, formulaBoxId)
@@ -8,20 +10,25 @@ import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Ro
 import App.Components.Table.Formula (FormulaId, getDependencies)
 import App.Components.Table.Models (AppState)
 import App.Interpreter.Formula (runFormula)
+import App.Interpreter.Module (reloadModule)
+import App.SyntaxTree.Common (preludeModule)
 import App.Utils.Dom (class IsEvent, getTarget, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import App.Utils.Map (updateJust) as Map
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Array as Array
+import Data.List.NonEmpty (NonEmptyList(..))
 import Data.Map (delete, keys, lookup, union) as Map
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree (Forest)
+import Effect.Class.Console as Logger
 import Promise.Aff as Promise
 import Web.Clipboard (Clipboard, clipboard, readText, writeText)
 import Web.DOM (Element)
 import Web.DOM.Element (id, scrollWidth)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.HTML (HTMLElement, window)
+import Web.HTML.Event.EventTypes (close)
 import Web.HTML.HTMLElement (focus)
 import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
 import Web.HTML.Window (navigator)
@@ -105,6 +112,14 @@ deleteCells = do
 getClipboard :: forall m. MonadEffect m => m Clipboard
 getClipboard = liftEffect $ clipboard =<< navigator =<< window
 
+getPrelude
+  :: forall m. MonadEffect m => m (Either (NonEmptyList ForeignError) String)
+getPrelude = runExceptT
+  $ readString
+  =<< (_ ! "prelude")
+  =<< unsafeToForeign
+  <$> liftEffect window
+
 selectCell
   :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
 selectCell move = do
@@ -168,6 +183,14 @@ adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
 initialize :: forall m. MonadState AppState m => MonadEffect m => m Unit
 initialize = do
+  preludeLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
+  case preludeLoad of
+    Left err ->
+      Logger.error
+        ( "Prelude load error \n" <> "Parse Error: " <>
+            show err
+        )
+    _ -> pure unit
   { selectedCell, rows } <- get
   let Row (firstRow) = head rows
   visibleRows <- parseElems parseRow =<< getVisibleRows

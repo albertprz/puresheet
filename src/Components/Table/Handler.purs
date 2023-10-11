@@ -12,6 +12,7 @@ import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, wit
 import App.Utils.Map (lookup2) as Map
 import Data.Map (insert, keys, member, union, unionWith) as Map
 import Data.Set as Set
+import Effect.Class.Console as Logger
 import Halogen as H
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
@@ -73,8 +74,9 @@ handleAction (FormulaKeyPress Enter ev)
             , formulaState = ValidFormula
             }
           refreshCellsFromDeps cellDeps
-        Left _ ->
-          modify_ _ { formulaState = InvalidFormula }
+        Left err ->
+          Logger.errorShow err *>
+            modify_ _ { formulaState = InvalidFormula }
 
 handleAction (FormulaKeyPress Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell

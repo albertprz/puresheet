@@ -51,10 +51,10 @@ evalExprInApp
 evalExprInApp appState =
   evalExprInCtx
     { tableData: appState.tableData
-    , fnsMap: appState.formulaCtx.fnsMap
-    , operatorsMap: appState.formulaCtx.operatorsMap
-    , aliasedModulesMap: appState.formulaCtx.aliasedModulesMap
-    , importedModulesMap: appState.formulaCtx.importedModulesMap
+    , fnsMap: appState.fnsMap
+    , operatorsMap: appState.operatorsMap
+    , aliasedModulesMap: appState.aliasedModulesMap
+    , importedModulesMap: appState.importedModulesMap
     , localFnsMap: Map.empty
     , argsMap: Map.empty
     , module': preludeModule

@@ -29,11 +29,7 @@ type AppState =
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
-  , formulaCtx :: FormulaCtx
-  }
-
-type FormulaCtx =
-  { fnsMap :: Map QVar FnInfo
+  , fnsMap :: Map QVar FnInfo
   , operatorsMap :: Map QVarOp OpInfo
   , aliasedModulesMap :: Map (Module /\ Module) (Set Module)
   , importedModulesMap :: Map Module (Set Module)

@@ -14,6 +14,7 @@
   , "exceptions"
   , "filterable"
   , "foldable-traversable"
+  , "foreign"
   , "halogen"
   , "integers"
   , "js-promise-aff"

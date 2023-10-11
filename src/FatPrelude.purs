@@ -43,7 +43,6 @@ module FatPrelude
   , module EffClass
   , module MonadState
   , module MonadError
-  , module Console
   , module PSCISupport
   , module PointFree
   , module Foldable
@@ -93,7 +92,6 @@ import Effect (Effect, forE, foreachE, untilE, whileE)
 import Effect.Aff (Aff, attempt, bracket, cancelWith, catchError, delay, error, fiberCanceler, finally, forkAff, launchAff, launchAff_, message, never, nonCanceler, parallel, runAff, runAff_, sequential, supervise, throwError, try) as Aff
 import Effect.Aff.Class (class MonadAff, liftAff) as AffClass
 import Effect.Class (class MonadEffect, liftEffect) as EffClass
-import Effect.Class.Console hiding (error) as Console
 import Effect.Exception (Error, error, throw) as Exception
 import PSCI.Support (class Eval) as PSCISupport
 import PointFree ((#~), (#~~), (#~~~), (...>), (..>), (.>), (<.), (<..), (<...), (<~.), (<~..), (<~...), (<~~.), (<~~..), (<~~~.), (~$), (~...>), (~..>), (~.>), (~~$), (~~..>), (~~.>), (~~~$), (~~~.>))
