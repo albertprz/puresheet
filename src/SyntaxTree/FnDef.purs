@@ -63,6 +63,7 @@ type FnInfo =
   , body :: FnBody
   , params :: Array Var
   , scope :: Scope
+  , appliedArgs :: Array FnBody
   }
 
 type BuiltinFnInfo =

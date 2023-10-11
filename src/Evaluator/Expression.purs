@@ -47,6 +47,7 @@ evalExpr (LeftOpSection fnOp body) = do
     , body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
     , params: [ Var argId ]
     , scope
+    , appliedArgs: []
     }
 
 evalExpr (RightOpSection body fnOp) = do
@@ -56,6 +57,7 @@ evalExpr (RightOpSection body fnOp) = do
     , body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
     , params: [ Var argId ]
     , scope
+    , appliedArgs: []
     }
 
 evalExpr (WhereExpr fnBody bindings) =
@@ -138,7 +140,7 @@ evalFn
   :: FnInfo
   -> Array FnBody
   -> EvalM Object
-evalFn { body, params, scope, id: fnId } args = do
+evalFn { body, params, scope, id: fnId, appliedArgs } args = do
   ctx <- get
   let
     newCtx = case fnId of
@@ -158,15 +160,16 @@ evalFn { body, params, scope, id: fnId } args = do
     except $ evalState (runExceptT $ evalExpr body) newCtx
   else if unappliedArgsNum > 0 then
     evalExpr
-      ( Object' $ FnObj
-          { id: Nothing, body, params: takeEnd' unappliedArgsNum params, scope }
-      )
+      $ Object'
+      $ FnObj { id: Nothing, body, params, scope, appliedArgs: allArgs }
   else raiseError $ TypeError' $ TooManyArguments $ length args
   where
-  unappliedArgsNum = length params - length args
+  allArgs = appliedArgs <> args
+  unappliedArgsNum = length params - length allArgs
   argBindings = Map.fromFoldable
-    $ rmap (\arg -> { id: Nothing, body: arg, params: [], scope })
-    <$> zip' ((scope /\ _) <$> params) args
+    $ rmap
+        (\arg -> { id: Nothing, body: arg, scope, params: [], appliedArgs: [] })
+    <$> zip' ((scope /\ _) <$> params) allArgs
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =

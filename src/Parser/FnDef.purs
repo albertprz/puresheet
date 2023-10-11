@@ -7,7 +7,7 @@ import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, va
 import App.Parser.Pattern (pattern')
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (someSepBy, within, (<|>), (|+), (|?))
+import Bookhound.ParserCombinators (someSepBy, within, (<|>), (|+))
 import Bookhound.Parsers.Char (comma, quote, upper)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (posInt)
@@ -101,10 +101,12 @@ guardedFnBody sep = GuardedFnBody <$> guard <* sep <*>
   fnBody
 
 guard :: Parser Guard
-guard = defer \_ -> Otherwise <$ (isToken "?" *> isToken "otherwise")
-  <|> Guard
-  <$>
-    (isToken "?" *> someSepBy comma patternGuard)
+guard = defer \_ -> isToken "?"
+  *>
+    ( Otherwise <$ isToken "otherwise"
+        <|> Guard
+        <$> someSepBy comma patternGuard
+    )
 
 patternGuard :: Parser PatternGuard
 patternGuard = defer \_ -> PatternGuard <$> (pattern' <* isToken "<-")
@@ -113,8 +115,8 @@ patternGuard = defer \_ -> PatternGuard <$> (pattern' <* isToken "<-")
   <$> fnBody
 
 statements :: forall a. String -> Parser a -> Parser (Array a)
-statements sep parser = defer \_ -> fold <$> someSepBy (isToken sep)
-  (maybeToArray <$> (|?) parser)
+statements sep parser =
+  ((|+) (isToken sep *> parser))
 
 withinContext :: forall a. String -> Parser a -> Parser (Array a)
 withinContext sep = withinCurlyBrackets <<< statements sep

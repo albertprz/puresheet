@@ -89,4 +89,9 @@ registerModuleFns fnModule fnDefs =
   where
   toEntry (FnDef fnName params body) =
     QVar (Just fnModule) fnName /\
-      { id: Just { fnModule, fnName }, params, body, scope: zero }
+      { id: Just { fnModule, fnName }
+      , params
+      , body
+      , scope: zero
+      , appliedArgs: []
+      }

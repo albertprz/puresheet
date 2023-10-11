@@ -6,7 +6,6 @@ import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp, Var(..))
 import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo, OpInfo, Scope(..))
-import App.Utils.Common (spyShow)
 import Bookhound.FatPrelude (findJust)
 import Control.Alternative ((<|>))
 import Data.Array as Array
@@ -46,18 +45,15 @@ registerLocalFn newScope (FnDef fnName params body) =
   modify_ \st ->
     st
       { localFnsMap = Map.insert (newScope /\ fnName)
-          { id: Nothing, params, body, scope: newScope }
+          { id: Nothing, params, body, scope: newScope, appliedArgs: [] }
           st.localFnsMap
       }
 
 lookupFn :: QVar -> EvalM FnInfo
-lookupFn qVar@(QVar Nothing var) = do
-  let x = spyShow (qVar)
-  result <- lookupLocalFn var <|> lookupModuleFn qVar
-  let y = "successful lookup"
-  pure result
-
-lookupFn qVar = lookupModuleFn qVar
+lookupFn qVar@(QVar Nothing var) =
+  lookupLocalFn var <|> lookupModuleFn qVar
+lookupFn qVar =
+  lookupModuleFn qVar
 
 -- Scope resolution:
 -- 1. Children bindings

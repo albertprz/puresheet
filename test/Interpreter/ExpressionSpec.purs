@@ -47,176 +47,187 @@ spec = describe "Interpreter.Expression" do
           """ `shouldEqual` pure
           (ArrayObj (IntObj <$> [ 1, 4, 9, 16 ]))
 
-    describe "works for partially applied functions" do
+  describe "works for partially applied functions" do
 
-      it "Curried function" $
-        runExpr
-          """
-          mult2(10) where {
-              | mult2 = mult(2)
-          }
-          """ `shouldEqual` pure
-          (IntObj 20)
+    it "Curried function" $
+      runExpr
+        """
+        mult2(10) where {
+            | mult2 = mult(2)
+        }
+        """ `shouldEqual` pure
+        (IntObj 20)
 
-      it "Operator section" $
-        runExpr
-          """
-          mult2(10) where {
-              | mult2 = (_ * 2)
-          }
-          """ `shouldEqual` pure
-          (IntObj 20)
+    it "Operator section" $
+      runExpr
+        """
+        mult2(10) where {
+            | mult2 = (_ * 2)
+        }
+        """ `shouldEqual` pure
+        (IntObj 20)
 
-    describe "applies precedence for infix operators" do
-      it "Infix arithmetic expression" do
-        runExpr
-          """
-          3 / 4 - 6 + 8 * 9
-          """ `shouldEqual` pure
-          (FloatObj 66.75)
+    it "Higher order curried function" $
+      runExpr
+        """
+        h(2) where {
+            | h = apply(neg)
+            | apply (f, x) = f(x)
+        }
+        """ `shouldEqual` pure
+        (IntObj (-2))
 
-    describe "looks for bindings in lexical scope" do
+  describe "applies precedence for infix operators" do
+    it "Infix arithmetic expression" do
+      runExpr
+        """
+        3 / 4 - 6 + 8 * 9
+        """ `shouldEqual` pure
+        (FloatObj 66.75)
 
-      it "Successful lookup" $
-        runExpr
-          """
-          f(5) where {
-              | f(x) = g(x + h(x) * z) where {
-                  | g(x) = 3 + x
-                  | h(y) = 2 * x
-              }
-              | z = 2
-          }
-          """ `shouldEqual` pure
-          (IntObj 28)
+  describe "looks for bindings in lexical scope" do
 
-      it "Unaccesible nested binding" $
-        runExpr
-          """
-          g(1) where {
-              | f(x) = g(x) where {
-                  | g(x) = 3
-              }
-          }
-          """ `shouldEqual` evalError
-          (LexicalError' $ UnknownValue $ mkQVar "g")
+    it "Successful lookup" $
+      runExpr
+        """
+        f(5) where {
+            | f(x) = g(x + h(x) * z) where {
+                | g(x) = 3 + x
+                | h(y) = 2 * x
+            }
+            | z = 2
+        }
+        """ `shouldEqual` pure
+        (IntObj 28)
 
-      it "Unbound value" $
-        runExpr
-          """
-          y
-          """ `shouldEqual` evalError
-          (LexicalError' $ UnknownValue $ mkQVar "y")
+    it "Unaccesible nested binding" $
+      runExpr
+        """
+        g(1) where {
+            | f(x) = g(x) where {
+                | g(x) = 3
+            }
+        }
+        """ `shouldEqual` evalError
+        (LexicalError' $ UnknownValue $ mkQVar "g")
 
-      it "Unbound operator" $
-        runExpr
-          """
-          1 -+ 2
-          """ `shouldEqual` evalError
-          (LexicalError' $ UnknownOperator $ mkQVarOp "-+")
+    it "Unbound value" $
+      runExpr
+        """
+        y
+        """ `shouldEqual` evalError
+        (LexicalError' $ UnknownValue $ mkQVar "y")
 
-    describe "evaluates pattern and guard matches" do
+    it "Unbound operator" $
+      runExpr
+        """
+        1 -+ 2
+        """ `shouldEqual` evalError
+        (LexicalError' $ UnknownOperator $ mkQVarOp "-+")
 
-      it "Succesful pattern match" $
-        runExpr
-          """
-          switch ([1, 2, 3, 4, 5, 6]) {
-              | [x, y, ... , z] => [x, y, z]
-          }
-          """ `shouldEqual` pure
-          (ArrayObj $ IntObj <$> [ 1, 2, 6 ])
+  describe "evaluates pattern and guard matches" do
 
-      it "Succesful guard match" $
-        runExpr
-          """
-          cond {
-              ? length(xs) == 0 => "empty"
-              ? length(xs) == 1 => "one elem"
-              ? length(xs) == 2 => "two elems"
-              ? otherwise       => "any number of elems"
-          } where {
-              | xs = [1, 2]
-          }
-          """ `shouldEqual` pure
-          (StringObj "two elems")
+    it "Succesful pattern match" $
+      runExpr
+        """
+        switch ([1, 2, 3, 4, 5, 6]) {
+            | [x, y, ... , z] => [x, y, z]
+        }
+        """ `shouldEqual` pure
+        (ArrayObj $ IntObj <$> [ 1, 2, 6 ])
 
-      it "Complex guard match" $
-        runExpr
-          """
-          cond {
-              ? [x, y] <- xs, x > y => x
-              ? [x, y] <- xs, y > x => y
-              ? otherwise           => 0
-          } where {
-              | xs = [1, 2]
-          }
-          """ `shouldEqual` pure (IntObj 2)
+    it "Succesful guard match" $
+      runExpr
+        """
+        cond {
+            ? length(xs) == 0 => "empty"
+            ? length(xs) == 1 => "one elem"
+            ? length(xs) == 2 => "two elems"
+            ? otherwise       => "any number of elems"
+        } where {
+            | xs = [1, 2]
+        }
+        """ `shouldEqual` pure
+        (StringObj "two elems")
 
-      it "Guarded pattern match" $
-        runExpr
-          """
-          switch (xs) {
-              | [x]                 => x
-              | [x, y] ? x % 2 == 0 => x * x
-                       ? y % 2 == 0 => y * y
-                       ? otherwise  => 0
-          } where {
-              | xs = [3, 4]
-          }
-          """ `shouldEqual` pure (IntObj 16)
+    it "Complex guard match" $
+      runExpr
+        """
+        cond {
+            ? [x, y] <- xs, x > y => x
+            ? [x, y] <- xs, y > x => y
+            ? otherwise           => 0
+        } where {
+            | xs = [1, 2]
+        }
+        """ `shouldEqual` pure (IntObj 2)
 
-      it "Non exhaustive pattern match" $
-        runExpr
-          """
-          switch ([1]) {
-              | [] => []
-          }          """ `shouldEqual` evalError
-          (MatchError' NonExhaustiveMatch)
+    it "Guarded pattern match" $
+      runExpr
+        """
+        switch (xs) {
+            | [x]                 => x
+            | [x, y] ? x % 2 == 0 => x * x
+                    ? y % 2 == 0 => y * y
+                    ? otherwise  => 0
+        } where {
+            | xs = [3, 4]
+        }
+        """ `shouldEqual` pure (IntObj 16)
 
-      it "Non boolean guard" $
-        runExpr
-          """
-          cond {
-              ? 0 => true
-          }
-          """ `shouldEqual` evalError
-          (MatchError' InvalidGuard)
+    it "Non exhaustive pattern match" $
+      runExpr
+        """
+        switch ([1]) {
+            | [] => []
+        }          """ `shouldEqual` evalError
+        (MatchError' NonExhaustiveMatch)
 
-    describe "raises type errors on invalid function calls" do
+    it "Non boolean guard" $
+      runExpr
+        """
+        cond {
+            ? 0 => true
+        }
+        """ `shouldEqual` evalError
+        (MatchError' InvalidGuard)
 
-      it "Too many arguments" $
-        runExpr
-          """
-          add(1, 2, 3)
-          """ `shouldEqual` evalError
-          (TypeError' $ TooManyArguments 3)
+  describe "raises type errors on invalid function calls" do
 
-      it "Not a function" $
-        runExpr
-          """
-          f(1) where {
-              | f = []
-          }
-          """ `shouldEqual` evalError
-          (TypeError' $ NotAFunction $ ArrayObj [])
+    it "Too many arguments" $
+      runExpr
+        """
+        add(1, 2, 3)
+        """ `shouldEqual` evalError
+        (TypeError' $ TooManyArguments 3)
 
-      it "Invalid argument types" $
-        runExpr
-          """
-          "hello" - "world"
-          """ `shouldEqual` evalError
-          ( TypeError' $ InvalidArgumentTypes
-              (StringObj <$> [ "hello", "world" ])
-          )
-      it "Invalid cell array range" $
-        runExpr
-          """
-          [| A1 .. B2 |]
-          """ `shouldEqual` evalError
-          ( TypeError' $ InvalidCellArrayRange
-              { column: Column 'A', row: Row 1 }
-              { column: Column 'B', row: Row 2 }
-          )
+    it "Not a function" $
+      runExpr
+        """
+        f(1) where {
+            | f = []
+        }
+        """ `shouldEqual` evalError
+        (TypeError' $ NotAFunction $ ArrayObj [])
+
+    it "Invalid argument types" $
+      runExpr
+        """
+        "hello" - "world"
+        """ `shouldEqual` evalError
+        ( TypeError' $ InvalidArgumentTypes
+            (StringObj <$> [ "hello", "world" ])
+        )
+
+    it "Invalid cell array range" $
+      runExpr
+        """
+        [| A1 .. B2 |]
+        """ `shouldEqual` evalError
+        ( TypeError' $ InvalidCellArrayRange
+            { column: Column 'A', row: Row 1 }
+            { column: Column 'B', row: Row 2 }
+        )
 
 mkQVar :: String -> QVar
 mkQVar = QVar Nothing <<< Var

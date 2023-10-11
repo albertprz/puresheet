@@ -1,8 +1,6 @@
 module App.Components.Table.HandlerHelpers where
 
 import FatPrelude
-import Foreign
-import Foreign.Index
 import Prim hiding (Row)
 
 import App.CSS.Ids (cellId, formulaBoxId)
@@ -11,24 +9,24 @@ import App.Components.Table.Formula (FormulaId, getDependencies)
 import App.Components.Table.Models (AppState)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.SyntaxTree.Common (preludeModule)
 import App.Utils.Dom (class IsEvent, getTarget, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
 import App.Utils.Map (updateJust) as Map
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Array as Array
-import Data.List.NonEmpty (NonEmptyList(..))
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (delete, keys, lookup, union) as Map
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree (Forest)
 import Effect.Class.Console as Logger
+import Foreign (ForeignError, readString, unsafeToForeign)
+import Foreign.Index ((!))
 import Promise.Aff as Promise
 import Web.Clipboard (Clipboard, clipboard, readText, writeText)
 import Web.DOM (Element)
 import Web.DOM.Element (id, scrollWidth)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.HTML (HTMLElement, window)
-import Web.HTML.Event.EventTypes (close)
 import Web.HTML.HTMLElement (focus)
 import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
 import Web.HTML.Window (navigator)

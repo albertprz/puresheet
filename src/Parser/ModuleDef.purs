@@ -11,7 +11,7 @@ import Bookhound.ParserCombinators (is, (|?))
 moduleDef :: Parser ModuleDef
 moduleDef = ModuleDef
   <$> (is "module" *> module')
-  <*> statements "import" moduleImport
+  <*> (fold <$> (|?) (statements "import" moduleImport))
   <*> statements "def" fnDef
 
 moduleImport :: Parser ModuleImport
