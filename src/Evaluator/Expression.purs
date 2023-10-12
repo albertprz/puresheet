@@ -26,6 +26,10 @@ evalExpr (FnApply fnExpr args) = do
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError $ TypeError' $ NotAFunction fnObj
 
+evalExpr (LambdaFn params body) = do
+  { scope } <- get
+  pure $ FnObj $ FnInfo { id: Nothing, params, body, scope, argsMap: Map.empty }
+
 evalExpr (InfixFnApply fnOps args) =
   do
     { operatorsMap } <- get

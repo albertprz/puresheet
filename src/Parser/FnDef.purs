@@ -27,12 +27,14 @@ fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
   where
   fnApply = defer \_ -> FnApply <$> token fnForm <*> argListOf openForm
+  lambdaFn = defer \_ -> LambdaFn <$> (argListOf var <|> pure <$> var)
+    <*> (isToken "->" *> fnBody)
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps qVarOp
     infixArgForm
-  leftOpSection = defer \_ -> uncurry LeftOpSection <$> withinParens
-    ((/\) <$> (isToken "_" *> qVarOp) <*> openForm)
-  rightOpSection = defer \_ -> uncurry RightOpSection <$> withinParens
-    ((/\) <$> openForm <*> (qVarOp <* isToken "_"))
+  leftOpSection = defer \_ -> uncurry LeftOpSection <$>
+    ((/\) <$> (isToken "_" *> qVarOp) <*> infixArgForm)
+  rightOpSection = defer \_ -> uncurry RightOpSection <$>
+    ((/\) <$> infixArgForm <*> (qVarOp <* isToken "_"))
   opSection = defer \_ -> leftOpSection <|> rightOpSection
   whereExpr = defer \_ -> WhereExpr <$> openForm
     <* isToken "where"
@@ -73,18 +75,19 @@ fnBody = whereExpr <|> openForm
     <|> cellMatrixRange
     <|> cellArrayRange
     <|> arrayRange
-    <|> opSection
     <|> CellValue'
     <$> cellValue
     <|> Cell'
     <$> cell
     <|> fnOp
     <|> fnVar
-  complexForm = defer \_ -> infixFnApply <|> complexInfixForm
+  complexForm = defer \_ -> opSection <|> infixFnApply <|>  complexInfixForm
   complexInfixForm = defer \_ ->
-    condExpr
+    lambdaFn
+      <|> condExpr
       <|> switchExpr
       <|> withinParens infixFnApply
+      <|> withinParens opSection
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding <$> pattern' <*> maybeGuardedFnBody

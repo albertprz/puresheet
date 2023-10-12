@@ -37,8 +37,7 @@ spec = describe "Interpreter.Expression" do
       it "Map" $
         runExpr
           """
-          map (square, [1 .. 4]) where {
-              | square (x) = x * x
+          map (x -> x * x, [1 .. 4]) where {
               | map (f, xs) = switch (xs) {
                   | [] => []
                   | xs => map (f, init (xs)) :+ f (last (xs))
@@ -62,7 +61,7 @@ spec = describe "Interpreter.Expression" do
         runExpr
           """
           mult2 (10) where {
-              | mult2 = (_ * 2)
+              | mult2 = _ * 2
           }
           """ `shouldEqual` pure
           (IntObj 20)
@@ -71,13 +70,13 @@ spec = describe "Interpreter.Expression" do
         runExpr
           """
           f (5) where {
+              | f = compose (_ * 2, _ + 3)
               | compose (f, g) = h where {
                   | h (x) = f (g (x))
               }
-              | f = compose (neg, neg)
           }
           """ `shouldEqual` pure
-          (IntObj (5))
+          (IntObj 16)
 
     describe "applies precedence for infix operators" do
 

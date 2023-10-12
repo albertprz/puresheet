@@ -40,6 +40,9 @@ extractCells :: FnBody -> Set Cell
 extractCells (FnApply fnExpr args) =
   extractCells fnExpr <> foldMap extractCells args
 
+extractCells (LambdaFn _ body) =
+  extractCells body
+
 extractCells (InfixFnApply _ args) =
   foldMap extractCells args
 

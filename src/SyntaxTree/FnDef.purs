@@ -15,6 +15,7 @@ data FnDef = FnDef Var (Array Var) FnBody
 
 data FnBody
   = FnApply FnBody (Array FnBody)
+  | LambdaFn (Array Var) FnBody
   | InfixFnApply (Array QVarOp) (Array FnBody)
   | LeftOpSection QVarOp FnBody
   | RightOpSection FnBody QVarOp

@@ -2,6 +2,4 @@ module Prelude
 
 def apply (f, x) = f (x)
 
-def compose (f, g, x) = h where {
-    | h (x) = f (g (x))
-}
+def compose (f, g) = x -> f (g (x))
