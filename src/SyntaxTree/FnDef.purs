@@ -58,13 +58,18 @@ data Object
   | BuiltinFnObj BuiltinFnInfo
   | NullObj
 
-type FnInfo =
-  { id :: Maybe { fnModule :: Module, fnName :: Var }
-  , body :: FnBody
-  , params :: Array Var
-  , scope :: Scope
-  , appliedArgs :: Array FnBody
-  }
+newtype FnInfo =
+  FnInfo
+    { id :: Maybe { fnModule :: Module, fnName :: Var }
+    , body :: FnBody
+    , params :: Array Var
+    , scope :: Scope
+    , argsMap :: Map (Scope /\ Var) FnInfo
+    }
+
+derive instance Generic FnInfo _
+instance Show FnInfo where
+  show x = genericShow x
 
 type BuiltinFnInfo =
   { fn :: Array Object -> Object
@@ -174,8 +179,8 @@ instance Show Object where
     (CharObj x) -> show x
     (StringObj x) -> show x
     (ArrayObj x) -> show x
-    (FnObj _) -> "[fn]"
-    (BuiltinFnObj _) -> "[builtin fn]"
+    (FnObj _) -> "function"
+    (BuiltinFnObj _) -> "builtin-function"
     (NullObj) -> "null"
 
 instance Eq Object where

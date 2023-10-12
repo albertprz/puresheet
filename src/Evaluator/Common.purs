@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp, Var(..))
-import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo, OpInfo, Scope(..))
+import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo(..), OpInfo, Scope(..))
 import Bookhound.FatPrelude (findJust)
 import Control.Alternative ((<|>))
 import Data.Array as Array
@@ -45,7 +45,14 @@ registerLocalFn newScope (FnDef fnName params body) =
   modify_ \st ->
     st
       { localFnsMap = Map.insert (newScope /\ fnName)
-          { id: Nothing, params, body, scope: newScope, appliedArgs: [] }
+          ( FnInfo
+              { id: Nothing
+              , params
+              , body
+              , scope: newScope
+              , argsMap: Map.empty
+              }
+          )
           st.localFnsMap
       }
 

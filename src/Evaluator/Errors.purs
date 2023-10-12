@@ -54,7 +54,7 @@ instance Show MatchError where
 instance Show TypeError where
   show (TooManyArguments x) = "Too many arguments applied: " <> show x
   show (NotAFunction x) = "Value " <> wrapQuotes (show x) <>
-    " is not m function"
+    " is not a function"
   show (InvalidArgumentTypes x) =
     "The combination of argument types is not allowed: " <> showParensCsv x
   show (InvalidCellArrayRange x y) =

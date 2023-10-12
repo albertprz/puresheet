@@ -4,11 +4,11 @@ import FatPrelude
 
 import App.Parser.ModuleDef (moduleDef)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..))
-import App.SyntaxTree.FnDef (FnDef(..), FnInfo, OpInfo)
+import App.SyntaxTree.FnDef (FnDef(..), FnInfo(..), OpInfo)
 import App.SyntaxTree.ModuleDef (ModuleDef(..), ModuleImport(..))
 import App.Utils.Map (deleteWhen) as Map
 import Bookhound.Parser (ParseError, runParser)
-import Data.Map (delete, fromFoldable, insertWith, union) as Map
+import Data.Map (delete, empty, fromFoldable, insertWith, union) as Map
 import Data.Set as Set
 
 type RegisterModuleCtx r =
@@ -89,9 +89,10 @@ registerModuleFns fnModule fnDefs =
   where
   toEntry (FnDef fnName params body) =
     QVar (Just fnModule) fnName /\
-      { id: Just { fnModule, fnName }
-      , params
-      , body
-      , scope: zero
-      , appliedArgs: []
-      }
+      FnInfo
+        { id: Just { fnModule, fnName }
+        , params
+        , body
+        , scope: zero
+        , argsMap: Map.empty
+        }

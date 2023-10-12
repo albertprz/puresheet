@@ -7,12 +7,12 @@ import App.Evaluator.Common (EvalM, LocalFormulaCtx, argId, lookupFn, lookupOper
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVarOp(..), Var(..), VarOp(..))
-import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo, Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import App.Utils.Map (lookupArray) as Map
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Data.Map (fromFoldable, lookup, member, union) as Map
+import Data.Map (empty, fromFoldable, keys, lookup, member, union) as Map
 import Data.Set as Set
 import Data.Tree.Zipper (fromTree)
 
@@ -43,22 +43,24 @@ evalExpr (InfixFnApply fnOps args) =
 evalExpr (LeftOpSection fnOp body) = do
   { scope } <- get
   pure $ FnObj
-    { id: Nothing
-    , body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
-    , params: [ Var argId ]
-    , scope
-    , appliedArgs: []
-    }
+    $ FnInfo
+        { id: Nothing
+        , body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
+        , params: [ Var argId ]
+        , scope
+        , argsMap: Map.empty
+        }
 
 evalExpr (RightOpSection body fnOp) = do
   { scope } <- get
   pure $ FnObj
-    { id: Nothing
-    , body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
-    , params: [ Var argId ]
-    , scope
-    , appliedArgs: []
-    }
+    $ FnInfo
+        { id: Nothing
+        , body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
+        , params: [ Var argId ]
+        , scope
+        , argsMap: Map.empty
+        }
 
 evalExpr (WhereExpr fnBody bindings) =
   registerBindings bindings *> evalExpr fnBody
@@ -113,8 +115,11 @@ evalExpr (Array' array) =
 evalExpr (FnVar fn)
   | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
       pure $ BuiltinFnObj fnInfo
-  | otherwise =
-      (\x -> evalExpr <<< Object' <<< FnObj $ x) =<< lookupFn fn
+  | otherwise = do
+      fnInfo <- lookupFn fn
+      case fnInfo of
+        FnInfo { body: FnApply _ _ } -> evalFn fnInfo []
+        _ -> evalExpr $ Object' $ FnObj $ fnInfo
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupOperator fnOp
@@ -128,7 +133,7 @@ evalExpr (Cell' cell) =
 
 evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 
-evalExpr (Object' (FnObj fnInfo@{ params: [] })) =
+evalExpr (Object' (FnObj fnInfo@(FnInfo { params: [] }))) =
   evalFn fnInfo []
 
 evalExpr (Object' (BuiltinFnObj fnInfo@{ arity: A0 })) =
@@ -140,36 +145,56 @@ evalFn
   :: FnInfo
   -> Array FnBody
   -> EvalM Object
-evalFn { body, params, scope, id: fnId, appliedArgs } args = do
+evalFn (FnInfo { body, params, scope, id: fnId, argsMap: fnArgsMap }) args = do
   ctx <- get
   let
+    argsMap = Map.union fnArgsMap $ Map.union argBindings ctx.argsMap
     newCtx = case fnId of
       Just { fnModule } -> ctx
-        { argsMap = Map.union argBindings ctx.argsMap
+        { argsMap = argsMap
         , module' = fnModule
         , scope = zero
         , scopeLoc = fromTree $ mkLeaf zero
         }
       Nothing -> ctx
-        { argsMap = Map.union argBindings ctx.argsMap
+        { argsMap = argsMap
         , scope = scope
         , scopeLoc = goToNode scope ctx.scopeLoc
         }
-
   if unappliedArgsNum == 0 then do
-    except $ evalState (runExceptT $ evalExpr body) newCtx
+    put newCtx
+    result <- evalExpr body
+    { scopeLoc: newScopeLoc, argsMap: newArgsMap } <- get
+    when (isNothing fnId) do
+      (put $ ctx { scopeLoc = newScopeLoc })
+      when (Map.keys newArgsMap /= Map.keys argsMap)
+        (modify_ _ { argsMap = newArgsMap })
+    pure result
   else if unappliedArgsNum > 0 then
-    evalExpr
-      $ Object'
-      $ FnObj { id: Nothing, body, params, scope, appliedArgs: allArgs }
+    pure
+      $ FnObj
+      $ FnInfo
+          { id: Nothing
+          , body
+          , params: takeEnd' unappliedArgsNum params
+          , scope
+          , argsMap
+          }
   else raiseError $ TypeError' $ TooManyArguments $ length args
   where
-  allArgs = appliedArgs <> args
-  unappliedArgsNum = length params - length allArgs
+  unappliedArgsNum = length params - length args
   argBindings = Map.fromFoldable
     $ rmap
-        (\arg -> { id: Nothing, body: arg, scope, params: [], appliedArgs: [] })
-    <$> zip' ((scope /\ _) <$> params) allArgs
+        ( \arg ->
+            FnInfo
+              { id: Nothing
+              , body: arg
+              , scope
+              , params: []
+              , argsMap: Map.empty
+              }
+        )
+    <$> zip' ((scope /\ _) <$> params) args
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =

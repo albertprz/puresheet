@@ -75,7 +75,7 @@ handleAction (FormulaKeyPress Enter ev)
             }
           refreshCellsFromDeps cellDeps
         Left err ->
-          Logger.errorShow err *>
+          Logger.error (show err) *>
             modify_ _ { formulaState = InvalidFormula }
 
 handleAction (FormulaKeyPress Tab ev) =
