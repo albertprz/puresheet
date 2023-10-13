@@ -40,7 +40,7 @@ spec = describe "Interpreter.Expression" do
           map (x -> x * x, [1 .. 4]) where {
               | map (f, xs) = switch (xs) {
                   | [] => []
-                  | xs => map (f, init (xs)) :+ f (last (xs))
+                  | [ xs @ ... , x ] => map (f, xs) :+ f (x)
               }
           }
           """ `shouldEqual` pure
@@ -127,9 +127,9 @@ spec = describe "Interpreter.Expression" do
           """ `shouldEqual` evalError
           (LexicalError' $ UnknownOperator $ mkQVarOp "-+")
 
-    describe "evaluates pattern and guard matches" do
+    describe "evaluates switch expressions" do
 
-      it "Succesful pattern match" $
+      it "Successful pattern match" $
         runExpr
           """
           switch ([1, 2, 3, 4, 5, 6]) {
@@ -138,7 +138,30 @@ spec = describe "Interpreter.Expression" do
           """ `shouldEqual` pure
           (ArrayObj $ IntObj <$> [ 1, 2, 6 ])
 
-      it "Succesful guard match" $
+      it "Guarded patterns" $
+        runExpr
+          """
+          switch (xs) {
+              | [x]                 => x
+              | [x, y] ? x % 2 == 0 => x * x
+                       ? y % 2 == 0 => y * y
+                       ? otherwise  => 0
+          } where {
+              | xs = [3, 4]
+          }
+          """ `shouldEqual` pure (IntObj 16)
+
+      it "Non exhaustive pattern match" $
+        runExpr
+          """
+          switch ([1]) {
+              | [] => []
+          }          """ `shouldEqual` evalError
+          (MatchError' NonExhaustiveMatch)
+
+    describe "evaluates cond expressions" do
+
+      it "Successful guard match" $
         runExpr
           """
           cond {
@@ -152,7 +175,7 @@ spec = describe "Interpreter.Expression" do
           """ `shouldEqual` pure
           (StringObj "two elems")
 
-      it "Complex guard match" $
+      it "Complex guards" $
         runExpr
           """
           cond {
@@ -164,26 +187,15 @@ spec = describe "Interpreter.Expression" do
           }
           """ `shouldEqual` pure (IntObj 2)
 
-      it "Guarded pattern match" $
+      it "Non exhaustive guard" $
         runExpr
           """
-          switch (xs) {
-              | [x]                 => x
-              | [x, y] ? x % 2 == 0 => x * x
-                      ? y % 2 == 0 => y * y
-                      ? otherwise  => 0
-          } where {
-              | xs = [3, 4]
+          cond {
+              ? 1 == 2 => "fst option"
+              ? 2 == 3 => "snd option"
           }
-          """ `shouldEqual` pure (IntObj 16)
-
-      it "Non exhaustive pattern match" $
-        runExpr
-          """
-          switch ([1]) {
-              | [] => []
-          }          """ `shouldEqual` evalError
-          (MatchError' NonExhaustiveMatch)
+          """ `shouldEqual` evalError
+          (MatchError' NonExhaustiveGuard)
 
       it "Non boolean guard" $
         runExpr

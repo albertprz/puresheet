@@ -1,18 +1,24 @@
 module App.Utils.Foldable where
 
+import Prelude
+
 import Data.Either (Either(..))
 import Data.Foldable (class Foldable, foldl)
-import Data.Ord (class Ord, Ordering)
-import Data.Semigroup (class Semigroup)
 import Data.Semigroup.Foldable (class Foldable1)
 import Data.Semigroup.Foldable as SemiFoldable
 
 findMapEither
-  :: forall a b e f. Foldable f => e -> (a -> Either e b) -> f a -> Either e b
+  :: forall a b e f
+   . Eq e
+  => Foldable f
+  => e
+  -> (a -> Either e b)
+  -> f a
+  -> Either e b
 findMapEither err mapFn = foldl go (Left err)
   where
-  go (Left _) x = mapFn x
-  go right _ = right
+  go (Left left) x | left == err = mapFn x
+  go x _ = x
 
 maximum1 :: forall f a. Ord a => Foldable1 f => f a -> a
 maximum1 = SemiFoldable.maximum

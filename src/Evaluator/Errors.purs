@@ -18,6 +18,7 @@ data LexicalError
 
 data MatchError
   = NonExhaustiveMatch
+  | NonExhaustiveGuard
   | InvalidGuard
 
 data TypeError
@@ -48,7 +49,8 @@ instance Show LexicalError where
   show (UnknownOperator x) = "Unknown operator " <> wrapQuotes (show x)
 
 instance Show MatchError where
-  show NonExhaustiveMatch = "Failed pattern match (non-exhaustive)"
+  show NonExhaustiveMatch = "Failed pattern match (non exhaustive)"
+  show NonExhaustiveGuard = "Failed guard match (non exhaustive)"
   show InvalidGuard = "Guard expression did not return a Boolean value"
 
 instance Show TypeError where

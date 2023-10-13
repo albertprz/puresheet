@@ -6,6 +6,7 @@ import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp, Var(..))
 import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo(..), OpInfo, Scope(..))
+import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (findJust)
 import Control.Alternative ((<|>))
 import Data.Array as Array
@@ -41,20 +42,12 @@ registerBindings bindings = do
     }
 
 registerLocalFn :: Scope -> FnDef -> EvalM Unit
-registerLocalFn newScope (FnDef fnName params body) =
-  modify_ \st ->
-    st
-      { localFnsMap = Map.insert (newScope /\ fnName)
-          ( FnInfo
-              { id: Nothing
-              , params
-              , body
-              , scope: newScope
-              , argsMap: Map.empty
-              }
-          )
-          st.localFnsMap
-      }
+registerLocalFn scope fnDef =
+  modify_ \st -> st { localFnsMap = insertFnDef scope fnDef st.localFnsMap }
+
+registerArg :: Scope -> FnDef -> EvalM Unit
+registerArg scope fnDef =
+  modify_ \st -> st { argsMap = insertFnDef scope fnDef st.argsMap }
 
 lookupFn :: QVar -> EvalM FnInfo
 lookupFn qVar@(QVar Nothing var) =
@@ -106,6 +99,26 @@ lookupOperator opName = do
   except
     $ note (LexicalError' $ UnknownOperator opName)
     $ Map.lookup opName operatorsMap
+
+insertFnDef
+  :: Scope
+  -> FnDef
+  -> Map (Scope /\ Var) FnInfo
+  -> Map (Scope /\ Var) FnInfo
+insertFnDef scope (FnDef fnName params body) =
+  Map.insert (scope /\ fnName) fnInfo
+  where
+  fnInfo = FnInfo
+    { id: Nothing, params, body, scope: scope, argsMap: Map.empty }
+
+isSpread :: Pattern -> Boolean
+isSpread Spread = true
+isSpread (AliasedPattern _ Spread) = true
+isSpread _ = false
+
+extractAlias :: Pattern -> Maybe Var
+extractAlias (AliasedPattern alias _) = Just alias
+extractAlias _ = Nothing
 
 nonEmptyCellValue :: CellValue -> Boolean
 nonEmptyCellValue (StringVal "") = false

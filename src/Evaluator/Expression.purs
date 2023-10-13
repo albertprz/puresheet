@@ -3,18 +3,19 @@ module App.Evaluator.Expression where
 import FatPrelude
 
 import App.Evaluator.Builtins as Builtins
-import App.Evaluator.Common (EvalM, LocalFormulaCtx, argId, lookupFn, lookupOperator, registerBindings, registerLocalFn, varFn)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, argId, extractAlias, isSpread, lookupFn, lookupOperator, registerArg, registerBindings, varFn)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
-import App.SyntaxTree.Common (QVarOp(..), Var(..), VarOp(..))
+import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
 import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import App.Utils.Map (lookupArray) as Map
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Data.Map (empty, fromFoldable, keys, lookup, member, union) as Map
+import Control.Alternative ((<|>))
+import Data.Map (empty, fromFoldable, lookup, member, union) as Map
 import Data.Set as Set
-import Data.Tree.Zipper (fromTree)
+import Data.Tree.Zipper (fromTree, insertChild, toTree)
 
 evalExpr :: FnBody -> EvalM Object
 
@@ -26,9 +27,9 @@ evalExpr (FnApply fnExpr args) = do
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError $ TypeError' $ NotAFunction fnObj
 
-evalExpr (LambdaFn params body) = do
-  { scope } <- get
-  pure $ FnObj $ FnInfo { id: Nothing, params, body, scope, argsMap: Map.empty }
+evalExpr (LambdaFn params body) =
+  evalExpr $ WhereExpr (FnVar $ QVar Nothing $ Var argId)
+    [ FnDef (Var argId) params body ]
 
 evalExpr (InfixFnApply fnOps args) =
   do
@@ -71,16 +72,28 @@ evalExpr (WhereExpr fnBody bindings) =
 
 evalExpr (CondExpr conds) = do
   st <- get
+  let
+    newScope = inc $ fromMaybe st.scope $ maximum $ toTree st.scopeLoc
+    newSt = st
+      { scopeLoc = insertChild (mkLeaf newScope) st.scopeLoc
+      , scope = newScope
+      }
   except $
-    findMapEither (MatchError' NonExhaustiveMatch)
-      (evalGuardedFnBody st)
+    findMapEither (MatchError' NonExhaustiveGuard)
+      (evalGuardedFnBody newSt)
       conds
 
 evalExpr (SwitchExpr matchee cases) = do
-  st <- get
   result <- evalExpr matchee
+  st <- get
+  let
+    newScope = inc $ fromMaybe st.scope $ maximum $ toTree st.scopeLoc
+    newSt = st
+      { scopeLoc = insertChild (mkLeaf newScope) st.scopeLoc
+      , scope = newScope
+      }
   except $ findMapEither (MatchError' NonExhaustiveMatch)
-    (evalCaseBinding st result)
+    (evalCaseBinding newSt result)
     cases
 
 evalExpr
@@ -116,14 +129,8 @@ evalExpr (Array' array) =
         (Object' $ ArrayObj [])
         array
 
-evalExpr (FnVar fn)
-  | Just fnInfo <- Map.lookup fn Builtins.builtinFnsMap =
-      pure $ BuiltinFnObj fnInfo
-  | otherwise = do
-      fnInfo <- lookupFn fn
-      case fnInfo of
-        FnInfo { body: FnApply _ _ } -> evalFn fnInfo []
-        _ -> evalExpr $ Object' $ FnObj $ fnInfo
+evalExpr (FnVar fn) =
+  getFnInfo fn <|> getBuiltinFnInfo fn
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupOperator fnOp
@@ -150,29 +157,28 @@ evalFn
   -> Array FnBody
   -> EvalM Object
 evalFn (FnInfo { body, params, scope, id: fnId, argsMap: fnArgsMap }) args = do
-  ctx <- get
+  st <- get
   let
-    argsMap = Map.union fnArgsMap $ Map.union argBindings ctx.argsMap
-    newCtx = case fnId of
-      Just { fnModule } -> ctx
+    argsMap = Map.union fnArgsMap $ Map.union argBindings st.argsMap
+    newSt = case fnId of
+      Just { fnModule } -> st
         { argsMap = argsMap
         , module' = fnModule
         , scope = zero
         , scopeLoc = fromTree $ mkLeaf zero
         }
-      Nothing -> ctx
+      Nothing -> st
         { argsMap = argsMap
         , scope = scope
-        , scopeLoc = goToNode scope ctx.scopeLoc
+        , scopeLoc = goToNode scope st.scopeLoc
         }
   if unappliedArgsNum == 0 then do
-    put newCtx
+    put newSt
     result <- evalExpr body
-    { scopeLoc: newScopeLoc, argsMap: newArgsMap } <- get
-    when (isNothing fnId) do
-      (put $ ctx { scopeLoc = newScopeLoc })
-      when (Map.keys newArgsMap /= Map.keys argsMap)
-        (modify_ _ { argsMap = newArgsMap })
+    newScopeLoc <- gets _.scopeLoc
+    put st
+    when (isNothing fnId)
+      (modify_ _ { scopeLoc = newScopeLoc })
     pure result
   else if unappliedArgsNum > 0 then
     pure
@@ -254,8 +260,8 @@ evalCaseBinding
   -> Object
   -> CaseBinding
   -> Either EvalError Object
-evalCaseBinding ctx matchee (CaseBinding pattern body) =
-  evalState action ctx
+evalCaseBinding st matchee (CaseBinding pattern body) =
+  evalState action st
   where
   action = runExceptT
     $ ifM (evalPatternBinding pattern matchee)
@@ -275,13 +281,13 @@ evalGuardedFnBody
   :: LocalFormulaCtx
   -> GuardedFnBody
   -> Either EvalError Object
-evalGuardedFnBody ctx (GuardedFnBody guard body) =
-  evalState action ctx
+evalGuardedFnBody st (GuardedFnBody guard body) =
+  evalState action st
   where
   action = runExceptT
     $ ifM (evalGuard guard)
         (evalExpr body)
-        (raiseError $ MatchError' NonExhaustiveMatch)
+        (raiseError $ MatchError' NonExhaustiveGuard)
 
 evalGuard :: Guard -> EvalM Boolean
 evalGuard (Guard guardPatterns) = do
@@ -300,39 +306,59 @@ evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
 evalPatternBinding (VarPattern var) result = do
   { scope } <- get
-  registerLocalFn scope (FnDef var [] $ Object' result) $> true
+  registerArg scope (FnDef var [] $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
   pure $ cellValueToObj cellValue == result
 
 evalPatternBinding (AliasedPattern var pattern) result = do
   { scope } <- get
-  registerLocalFn scope (FnDef var [] $ Object' result) *>
+  registerArg scope (FnDef var [] $ Object' result) *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ArrayPattern patterns) result
-  | Just idx <- findIndex' (_ == Spread) patterns
-  , length (filter (_ == Spread) patterns) == 1
+  | Just idx <- findIndex' isSpread patterns
+  , length (filter isSpread patterns) == 1
   , ArrayObj results <- result =
-      evalPatternBinding
-        (ArrayPattern $ patternsBegin <> patternsEnd)
-        (ArrayObj $ resultsBegin <> resultsEnd)
+      do
+        _ <- case findMap extractAlias patterns of
+          Just alias -> evalPatternBinding (VarPattern alias)
+            (ArrayObj resultsBetween)
+          Nothing -> pure true
+        evalPatternBinding
+          (ArrayPattern $ patternsBegin <> patternsEnd)
+          (ArrayObj $ resultsBegin <> resultsEnd)
       where
       { before, after } = splitAt' idx patterns
       (patternsBegin /\ patternsEnd) = (before /\ fold (tail' after))
       resultsBegin = take' (length patternsBegin) results
+      resultsBetween = slice' (length patternsBegin)
+        (length results - length patternsEnd)
+        results
       resultsEnd = takeEnd' (length patternsEnd) results
 
 evalPatternBinding (ArrayPattern patterns) result
   | Just results <- extractNList (length patterns) result =
       and <$> traverse (\(x /\ y) -> evalPatternBinding x y)
         (patterns `zip'` results)
-
-evalPatternBinding (ArrayPattern _) _ =
-  lift $ pure false
+  | otherwise = pure false
 
 evalPatternBinding Wildcard _ =
   pure true
 
 evalPatternBinding Spread _ =
-  pure true
+  pure false
+
+getFnInfo :: QVar -> EvalM Object
+getFnInfo fnName = do
+  fnInfo <- lookupFn fnName
+  case fnInfo of
+    FnInfo { body: FnApply _ _ } -> evalFn fnInfo []
+    _ -> evalExpr $ Object' $ FnObj $ fnInfo
+
+getBuiltinFnInfo :: QVar -> EvalM Object
+getBuiltinFnInfo fnName =
+  except
+    $ note (LexicalError' $ UnknownValue fnName)
+    $ BuiltinFnObj
+    <$> Map.lookup fnName Builtins.builtinFnsMap

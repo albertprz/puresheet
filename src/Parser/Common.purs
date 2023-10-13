@@ -119,27 +119,18 @@ opSymbolChars =
 
 reservedKeyWords :: Array String
 reservedKeyWords =
-  [ "switch"
-  , "cond"
-  , "class"
-  , "instance"
-  , "data"
-  , "newtype"
-  , "type"
-  , "do"
-  , "if"
-  , "then"
-  , "else"
-  , "forall"
+  [ "__arg__"
+  , "module"
   , "import"
+  , "as"
+  , "where"
+  , "switch"
+  , "cond"
+  , "data"
   , "infixl"
   , "infixr"
-  , "where"
-  , "let"
+  , "otherwise"
   , "_"
-  , "module"
-  , "qualified"
-  , "as"
   ]
 
 reservedSymbols :: Array String
@@ -153,9 +144,8 @@ reservedSymbols =
   , "?"
   , "<-"
   , "->"
-  , "@"
-  , "~"
   , "=>"
+  , "@"
   , "["
   , "]"
   ]

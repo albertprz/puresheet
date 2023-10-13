@@ -8,26 +8,30 @@ import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators ((<|>))
 import Bookhound.Parsers.Char (underscore)
 import Bookhound.Parsers.Collections (listOf)
+import Bookhound.Parsers.String (withinParens)
 import Control.Lazy (defer)
 
 pattern' :: Parser Pattern
-pattern' = pattern''
+pattern' = openForm
   where
-  alias = defer \_ -> AliasedPattern <$> (var <* isToken "@") <*> aliasElem
+  alias = defer \_ -> AliasedPattern <$> (var <* isToken "@") <*> infixArgForm
   var' = defer \_ -> VarPattern <$> var
-  cellValue' = defer \_ -> LitPattern <$> cellValue
+  literal = defer \_ -> LitPattern <$> cellValue
   wildcard = defer \_ -> Wildcard <$ token underscore
   spread = defer \_ -> Spread <$ isToken "..."
   list = defer \_ -> ArrayPattern <$> listOf pattern'
-  elem' = defer \_ -> cellValue'
-    <|> var'
-    <|> alias
-    <|> wildcard
-    <|> spread
-    <|> list
-  ctorElem = defer \_ ->
-    alias
-      <|> elem'
-  aliasElem = defer \_ -> elem'
-  pattern'' = defer \_ -> alias
-    <|> ctorElem
+  singleForm = defer \_ ->
+    wildcard
+      <|> spread
+      <|> literal
+      <|> list
+      <|> var'
+  complexForm = defer \_ -> alias <|> complexInfixForm
+  complexInfixForm = defer \_ ->
+    withinParens alias
+  infixArgForm = defer \_ ->
+    complexInfixForm
+      <|> withinParens complexInfixForm
+      <|> singleForm
+  openForm = defer \_ -> complexForm <|> singleForm
+    <|> withinParens (complexForm <|> singleForm)

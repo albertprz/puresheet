@@ -81,7 +81,7 @@ fnBody = whereExpr <|> openForm
     <$> cell
     <|> fnOp
     <|> fnVar
-  complexForm = defer \_ -> opSection <|> infixFnApply <|>  complexInfixForm
+  complexForm = defer \_ -> opSection <|> infixFnApply <|> complexInfixForm
   complexInfixForm = defer \_ ->
     lambdaFn
       <|> condExpr

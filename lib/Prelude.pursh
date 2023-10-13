@@ -1,0 +1,33 @@
+module Prelude
+
+
+def apply (f, x) = f (x)
+
+
+def compose (f, g) = x -> f (g (x))
+
+
+def flip (f) = (x, y) -> f (y, x)
+
+
+def map (f, xs) = switch (xs) {
+    | [] => []
+    | [ xs @ ... , x ] => map (f, xs) :+ f (x)
+}
+
+
+def filter (f, xs) = switch (xs) {
+    | [] => []
+    | [ xs @ ... , x ] ? f(x)      => filter (f, xs) :+ f (x)
+                       ? otherwise => filter (f, xs)
+}
+
+
+def reduce (f, start, xs) =
+    reduceRight(flip (f), start, reverse (xs))
+
+
+def reduceRight (f, start, xs) = switch (xs) {
+    | [] => start
+    | [ xs @ ... , x ] => f(x, reduceRight(f, start, xs))
+}
