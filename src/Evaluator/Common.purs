@@ -26,6 +26,7 @@ type LocalFormulaCtx =
   , module' :: Module
   , scope :: Scope
   , scopeLoc :: Loc Scope
+  , lambdaCount :: Int
   }
 
 type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT EvalError m a
@@ -127,5 +128,5 @@ nonEmptyCellValue _ = true
 varFn :: String -> FnBody
 varFn = FnVar <<< QVar Nothing <<< Var
 
-argId :: String
-argId = "__arg__"
+lambdaId :: Int -> String
+lambdaId n = "__lambda__" <> show n

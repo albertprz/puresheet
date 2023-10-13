@@ -60,6 +60,7 @@ evalExprInApp appState =
     , module': preludeModule
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero
+    , lambdaCount: zero
     }
 
 evalExprInCtx :: LocalFormulaCtx -> FnBody -> Either EvalError Object

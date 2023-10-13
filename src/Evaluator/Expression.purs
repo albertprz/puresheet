@@ -3,7 +3,7 @@ module App.Evaluator.Expression where
 import FatPrelude
 
 import App.Evaluator.Builtins as Builtins
-import App.Evaluator.Common (EvalM, LocalFormulaCtx, argId, extractAlias, isSpread, lookupFn, lookupOperator, registerArg, registerBindings, varFn)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, varFn)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
@@ -27,9 +27,11 @@ evalExpr (FnApply fnExpr args) = do
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError $ TypeError' $ NotAFunction fnObj
 
-evalExpr (LambdaFn params body) =
-  evalExpr $ WhereExpr (FnVar $ QVar Nothing $ Var argId)
-    [ FnDef (Var argId) params body ]
+evalExpr (LambdaFn params body) = do
+  { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }
+  let lambdaVar = Var $ lambdaId lambdaCount
+  evalExpr $ WhereExpr (FnVar $ QVar Nothing lambdaVar)
+    [ FnDef lambdaVar params body ]
 
 evalExpr (InfixFnApply fnOps args) =
   do
@@ -46,26 +48,16 @@ evalExpr (InfixFnApply fnOps args) =
     evalExpr nestedExpr
 
 evalExpr (LeftOpSection fnOp body) = do
-  { scope } <- get
-  pure $ FnObj
-    $ FnInfo
-        { id: Nothing
-        , body: (InfixFnApply [ fnOp ] [ body, varFn argId ])
-        , params: [ Var argId ]
-        , scope
-        , argsMap: Map.empty
-        }
+  { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }
+  let lambdaVar = Var $ lambdaId lambdaCount
+  evalExpr $ LambdaFn [ lambdaVar ]
+    (InfixFnApply [ fnOp ] [ FnVar $ QVar Nothing lambdaVar, body ])
 
 evalExpr (RightOpSection body fnOp) = do
-  { scope } <- get
-  pure $ FnObj
-    $ FnInfo
-        { id: Nothing
-        , body: (InfixFnApply [ fnOp ] [ varFn argId, body ])
-        , params: [ Var argId ]
-        , scope
-        , argsMap: Map.empty
-        }
+  { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }
+  let lambdaVar = Var $ lambdaId lambdaCount
+  evalExpr $ LambdaFn [ lambdaVar ]
+    (InfixFnApply [ fnOp ] [ body, FnVar $ QVar Nothing lambdaVar ])
 
 evalExpr (WhereExpr fnBody bindings) =
   registerBindings bindings *> evalExpr fnBody

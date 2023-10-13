@@ -267,4 +267,5 @@ formulaCtx =
   , module': preludeModule
   , scope: zero
   , scopeLoc: fromTree $ mkLeaf zero
+  , lambdaCount: zero
   }

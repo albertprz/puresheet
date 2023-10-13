@@ -35,6 +35,7 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("tail" /\ (tail /\ A1 /\ []))
     , ("init" /\ (init /\ A1 /\ []))
     , ("last" /\ (last /\ A1 /\ []))
+    , ("reverse" /\ (reverse /\ A1 /\ []))
     , ("length" /\ (length /\ A1 /\ []))
     , ("and" /\ (and /\ A2 /\ [ 0, 1 ]))
     , ("or" /\ (or /\ A2 /\ [ 0, 1 ]))
@@ -219,6 +220,11 @@ init [ ArrayObj a ] = fromMaybe NullObj $ ArrayObj <$> Array.init a
 init [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
   (Array.init $ toCharArray a)
 
+reverse :: Partial => Array Object -> Object
+reverse [ ArrayObj xs ] = ArrayObj $ Array.reverse xs
+reverse [ StringObj xs ] = StringObj $ fromCharArray $ Array.reverse $
+  toCharArray xs
+
 length :: Partial => Array Object -> Object
 length [ ArrayObj a ] = IntObj $ Foldable.length a
 length [ StringObj a ] = IntObj $ String.length a
@@ -242,3 +248,4 @@ dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
 slice :: Partial => Array Object -> Object
 slice [ IntObj n1, IntObj n2, ArrayObj xs ] = ArrayObj $ Array.slice n1 n2 xs
 slice [ IntObj n1, IntObj n2, StringObj xs ] = StringObj $ String.slice n1 n2 xs
+

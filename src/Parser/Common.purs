@@ -119,8 +119,7 @@ opSymbolChars =
 
 reservedKeyWords :: Array String
 reservedKeyWords =
-  [ "__arg__"
-  , "module"
+  [ "module"
   , "import"
   , "as"
   , "where"
@@ -138,8 +137,8 @@ reservedSymbols =
   [ ".."
   , "..."
   , "::"
+  , ":"
   , "="
-  , "\\"
   , "|"
   , "?"
   , "<-"
