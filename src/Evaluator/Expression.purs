@@ -3,7 +3,7 @@ module App.Evaluator.Expression where
 import FatPrelude
 
 import App.Evaluator.Builtins as Builtins
-import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, varFn)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, substituteFnArgs, varFn)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
@@ -13,18 +13,17 @@ import App.Utils.Map (lookupArray) as Map
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Alternative ((<|>))
-import Data.Map (empty, fromFoldable, lookup, member, union) as Map
+import Data.Map (lookup, member) as Map
 import Data.Set as Set
-import Data.Tree.Zipper (fromTree, insertChild, toTree)
+import Data.Tree.Zipper (insertChild, toTree)
 
 evalExpr :: FnBody -> EvalM Object
 
 evalExpr (FnApply fnExpr args) = do
-  fnObj <- evalExpr fnExpr
   argObjs <- traverse (\x -> evalExpr x) args
+  fnObj <- evalExpr fnExpr
   case fnObj of
-    FnObj fnInfo ->
-      evalFn fnInfo (Object' <$> argObjs)
+    FnObj fnInfo -> evalFn fnInfo (Object' <$> argObjs)
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError $ TypeError' $ NotAFunction fnObj
 
@@ -145,69 +144,41 @@ evalExpr (Object' (BuiltinFnObj fnInfo@{ arity: A0 })) =
 
 evalExpr (Object' obj) = pure obj
 
-evalFn
-  :: FnInfo
-  -> Array FnBody
-  -> EvalM Object
-evalFn
-  (FnInfo fnInfo@{ body, params, scope, id: maybeFnId, argsMap: fnArgsMap })
-  args =
-  do
-    st <- get
+evalFn :: FnInfo -> Array FnBody -> EvalM Object
+evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
+
+  st <- get
+  newSt <- getNewFnState (FnInfo fnInfo) args
+
+  if unappliedArgsNum == 0 then do
+    put newSt
+    result <- evalExpr body
+    newScopeLoc <- gets _.scopeLoc
+    put st
+    if isJust maybeFnId then
+      pure $ substituteFnArgs result (params `zip'` args)
+    else
+      modify_ _ { scopeLoc = newScopeLoc } *> pure result
+
+  else if length args == 0 then
+    pure $ FnObj $ FnInfo fnInfo
+      { argsMap = newSt.argsMap }
+
+  else if unappliedArgsNum > 0 then
+    pure $ FnObj $ FnInfo $ fnInfo
+      { params = takeEnd' unappliedArgsNum params
+      , argsMap = newSt.argsMap
+      }
+
+  else do
     let
-      newArgsMap = Map.union fnArgsMap $ Map.union argBindings st.argsMap
-      newSt = case maybeFnId of
-        Just { fnModule } ->
-          st
-            { argsMap = newArgsMap
-            , localFnsMap = Map.empty
-            , module' = fnModule
-            , scope = zero
-            , scopeLoc = fromTree $ mkLeaf zero
-            }
-        Nothing -> st
-          { argsMap = newArgsMap
-          , scope = scope
-          , scopeLoc = goToNode scope st.scopeLoc
-          }
-    if unappliedArgsNum == 0 then do
-      put newSt
-      result <- evalExpr body
-      newScopeLoc <- gets _.scopeLoc
-      put st
-      when (isNothing maybeFnId)
-        (modify_ _ { scopeLoc = newScopeLoc })
-      pure result
-    else if length args == 0 then
-      pure $ FnObj $ FnInfo fnInfo { argsMap = newSt.argsMap }
-    else if unappliedArgsNum > 0 then
-      pure
-        $ FnObj
-        $ FnInfo
-        $ fnInfo
-            { params = takeEnd' unappliedArgsNum params
-            , argsMap = newSt.argsMap
-            }
-    else do
-      let
-        { before: preArgs, after: postArgs } =
-          splitAt' (length params) args
-      fn <- evalFn (FnInfo fnInfo) preArgs
-      evalExpr $ FnApply (Object' fn) postArgs
+      { before: preArgs, after: postArgs } =
+        splitAt' (length params) args
+    fn <- evalFn (FnInfo fnInfo) preArgs
+    evalExpr $ FnApply (Object' fn) postArgs
+
   where
   unappliedArgsNum = length params - length args
-  argBindings = Map.fromFoldable
-    $ rmap
-        ( \arg ->
-            FnInfo
-              { id: Nothing
-              , body: arg
-              , scope
-              , params: []
-              , argsMap: Map.empty
-              }
-        )
-    <$> zip' ((scope /\ _) <$> params) args
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
 evalBuiltinFn { fn, arity, defaultParams } args =
@@ -307,16 +278,16 @@ evalPatternGuard (SimpleGuard body) =
 
 evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
-evalPatternBinding (VarPattern var) result = do
+evalPatternBinding (VarPattern param) result = do
   { scope } <- get
-  registerArg scope (FnDef var [] $ Object' result) $> true
+  registerArg scope (FnDef param [] $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
   pure $ cellValueToObj cellValue == result
 
-evalPatternBinding (AliasedPattern var pattern) result = do
+evalPatternBinding (AliasedPattern param pattern) result = do
   { scope } <- get
-  registerArg scope (FnDef var [] $ Object' result) *>
+  registerArg scope (FnDef param [] $ Object' result) *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ArrayPattern patterns) result
@@ -324,7 +295,7 @@ evalPatternBinding (ArrayPattern patterns) result
   , length (filter isSpread patterns) == 1
   , ArrayObj results <- result =
       do
-        _ <- case findMap extractAlias patterns of
+        void $ case findMap extractAlias patterns of
           Just alias -> evalPatternBinding (VarPattern alias)
             (ArrayObj resultsBetween)
           Nothing -> pure true
@@ -342,7 +313,7 @@ evalPatternBinding (ArrayPattern patterns) result
 
 evalPatternBinding (ArrayPattern patterns) result
   | Just results <- extractNList (length patterns) result =
-      and <$> traverse (\(x /\ y) -> evalPatternBinding x y)
+      and <$> traverse (\x -> uncurry evalPatternBinding x)
         (patterns `zip'` results)
   | otherwise = pure false
 
@@ -366,3 +337,4 @@ getBuiltinFnInfo fnName =
     $ note (LexicalError' $ UnknownValue fnName)
     $ BuiltinFnObj
     <$> Map.lookup fnName Builtins.builtinFnsMap
+

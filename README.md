@@ -13,3 +13,4 @@ Ideally, it should provide an ergonomic and simple to use formulas, sorting & fi
 ## Live Demo
 
 ![](assets/demo.gif)
+    

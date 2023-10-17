@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp, Var(..))
-import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo(..), OpInfo, Scope(..))
+import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Scope(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (findJust)
 import Control.Alternative ((<|>))
@@ -13,7 +13,7 @@ import Data.Array as Array
 import Data.List as List
 import Data.Map as Map
 import Data.Set as Set
-import Data.Tree.Zipper (Loc, toTree)
+import Data.Tree.Zipper (Loc, fromTree, toTree)
 
 type LocalFormulaCtx =
   { tableData :: Map Cell CellValue
@@ -57,9 +57,9 @@ lookupFn qVar =
   lookupModuleFn qVar
 
 -- Scope resolution:
--- 1. Children bindings
--- 2. Fn args
--- 3. Siblings bindings
+-- 1. Children bindings (Enclosing bindings)
+-- 2. Fn args (Enclosing args)
+-- 3. Siblings bindings (From the same where expression)
 -- 4. Free variables (Closed over bindings + args)
 lookupLocalFn :: Var -> EvalM FnInfo
 lookupLocalFn fnName = do
@@ -108,6 +108,67 @@ insertFnDef scope (FnDef fnName params body) =
   where
   fnInfo = FnInfo
     { id: Nothing, params, body, scope, argsMap: Map.empty }
+
+getNewFnState :: FnInfo -> Array FnBody -> EvalM LocalFormulaCtx
+getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
+  do
+    st <- get
+    let newArgsMap = Map.union argsMap $ Map.union argBindings st.argsMap
+    pure $ case maybeFnId of
+      Just { fnModule } ->
+        st
+          { argsMap = newArgsMap
+          , localFnsMap = Map.empty
+          , module' = fnModule
+          , scope = zero
+          , scopeLoc = fromTree $ mkLeaf zero
+          }
+      Nothing -> st
+        { argsMap = newArgsMap
+        , scope = scope
+        , scopeLoc = goToNode scope st.scopeLoc
+        }
+  where
+  argBindings = Map.fromFoldable
+    $ rmap
+        ( FnInfo <<<
+            { id: Nothing
+            , body: _
+            , scope
+            , params: []
+            , argsMap: Map.empty
+            }
+        )
+    <$> zip' ((scope /\ _) <$> params) args
+  args =
+    if isJust maybeFnId then substituteScope <$> fnArgs
+    else fnArgs
+
+substituteFnArgs :: Object -> Array (Var /\ FnBody) -> Object
+substituteFnArgs (FnObj (FnInfo fn)) pairs =
+  FnObj $ FnInfo $ fn { body = foldl substituteArg fn.body pairs }
+
+substituteFnArgs x _ = x
+
+substituteArg :: FnBody -> (Var /\ FnBody) -> FnBody
+substituteArg (FnApply f xs) pair =
+  FnApply (substituteArg f pair)
+    (flip substituteArg pair <$> xs)
+
+substituteArg fnVar@(FnVar x) (param /\ arg)
+  | x == QVar Nothing param = arg
+  | otherwise = fnVar
+
+substituteArg (InfixFnApply ops bodies) pair =
+  InfixFnApply ops (flip substituteArg pair <$> bodies)
+
+substituteArg body _ = body
+
+substituteScope :: FnBody -> FnBody
+substituteScope (Object' (FnObj (FnInfo fnInfo))) =
+  Object' $ FnObj $ FnInfo fnInfo { scope = zero }
+
+substituteScope x = x
 
 isSpread :: Pattern -> Boolean
 isSpread Spread = true
