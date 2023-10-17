@@ -102,15 +102,12 @@ lookupOperator opName = do
     $ Map.lookup opName operatorsMap
 
 insertFnDef
-  :: Scope
-  -> FnDef
-  -> Map (Scope /\ Var) FnInfo
-  -> Map (Scope /\ Var) FnInfo
+  :: Scope -> FnDef -> Map (Scope /\ Var) FnInfo -> Map (Scope /\ Var) FnInfo
 insertFnDef scope (FnDef fnName params body) =
   Map.insert (scope /\ fnName) fnInfo
   where
   fnInfo = FnInfo
-    { id: Nothing, params, body, scope: scope, argsMap: Map.empty }
+    { id: Nothing, params, body, scope, argsMap: Map.empty }
 
 isSpread :: Pattern -> Boolean
 isSpread Spread = true

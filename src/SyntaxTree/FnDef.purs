@@ -61,12 +61,14 @@ data Object
 
 newtype FnInfo =
   FnInfo
-    { id :: Maybe { fnModule :: Module, fnName :: Var }
+    { id :: Maybe FnId
     , body :: FnBody
     , params :: Array Var
     , scope :: Scope
     , argsMap :: Map (Scope /\ Var) FnInfo
     }
+
+type FnId = { fnModule :: Module, fnName :: Var }
 
 derive instance Generic FnInfo _
 instance Show FnInfo where

@@ -23,7 +23,8 @@ evalExpr (FnApply fnExpr args) = do
   fnObj <- evalExpr fnExpr
   argObjs <- traverse (\x -> evalExpr x) args
   case fnObj of
-    FnObj fnInfo -> evalFn fnInfo (Object' <$> argObjs)
+    FnObj fnInfo ->
+      evalFn fnInfo (Object' <$> argObjs)
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError $ TypeError' $ NotAFunction fnObj
 
@@ -148,41 +149,51 @@ evalFn
   :: FnInfo
   -> Array FnBody
   -> EvalM Object
-evalFn (FnInfo { body, params, scope, id: fnId, argsMap: fnArgsMap }) args = do
-  st <- get
-  let
-    argsMap = Map.union fnArgsMap $ Map.union argBindings st.argsMap
-    newSt = case fnId of
-      Just { fnModule } -> st
-        { argsMap = argsMap
-        , module' = fnModule
-        , scope = zero
-        , scopeLoc = fromTree $ mkLeaf zero
-        }
-      Nothing -> st
-        { argsMap = argsMap
-        , scope = scope
-        , scopeLoc = goToNode scope st.scopeLoc
-        }
-  if unappliedArgsNum == 0 then do
-    put newSt
-    result <- evalExpr body
-    newScopeLoc <- gets _.scopeLoc
-    put st
-    when (isNothing fnId)
-      (modify_ _ { scopeLoc = newScopeLoc })
-    pure result
-  else if unappliedArgsNum > 0 then
-    pure
-      $ FnObj
-      $ FnInfo
-          { id: Nothing
-          , body
-          , params: takeEnd' unappliedArgsNum params
-          , scope
-          , argsMap
+evalFn
+  (FnInfo fnInfo@{ body, params, scope, id: maybeFnId, argsMap: fnArgsMap })
+  args =
+  do
+    st <- get
+    let
+      newArgsMap = Map.union fnArgsMap $ Map.union argBindings st.argsMap
+      newSt = case maybeFnId of
+        Just { fnModule } ->
+          st
+            { argsMap = newArgsMap
+            , localFnsMap = Map.empty
+            , module' = fnModule
+            , scope = zero
+            , scopeLoc = fromTree $ mkLeaf zero
+            }
+        Nothing -> st
+          { argsMap = newArgsMap
+          , scope = scope
+          , scopeLoc = goToNode scope st.scopeLoc
           }
-  else raiseError $ TypeError' $ TooManyArguments $ length args
+    if unappliedArgsNum == 0 then do
+      put newSt
+      result <- evalExpr body
+      newScopeLoc <- gets _.scopeLoc
+      put st
+      when (isNothing maybeFnId)
+        (modify_ _ { scopeLoc = newScopeLoc })
+      pure result
+    else if length args == 0 then
+      pure $ FnObj $ FnInfo fnInfo { argsMap = newSt.argsMap }
+    else if unappliedArgsNum > 0 then
+      pure
+        $ FnObj
+        $ FnInfo
+        $ fnInfo
+            { params = takeEnd' unappliedArgsNum params
+            , argsMap = newSt.argsMap
+            }
+    else do
+      let
+        { before: preArgs, after: postArgs } =
+          splitAt' (length params) args
+      fn <- evalFn (FnInfo fnInfo) preArgs
+      evalExpr $ FnApply (Object' fn) postArgs
   where
   unappliedArgsNum = length params - length args
   argBindings = Map.fromFoldable
@@ -345,8 +356,9 @@ getFnInfo :: QVar -> EvalM Object
 getFnInfo fnName = do
   fnInfo <- lookupFn fnName
   case fnInfo of
-    FnInfo { body: FnApply _ _ } -> evalFn fnInfo []
-    _ -> evalExpr $ Object' $ FnObj $ fnInfo
+    FnInfo { body: FnApply _ _ } -> evalFn fnInfo [] <|> evalExpr
+      (Object' $ FnObj $ fnInfo)
+    _ -> evalExpr (Object' $ FnObj $ fnInfo)
 
 getBuiltinFnInfo :: QVar -> EvalM Object
 getBuiltinFnInfo fnName =

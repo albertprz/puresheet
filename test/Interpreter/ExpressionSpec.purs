@@ -207,7 +207,6 @@ spec = describe "Interpreter.Expression" do
           (MatchError' InvalidGuard)
 
     describe "raises type errors on invalid function calls" do
-
       it "Too many arguments" $
         runExpr
           """
@@ -269,3 +268,4 @@ formulaCtx =
   , scopeLoc: fromTree $ mkLeaf zero
   , lambdaCount: zero
   }
+
