@@ -32,18 +32,10 @@ evalExpr (LambdaFn params body) = do
   evalExpr $ WhereExpr (FnVar $ QVar Nothing lambdaVar)
     [ FnDef lambdaVar params body ]
 
-evalExpr (InfixFnApply fnOps args) =
-  do
-    opInfos <- traverse (\x -> lookupOperator x) fnOps
-    -- let
-    --   noteUnknownOperator = except <<< note
-    --     ( LexicalError' $ UnknownOperator $ fromMaybe
-    --         (QVarOp Nothing $ VarOp "")
-    --         unknownOperator
-    --     )
-    -- unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
-    nestedExpr <- pure $ unsafeFromJust $ flip nestInfixFns args opInfos
-    evalExpr nestedExpr
+evalExpr (InfixFnApply fnOps args) = do
+  opInfos <- traverse (\x -> lookupOperator x) fnOps
+  nestedExpr <- pure $ unsafeFromJust $ flip nestInfixFns args opInfos
+  evalExpr nestedExpr
 
 evalExpr (LeftOpSection fnOp body) = do
   { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }

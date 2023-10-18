@@ -1,11 +1,10 @@
 module App.Evaluator.Builtins
   ( builtinFnsMap
-  , operatorsMap
   ) where
 
 import App.Evaluator.Object (extractList, isElement, nonNullObj)
-import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
-import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
+import App.SyntaxTree.Common (Var(..))
+import App.SyntaxTree.FnDef (Arity(..), BuiltinFnInfo, Object(..))
 import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.EuclideanRing as Ring
@@ -62,36 +61,6 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("snoc" /\ (snoc /\ A2 /\ []))
     , ("range" /\ (range /\ A2 /\ []))
     , ("slice" /\ (slice /\ A3 /\ []))
-    ]
-
-operatorsMap :: Map QVarOp OpInfo
-operatorsMap = Map.fromFoldable
-  $
-    ( \(opName /\ (fnName /\ precedence /\ associativity)) ->
-        (QVarOp (Just preludeModule) (VarOp opName)) /\
-          { id: { opModule: preludeModule, opName: VarOp opName }
-          , fnName: QVar Nothing $ Var fnName
-          , precedence
-          , associativity
-          }
-    )
-  <$>
-    [ ("||" /\ ("or" /\ P2 /\ R))
-    , ("&&" /\ ("and" /\ P3 /\ R))
-    , ("==" /\ ("eq" /\ P4 /\ L))
-    , ("!=" /\ ("notEq" /\ P4 /\ L))
-    , (">" /\ ("gt" /\ P4 /\ L))
-    , (">=" /\ ("gtOrEq" /\ P4 /\ L))
-    , ("<" /\ ("lt" /\ P4 /\ L))
-    , ("<=" /\ ("ltOrEq" /\ P4 /\ L))
-    , ("++" /\ ("append" /\ P5 /\ R))
-    , ("+:" /\ ("cons" /\ P6 /\ R))
-    , (":+" /\ ("snoc" /\ P7 /\ L))
-    , ("+" /\ ("add" /\ P8 /\ L))
-    , ("-" /\ ("sub" /\ P9 /\ L))
-    , ("*" /\ ("mult" /\ P10 /\ L))
-    , ("/" /\ ("div" /\ P11 /\ L))
-    , ("%" /\ ("mod" /\ P11 /\ L))
     ]
 
 -- Boolean Fns

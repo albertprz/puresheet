@@ -3,15 +3,18 @@ module Interpreter.ExpressionSpec where
 import TestPrelude
 
 import App.Components.Table.Cell (Column(..), Row(..))
-import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
 import App.Interpreter.Expression (RunError(..))
 import App.Interpreter.Expression as Interpreter
+import App.Interpreter.Module (reloadModule)
 import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (Object(..))
 import Data.Map as Map
 import Data.Tree.Zipper (fromTree)
+import Effect.Unsafe (unsafePerformEffect)
+import Node.Encoding (Encoding(..))
+import Node.FS.Sync (readTextFile, realpath)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
@@ -37,10 +40,10 @@ spec = describe "Interpreter.Expression" do
       it "Map" $
         runExpr
           """
-          map (x -> x * x, [1 .. 4]) where {
-              | map (f, xs) = switch (xs) {
+          map' (x -> x * x, [1 .. 4]) where {
+              | map' (f, xs) = switch (xs) {
                   | [] => []
-                  | [ xs @ ... , x ] => map (f, xs) :+ f (x)
+                  | [ xs @ ... , x ] => map' (f, xs) :+ f (x)
               }
           }
           """ `shouldEqual` pure
@@ -70,8 +73,8 @@ spec = describe "Interpreter.Expression" do
         runExpr
           """
           f (5) where {
-              | f = compose (_ * 2, _ + 3)
-              | compose (f, g) = h where {
+              | f = compose' (_ * 2, _ + 3)
+              | compose' (f, g) = h where {
                   | h (x) = f (g (x))
               }
           }
@@ -242,30 +245,36 @@ spec = describe "Interpreter.Expression" do
               { column: Column 'B', row: Row 2 }
           )
 
+runExpr :: String -> Either RunError Object
+runExpr = Interpreter.runExpr formulaCtx
+
 mkQVar :: String -> QVar
 mkQVar = QVar Nothing <<< Var
 
 mkQVarOp :: String -> QVarOp
 mkQVarOp = QVarOp Nothing <<< VarOp
 
-runExpr :: String -> Either RunError Object
-runExpr = Interpreter.runExpr formulaCtx
-
 evalError :: forall a. EvalError -> Either RunError a
 evalError = Left <<< EvalError'
 
 formulaCtx :: LocalFormulaCtx
-formulaCtx =
-  { tableData: Map.empty
-  , fnsMap: Map.empty
-  , operatorsMap: Builtins.operatorsMap
-  , aliasedModulesMap: Map.empty
-  , importedModulesMap: Map.empty
-  , localFnsMap: Map.empty
-  , argsMap: Map.empty
-  , module': preludeModule
-  , scope: zero
-  , scopeLoc: fromTree $ mkLeaf zero
-  , lambdaCount: zero
-  }
-
+formulaCtx = unsafePerformEffect $
+  execStateT loadModuleFile newFormulaCtx
+  where
+  loadModuleFile = do
+    fp <- liftEffect $ realpath "lib/Prelude.pursh"
+    contents <- liftEffect $ readTextFile UTF8 fp
+    reloadModule contents
+  newFormulaCtx =
+    { tableData: Map.empty
+    , fnsMap: Map.empty
+    , operatorsMap: Map.empty
+    , aliasedModulesMap: Map.empty
+    , importedModulesMap: Map.empty
+    , localFnsMap: Map.empty
+    , argsMap: Map.empty
+    , module': preludeModule
+    , scope: zero
+    , scopeLoc: fromTree $ mkLeaf zero
+    , lambdaCount: zero
+    }

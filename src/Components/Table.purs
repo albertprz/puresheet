@@ -8,7 +8,6 @@ import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
-import App.Evaluator.Builtins (operatorsMap)
 import Data.Map as Map
 import Halogen as H
 
@@ -44,7 +43,7 @@ initialState = const
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing
   , fnsMap: Map.empty
-  , operatorsMap
+  , operatorsMap: Map.empty
   , aliasedModulesMap: Map.empty
   , importedModulesMap: Map.empty
   }
