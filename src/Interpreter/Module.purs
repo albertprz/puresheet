@@ -4,7 +4,7 @@ import FatPrelude
 
 import App.Parser.ModuleDef (moduleDef)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..))
-import App.SyntaxTree.FnDef (FnDef(..), FnInfo(..), OpInfo)
+import App.SyntaxTree.FnDef (FnDef(..), FnInfo(..), OpDef(..), OpInfo)
 import App.SyntaxTree.ModuleDef (ModuleDef(..), ModuleImport(..))
 import App.Utils.Map (deleteWhen) as Map
 import Bookhound.Parser (ParseError, runParser)
@@ -33,7 +33,7 @@ unRegisterModuleDef
    . MonadState (RegisterModuleCtx r) m
   => ModuleDef
   -> m Unit
-unRegisterModuleDef (ModuleDef module' _ _) =
+unRegisterModuleDef (ModuleDef module' _ _ _) =
   modify_ \st -> st
     { fnsMap = Map.deleteWhen (\(QVar x _) -> x == Just module')
         st.fnsMap
@@ -49,9 +49,11 @@ registerModuleDef
    . MonadState (RegisterModuleCtx r) m
   => ModuleDef
   -> m Unit
-registerModuleDef (ModuleDef module' imports fnDefs) =
-  registerModuleImports module' imports *>
-    registerModuleFns module' fnDefs
+registerModuleDef (ModuleDef module' imports opDefs fnDefs) =
+  registerModuleImports module' imports
+    *> registerModuleOps module' opDefs
+    *>
+      registerModuleFns module' fnDefs
 
 registerModuleImports
   :: forall r m
@@ -75,6 +77,26 @@ registerModuleImports module' imports =
           st.importedModulesMap
       }
 
+registerModuleOps
+  :: forall r m
+   . MonadState (RegisterModuleCtx r) m
+  => Module
+  -> Array OpDef
+  -> m Unit
+registerModuleOps opModule opDefs =
+  modify_ \st -> st
+    { operatorsMap = Map.union (Map.fromFoldable (toEntry <$> opDefs))
+        st.operatorsMap
+    }
+  where
+  toEntry (OpDef opName fnName associativity precedence) =
+    QVarOp (Just opModule) opName /\
+      { id: { opModule, opName }
+      , fnName: QVar (Just opModule) fnName
+      , precedence
+      , associativity
+      }
+
 registerModuleFns
   :: forall r m
    . MonadState (RegisterModuleCtx r) m
@@ -96,3 +118,4 @@ registerModuleFns fnModule fnDefs =
         , scope: zero
         , argsMap: Map.empty
         }
+

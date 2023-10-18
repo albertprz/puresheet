@@ -3,13 +3,15 @@ module App.SyntaxTree.FnDef where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
-import App.SyntaxTree.Common (Module, QVar, QVarOp, Var)
+import App.SyntaxTree.Common (Module, QVar, QVarOp, Var, VarOp)
 import App.SyntaxTree.Pattern (Pattern)
 import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Partial.Unsafe (unsafeCrashWith)
+
+data OpDef = OpDef VarOp Var Associativity Precedence
 
 data FnDef = FnDef Var (Array Var) FnBody
 
@@ -70,10 +72,6 @@ newtype FnInfo =
 
 type FnId = { fnModule :: Module, fnName :: Var }
 
-derive instance Generic FnInfo _
-instance Show FnInfo where
-  show x = genericShow x
-
 type BuiltinFnInfo =
   { fn :: Array Object -> Object
   , arity :: Arity
@@ -81,10 +79,13 @@ type BuiltinFnInfo =
   }
 
 type OpInfo =
-  { fnName :: QVar
+  { id :: FnOpId
+  , fnName :: QVar
   , precedence :: Precedence
   , associativity :: Associativity
   }
+
+type FnOpId = { opModule :: Module, opName :: VarOp }
 
 data Arity
   = A0
@@ -99,7 +100,8 @@ data Arity
   | A9
 
 data Precedence
-  = P1
+  = P0
+  | P1
   | P2
   | P3
   | P4
@@ -117,62 +119,6 @@ data Associativity
   | R
 
 newtype Scope = Scope Int
-
-derive newtype instance Eq Scope
-derive newtype instance Ord Scope
-derive newtype instance Semiring Scope
-derive newtype instance Show Scope
-
-instance Range Scope where
-  range (Scope a) (Scope b) = Scope <$> (a .. b)
-
-derive instance Eq Precedence
-derive instance Ord Precedence
-
-derive instance Eq Arity
-derive instance Ord Arity
-derive instance Generic Arity _
-
-instance Enum Arity where
-  succ = genericSucc
-  pred = genericPred
-
-instance Bounded Arity where
-  bottom = genericBottom
-  top = genericTop
-
-instance BoundedEnum Arity where
-  cardinality = genericCardinality
-  fromEnum = genericFromEnum
-  toEnum = genericToEnum
-
-derive instance Generic FnDef _
-instance Show FnDef where
-  show x = genericShow x
-
-derive instance Generic FnBody _
-instance Show FnBody where
-  show x = genericShow x
-
-derive instance Generic CaseBinding _
-instance Show CaseBinding where
-  show x = genericShow x
-
-derive instance Generic MaybeGuardedFnBody _
-instance Show MaybeGuardedFnBody where
-  show x = genericShow x
-
-derive instance Generic GuardedFnBody _
-instance Show GuardedFnBody where
-  show x = genericShow x
-
-derive instance Generic Guard _
-instance Show Guard where
-  show x = genericShow x
-
-derive instance Generic PatternGuard _
-instance Show PatternGuard where
-  show x = genericShow x
 
 instance Show Object where
   show = case _ of
@@ -208,3 +154,77 @@ instance Ord Object where
   compare NullObj NullObj = EQ
   compare x y = unsafeCrashWith
     ("Cannot compare: " <> show x <> " and " <> show y)
+
+derive newtype instance Eq Scope
+derive newtype instance Ord Scope
+derive newtype instance Semiring Scope
+derive newtype instance Show Scope
+
+instance Range Scope where
+  range (Scope a) (Scope b) = Scope <$> (a .. b)
+
+derive instance Eq Precedence
+derive instance Ord Precedence
+derive instance Generic Precedence _
+
+instance Enum Precedence where
+  succ = genericSucc
+  pred = genericPred
+
+instance Bounded Precedence where
+  bottom = genericBottom
+  top = genericTop
+
+instance BoundedEnum Precedence where
+  cardinality = genericCardinality
+  fromEnum = genericFromEnum
+  toEnum = genericToEnum
+
+derive instance Eq Arity
+derive instance Ord Arity
+derive instance Generic Arity _
+
+instance Enum Arity where
+  succ = genericSucc
+  pred = genericPred
+
+instance Bounded Arity where
+  bottom = genericBottom
+  top = genericTop
+
+instance BoundedEnum Arity where
+  cardinality = genericCardinality
+  fromEnum = genericFromEnum
+  toEnum = genericToEnum
+
+derive instance Generic FnInfo _
+instance Show FnInfo where
+  show x = genericShow x
+
+derive instance Generic FnDef _
+instance Show FnDef where
+  show x = genericShow x
+
+derive instance Generic FnBody _
+instance Show FnBody where
+  show x = genericShow x
+
+derive instance Generic CaseBinding _
+instance Show CaseBinding where
+  show x = genericShow x
+
+derive instance Generic MaybeGuardedFnBody _
+instance Show MaybeGuardedFnBody where
+  show x = genericShow x
+
+derive instance Generic GuardedFnBody _
+instance Show GuardedFnBody where
+  show x = genericShow x
+
+derive instance Generic Guard _
+instance Show Guard where
+  show x = genericShow x
+
+derive instance Generic PatternGuard _
+instance Show PatternGuard where
+  show x = genericShow x

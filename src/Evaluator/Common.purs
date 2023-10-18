@@ -4,7 +4,7 @@ import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
-import App.SyntaxTree.Common (Module, QVar(..), QVarOp, Var(..))
+import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..))
 import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Scope(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (findJust)
@@ -79,27 +79,42 @@ lookupLocalFn fnName = do
 
 lookupModuleFn :: QVar -> EvalM FnInfo
 lookupModuleFn qVar@(QVar fnModule fnName) = do
-  { module', importedModulesMap, aliasedModulesMap, fnsMap } <- get
-  let
-    modules = case fnModule of
-      Just alias -> fromMaybe Set.empty $ Map.lookup (module' /\ alias)
-        aliasedModulesMap
-      Nothing -> Set.insert module' $ fromMaybe Set.empty $ Map.lookup
-        module'
-        importedModulesMap
-    fns = flip QVar fnName <<< pure <$> Array.fromFoldable modules
+  st <- get
+  let fns = getAvailableFns QVar (fnModule /\ fnName) st
   except
     $ note (LexicalError' $ UnknownValue qVar)
     $ findJust
-    $ flip Map.lookup fnsMap
+    $ flip Map.lookup st.fnsMap
     <$> fns
 
 lookupOperator :: QVarOp -> EvalM OpInfo
-lookupOperator opName = do
-  { operatorsMap } <- get
+lookupOperator qVarOp@(QVarOp opModule opName) = do
+  st <- get
+  let ops = getAvailableFns QVarOp (opModule /\ opName) st
   except
-    $ note (LexicalError' $ UnknownOperator opName)
-    $ Map.lookup opName operatorsMap
+    $ note (LexicalError' $ UnknownOperator qVarOp)
+    $ findJust
+    $ flip Map.lookup st.operatorsMap
+    <$> ops
+
+getAvailableFns
+  :: forall a b
+   . (Maybe Module -> a -> b)
+  -> (Maybe Module /\ a)
+  -> LocalFormulaCtx
+  -> NonEmptyArray b
+getAvailableFns
+  ctor
+  (fnModule /\ fnName)
+  { module', importedModulesMap, aliasedModulesMap } =
+  flip ctor fnName <<< pure <$> cons' module' (Array.fromFoldable modules)
+  where
+  modules = case fnModule of
+    Just alias -> fromMaybe Set.empty $ Map.lookup (module' /\ alias)
+      aliasedModulesMap
+    Nothing -> fromMaybe Set.empty $ Map.lookup
+      module'
+      importedModulesMap
 
 insertFnDef
   :: Scope -> FnDef -> Map (Scope /\ Var) FnInfo -> Map (Scope /\ Var) FnInfo

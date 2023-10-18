@@ -3,7 +3,7 @@ module App.Parser.ModuleDef where
 import FatPrelude
 
 import App.Parser.Common (module')
-import App.Parser.FnDef (fnDef, statements)
+import App.Parser.FnDef (fnDef, opDef, statements)
 import App.SyntaxTree.ModuleDef (ModuleDef(..), ModuleImport(..))
 import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators (is, (|?))
@@ -12,6 +12,7 @@ moduleDef :: Parser ModuleDef
 moduleDef = ModuleDef
   <$> (is "module" *> module')
   <*> (fold <$> (|?) (statements "import" moduleImport))
+  <*> (fold <$> (|?) (statements "op" opDef))
   <*> statements "def" fnDef
 
 moduleImport :: Parser ModuleImport

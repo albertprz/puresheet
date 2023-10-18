@@ -4,7 +4,7 @@ module App.Evaluator.Builtins
   ) where
 
 import App.Evaluator.Object (extractList, isElement, nonNullObj)
-import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
+import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, Object(..), OpInfo, Precedence(..))
 import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
@@ -13,14 +13,14 @@ import Data.Foldable as Foldable
 import Data.Map as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, filter, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, filter, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
-builtinFnsMap :: Map QVar BuiltinFnInfo
+builtinFnsMap :: Map Var BuiltinFnInfo
 builtinFnsMap = unsafePartial $ Map.fromFoldable
   $
-    bimap (QVar Nothing <<< Var)
+    bimap Var
       ( \(fn /\ arity /\ nulls) ->
           { fn, arity, defaultParams: Set.fromFoldable nulls }
       )
@@ -67,10 +67,14 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
 operatorsMap :: Map QVarOp OpInfo
 operatorsMap = Map.fromFoldable
   $
-    bimap (QVarOp Nothing <<< VarOp)
-      ( \(fnName /\ precedence /\ associativity) ->
-          { fnName: QVar Nothing $ Var fnName, precedence, associativity }
-      )
+    ( \(opName /\ (fnName /\ precedence /\ associativity)) ->
+        (QVarOp (Just preludeModule) (VarOp opName)) /\
+          { id: { opModule: preludeModule, opName: VarOp opName }
+          , fnName: QVar Nothing $ Var fnName
+          , precedence
+          , associativity
+          }
+    )
   <$>
     [ ("||" /\ ("or" /\ P2 /\ R))
     , ("&&" /\ ("and" /\ P3 /\ R))

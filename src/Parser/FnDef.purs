@@ -1,19 +1,31 @@
-module App.Parser.FnDef (fnDef, fnBody, statements) where
+module App.Parser.FnDef (opDef, fnDef, fnBody, statements) where
 
 import FatPrelude
 
 import App.Components.Table.Cell (Column(..), Row(..), buildCell)
-import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, var)
+import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, var, varOp)
 import App.Parser.Pattern (pattern')
-import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
-import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (someSepBy, within, (<|>), (|+))
+import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
+import Bookhound.Parser (ParseError(..), Parser, errorParser, withError)
+import Bookhound.ParserCombinators (is, someSepBy, within, (<|>), (|*), (|+))
 import Bookhound.Parsers.Char (comma, quote, upper)
 import Bookhound.Parsers.Collections (listOf)
-import Bookhound.Parsers.Number (posInt)
+import Bookhound.Parsers.Number (posInt, unsignedInt)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
 import Data.Array as Array
+
+opDef :: Parser OpDef
+opDef = defer \_ -> withError "Operator definition"
+  $ OpDef
+  <$> varOp
+  <* isToken "="
+  <*> var
+  <*> (L <$ is 'L' <|> R <$ is 'R')
+  <*>
+    ( mandatory "precedence must be between 0 and 12"
+        (toEnum <$> unsignedInt)
+    )
 
 fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
@@ -129,3 +141,7 @@ sepByOps sep p = do
   x <- p
   y <- (|+) ((/\) <$> sep <*> p)
   pure $ ((fst <$> y) /\ Array.cons x (snd <$> y))
+
+mandatory :: forall a. String -> Parser (Maybe a) -> Parser a
+mandatory tag maybeP =
+  fromMaybe (errorParser $ NoMatch tag) <<< (map pure) =<< maybeP

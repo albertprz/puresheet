@@ -6,14 +6,13 @@ import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, substituteFnArgs, varFn)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
-import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
+import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
-import App.Utils.Map (lookupArray) as Map
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Alternative ((<|>))
-import Data.Map (lookup, member) as Map
+import Data.Map (lookup) as Map
 import Data.Set as Set
 import Data.Tree.Zipper (insertChild, toTree)
 
@@ -35,16 +34,15 @@ evalExpr (LambdaFn params body) = do
 
 evalExpr (InfixFnApply fnOps args) =
   do
-    { operatorsMap } <- get
-    let
-      noteUnknownOperator = except <<< note
-        ( LexicalError' $ UnknownOperator $ fromMaybe
-            (QVarOp Nothing $ VarOp "")
-            unknownOperator
-        )
-      unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
-    nestedExpr <- noteUnknownOperator
-      (flip nestInfixFns args =<< Map.lookupArray fnOps operatorsMap)
+    opInfos <- traverse (\x -> lookupOperator x) fnOps
+    -- let
+    --   noteUnknownOperator = except <<< note
+    --     ( LexicalError' $ UnknownOperator $ fromMaybe
+    --         (QVarOp Nothing $ VarOp "")
+    --         unknownOperator
+    --     )
+    -- unknownOperator = find (not <<< (_ `Map.member` operatorsMap)) fnOps
+    nestedExpr <- pure $ unsafeFromJust $ flip nestInfixFns args opInfos
     evalExpr nestedExpr
 
 evalExpr (LeftOpSection fnOp body) = do
@@ -121,8 +119,12 @@ evalExpr (Array' array) =
         (Object' $ ArrayObj [])
         array
 
+evalExpr (FnVar qVar@(QVar module' var))
+  | module' == Nothing || module' == Just preludeModule =
+      getBuiltinFnInfo var <|> getFnInfo qVar
+
 evalExpr (FnVar fn) =
-  getFnInfo fn <|> getBuiltinFnInfo fn
+  getFnInfo fn
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupOperator fnOp
@@ -159,10 +161,6 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
       pure $ substituteFnArgs result (params `zip'` args)
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
-
-  else if length args == 0 then
-    pure $ FnObj $ FnInfo fnInfo
-      { argsMap = newSt.argsMap }
 
   else if unappliedArgsNum > 0 then
     pure $ FnObj $ FnInfo $ fnInfo
@@ -206,22 +204,22 @@ evalBuiltinFn { fn, arity, defaultParams } args =
       Nothing
 
 nestInfixFns
-  :: Array (QVarOp /\ OpInfo)
+  :: Array OpInfo
   -> Array FnBody
   -> Maybe FnBody
-nestInfixFns [ (_ /\ { fnName }) ] args =
+nestInfixFns [ { fnName } ] args =
   pure $ FnApply (FnVar fnName) args
 
 nestInfixFns fnOps args = do
-  (fnOp /\ { fnName, associativity }) <- maximumBy
-    (compare `on` (_.precedence <<< snd))
+  ({ id: opId, fnName, associativity }) <- maximumBy
+    (compare `on` _.precedence)
     fnOps
   let
     indexFn =
       case associativity of
         L -> findIndex'
         R -> findLastIndex'
-  idx <- indexFn ((_ == fnOp) <<< fst) fnOps
+  idx <- indexFn (eq opId <<< _.id) fnOps
   let
     newFns = fold $ deleteAt' idx fnOps
     redexArgs = sliceNext' 2 idx args
@@ -331,10 +329,9 @@ getFnInfo fnName = do
       (Object' $ FnObj $ fnInfo)
     _ -> evalExpr (Object' $ FnObj $ fnInfo)
 
-getBuiltinFnInfo :: QVar -> EvalM Object
+getBuiltinFnInfo :: Var -> EvalM Object
 getBuiltinFnInfo fnName =
   except
-    $ note (LexicalError' $ UnknownValue fnName)
+    $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
     $ BuiltinFnObj
     <$> Map.lookup fnName Builtins.builtinFnsMap
-
