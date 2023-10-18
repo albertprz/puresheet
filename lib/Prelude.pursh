@@ -63,7 +63,7 @@ def map (f, xs) = switch (xs) {
 
 def filter (f, xs) = switch (xs) {
     | []                         => []
-    | [ xs @ ... , x ] ? f(x)      => filter (f, xs) :+ f (x)
+    | [ xs @ ... , x ] ? f(x)      => filter (f, xs) :+ x
                      ? otherwise => filter (f, xs)
 }
 

@@ -7,13 +7,14 @@ import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, va
 import App.Parser.Pattern (pattern')
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
 import Bookhound.Parser (ParseError(..), Parser, errorParser, withError)
-import Bookhound.ParserCombinators (is, someSepBy, within, (<|>), (|*), (|+))
+import Bookhound.ParserCombinators (is, someSepBy, within, (<|>), (|+))
 import Bookhound.Parsers.Char (comma, quote, upper)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (posInt, unsignedInt)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
 import Data.Array as Array
+
 
 opDef :: Parser OpDef
 opDef = defer \_ -> withError "Operator definition"
@@ -38,7 +39,8 @@ fnDef = defer \_ -> withError "Function definition"
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> openForm
   where
-  fnApply = defer \_ -> FnApply <$> token fnForm <*> argListOf openForm
+  fnApply = defer \_ -> FnApply <$> (token fnForm) <*>
+                        (fold <$> ((|+) $ argListOf openForm))
   lambdaFn = defer \_ -> LambdaFn <$> (argListOf var <|> pure <$> var)
     <*> (isToken "->" *> fnBody)
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps qVarOp
@@ -81,7 +83,7 @@ fnBody = whereExpr <|> openForm
       <|> singleForm
   openForm = defer \_ -> complexForm <|> singleForm
     <|> withinParens (complexForm <|> singleForm)
-  fnForm = defer \_ -> fnVar <|> fnOp <|> withinParens (fnApply <|> complexForm)
+  fnForm = defer \_ -> fnVar <|> fnOp
   singleForm = defer \_ -> fnApply
     <|> array
     <|> cellMatrixRange
@@ -93,13 +95,13 @@ fnBody = whereExpr <|> openForm
     <$> cell
     <|> fnOp
     <|> fnVar
-  complexForm = defer \_ -> opSection <|> infixFnApply <|> complexInfixForm
+  complexForm = defer \_ -> lambdaFn <|> opSection <|> infixFnApply <|> complexInfixForm
   complexInfixForm = defer \_ ->
-    lambdaFn
-      <|> condExpr
+      condExpr
       <|> switchExpr
-      <|> withinParens infixFnApply
+      <|> withinParens lambdaFn
       <|> withinParens opSection
+      <|> withinParens infixFnApply
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding <$> pattern' <*> maybeGuardedFnBody

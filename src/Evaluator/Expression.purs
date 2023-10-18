@@ -3,7 +3,7 @@ module App.Evaluator.Expression where
 import FatPrelude
 
 import App.Evaluator.Builtins as Builtins
-import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, substituteFnArgs, varFn)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, resetFnScope, substituteFnArgs, varFn)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
@@ -150,7 +150,8 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     newScopeLoc <- gets _.scopeLoc
     put st
     if isJust maybeFnId then
-      pure $ substituteFnArgs result (params `zip'` args)
+      pure $ resetFnScope $
+      substituteFnArgs result (params `zip'` args)
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
 

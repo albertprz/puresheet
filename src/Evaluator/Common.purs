@@ -156,14 +156,18 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
         )
     <$> zip' ((scope /\ _) <$> params) args
   args =
-    if isJust maybeFnId then substituteScope <$> fnArgs
+    if isJust maybeFnId then resetScope <$> fnArgs
     else fnArgs
 
 substituteFnArgs :: Object -> Array (Var /\ FnBody) -> Object
 substituteFnArgs (FnObj (FnInfo fn)) pairs =
   FnObj $ FnInfo $ fn { body = foldl substituteArg fn.body pairs }
-
 substituteFnArgs x _ = x
+
+resetFnScope :: Object -> Object
+resetFnScope (FnObj (FnInfo fn)) =
+  FnObj $ FnInfo $ fn { scope = zero }
+resetFnScope x = x
 
 substituteArg :: FnBody -> (Var /\ FnBody) -> FnBody
 substituteArg (FnApply f xs) pair =
@@ -179,11 +183,11 @@ substituteArg (InfixFnApply ops bodies) pair =
 
 substituteArg body _ = body
 
-substituteScope :: FnBody -> FnBody
-substituteScope (Object' (FnObj (FnInfo fnInfo))) =
+resetScope :: FnBody -> FnBody
+resetScope (Object' (FnObj (FnInfo fnInfo))) =
   Object' $ FnObj $ FnInfo fnInfo { scope = zero }
 
-substituteScope x = x
+resetScope x = x
 
 isSpread :: Pattern -> Boolean
 isSpread Spread = true

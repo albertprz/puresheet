@@ -245,6 +245,15 @@ spec = describe "Interpreter.Expression" do
               { column: Column 'B', row: Row 2 }
           )
 
+    describe "evaluates top level functions & operators" do
+      it "Map filter pipeline" $
+        runExpr
+          """
+          [1, 3, 5] |> map (_ * 2) |> filter (_ > 7)
+          """ `shouldEqual`
+          (pure $ ArrayObj [IntObj 10])
+
+
 runExpr :: String -> Either RunError Object
 runExpr = Interpreter.runExpr formulaCtx
 
