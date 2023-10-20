@@ -1,5 +1,8 @@
 module Prelude
 
+op <| = apply R0
+
+op |> = applyFlipped L1
 
 op || = or R2
 
@@ -27,19 +30,15 @@ op + = add L8
 
 op - = sub L9
 
+op <<< = compose R9
+
+op >>> = composeFlipped R9
+
 op * = mult L10
 
 op / = div L11
 
 op % = mod L11
-
-op <| = apply R0
-
-op |> = applyFlipped L1
-
-op <<< = compose R9
-
-op >>> = composeFlipped R9
 
 
 def id (x) = x
@@ -48,11 +47,7 @@ def const (x, y) = x
 
 def apply (f, x) = f (x)
 
-def applyFlipped = flip (apply)
-
 def compose (f, g) = x -> f (g (x))
-
-def composeFlipped = flip (compose)
 
 def flip (f) = (x, y) -> f (y, x)
 

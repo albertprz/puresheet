@@ -15,7 +15,6 @@ import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquare
 import Control.Lazy (defer)
 import Data.Array as Array
 
-
 opDef :: Parser OpDef
 opDef = defer \_ -> withError "Operator definition"
   $ OpDef
@@ -37,10 +36,10 @@ fnDef = defer \_ -> withError "Function definition"
   <*> fnBody
 
 fnBody :: Parser FnBody
-fnBody = whereExpr <|> openForm
+fnBody = whereExpr <|> token openForm
   where
   fnApply = defer \_ -> FnApply <$> (token fnForm) <*>
-                        (fold <$> ((|+) $ argListOf openForm))
+    (fold <$> ((|+) $ argListOf openForm))
   lambdaFn = defer \_ -> LambdaFn <$> (argListOf var <|> pure <$> var)
     <*> (isToken "->" *> fnBody)
   infixFnApply = defer \_ -> uncurry InfixFnApply <$> sepByOps qVarOp
@@ -95,9 +94,10 @@ fnBody = whereExpr <|> openForm
     <$> cell
     <|> fnOp
     <|> fnVar
-  complexForm = defer \_ -> lambdaFn <|> opSection <|> infixFnApply <|> complexInfixForm
+  complexForm = defer \_ -> lambdaFn <|> opSection <|> infixFnApply <|>
+    complexInfixForm
   complexInfixForm = defer \_ ->
-      condExpr
+    condExpr
       <|> switchExpr
       <|> withinParens lambdaFn
       <|> withinParens opSection

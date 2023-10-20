@@ -29,16 +29,10 @@ cellValue = token
   stringLit = noneOf [ '"', '\\' ]
 
 var :: Parser Var
-var = Var <$> notReserved
-  ( withinParens (operator opSymbol) <|>
-      ident lower
-  )
+var = Var <$> notReserved (ident lower)
 
 varOp :: Parser VarOp
-varOp = VarOp <$> notReserved
-  ( (wrapBackQuotes <$> withinBackQuotes (ident lower)) <|>
-      (operator opSymbol)
-  )
+varOp = VarOp <$> notReserved (operator opSymbol)
 
 module' :: Parser Module
 module' = Module <$> someSepBy dot (ident upper)
@@ -47,7 +41,14 @@ qVar :: Parser QVar
 qVar = uncurry QVar <$> qTerm var
 
 qVarOp :: Parser QVarOp
-qVarOp = uncurry QVarOp <$> qTerm varOp
+qVarOp = uncurry QVarOp <$> qTerm
+  ( VarOp <$> (is "|" ->>- (extractVar <$> var) ->>- is ">")
+      <|> VarOp
+      <$> (is "<" ->>- (extractVar <$> var) ->>- is "|")
+      <|> varOp
+  )
+  where
+  extractVar (Var x) = x
 
 argListOf :: forall a. Parser a -> Parser (Array a)
 argListOf = withinParens <<< someSepBy comma
@@ -122,12 +123,12 @@ reservedKeyWords =
   [ "module"
   , "import"
   , "as"
+  , "data"
+  , "op"
+  , "def"
   , "where"
   , "switch"
   , "cond"
-  , "data"
-  , "infixl"
-  , "infixr"
   , "otherwise"
   , "_"
   ]

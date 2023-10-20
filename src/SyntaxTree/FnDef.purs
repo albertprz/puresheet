@@ -163,6 +163,7 @@ derive newtype instance Show Scope
 instance Range Scope where
   range (Scope a) (Scope b) = Scope <$> (a .. b)
 
+derive instance Eq Associativity
 derive instance Eq Precedence
 derive instance Ord Precedence
 derive instance Generic Precedence _

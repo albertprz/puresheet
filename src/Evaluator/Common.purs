@@ -4,15 +4,20 @@ import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue(..))
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
-import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..))
-import App.SyntaxTree.FnDef (FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Scope(..))
+import App.Parser.Common (var)
+import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
+import App.SyntaxTree.FnDef (Associativity(..), FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Precedence(..), Scope(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (findJust)
+import Bookhound.Parser (runParser)
+import Bookhound.ParserCombinators (is)
 import Control.Alternative ((<|>))
 import Data.Array as Array
 import Data.List as List
 import Data.Map as Map
 import Data.Set as Set
+import Data.String (stripSuffix)
+import Data.String as String
 import Data.Tree.Zipper (Loc, fromTree, toTree)
 
 type LocalFormulaCtx =
@@ -51,10 +56,18 @@ registerArg scope fnDef =
   modify_ \st -> st { argsMap = insertFnDef scope fnDef st.argsMap }
 
 lookupFn :: QVar -> EvalM FnInfo
-lookupFn qVar@(QVar Nothing var) =
-  lookupLocalFn var <|> lookupModuleFn qVar
-lookupFn qVar =
-  lookupModuleFn qVar
+lookupFn (QVar fnModule (Var fnName))
+  | Just newFn <- Var <$> stripSuffix (String.Pattern "Flipped") fnName =
+      do
+        FnInfo fnInfo <- lookupFn $ QVar fnModule newFn
+        pure $ FnInfo $ fnInfo
+          { body = FnApply (varFn "flip")
+              [ Object' $ FnObj $ FnInfo fnInfo ]
+          , params = []
+          }
+lookupFn qVar = case qVar of
+  QVar Nothing var -> lookupLocalFn var <|> lookupModuleFn qVar
+  QVar _ _ -> lookupModuleFn qVar
 
 -- Scope resolution:
 -- 1. Children bindings (Enclosing bindings)
@@ -88,6 +101,20 @@ lookupModuleFn qVar@(QVar fnModule fnName) = do
     <$> fns
 
 lookupOperator :: QVarOp -> EvalM OpInfo
+lookupOperator (QVarOp opModule opName@(VarOp op))
+  | Right (Var fnName) <- runParser (is "|" *> var <* is ">") op = pure
+      { id: { opModule: preludeModule, opName }
+      , fnName: QVar opModule $ Var (fnName <> "Flipped")
+      , precedence: P1
+      , associativity: L
+      }
+  | Right fnName <- runParser (is "<" *> var <* is "|") op = pure
+      { id: { opModule: preludeModule, opName }
+      , fnName: QVar opModule fnName
+      , precedence: P0
+      , associativity: R
+      }
+
 lookupOperator qVarOp@(QVarOp opModule opName) = do
   st <- get
   let ops = getAvailableFns QVarOp (opModule /\ opName) st

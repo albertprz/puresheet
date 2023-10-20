@@ -151,7 +151,7 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     put st
     if isJust maybeFnId then
       pure $ resetFnScope $
-      substituteFnArgs result (params `zip'` args)
+        substituteFnArgs result (params `zip'` args)
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
 
@@ -204,19 +204,25 @@ nestInfixFns [ { fnName } ] args =
   pure $ FnApply (FnVar fnName) args
 
 nestInfixFns fnOps args = do
-  ({ id: opId, fnName, associativity }) <- maximumBy
-    (compare `on` _.precedence)
+  ({ associativity, precedence }) <- maximumBy (compare `on` _.precedence)
     fnOps
   let
     indexFn =
       case associativity of
         L -> findIndex'
         R -> findLastIndex'
-  idx <- indexFn (eq opId <<< _.id) fnOps
+  idx <- indexFn
+    ( \x -> x.associativity == associativity
+        && x.precedence
+        == precedence
+    )
+    fnOps
+  { fnName } <- index' fnOps idx
   let
     newFns = fold $ deleteAt' idx fnOps
     redexArgs = sliceNext' 2 idx args
-    newArgs = fold $ deleteAt' (idx + 1) $ fold
+    newArgs = fold $ deleteAt' (idx + 1)
+      $ fold
       $ updateAt' idx (FnApply (FnVar fnName) redexArgs) args
   nestInfixFns newFns newArgs
 

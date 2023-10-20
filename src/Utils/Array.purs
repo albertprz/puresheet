@@ -91,6 +91,9 @@ findLastIndex' = Array.findLastIndex
 slice' :: forall a. Int -> Int -> Array a -> Array a
 slice' = Array.slice
 
+index' :: forall a. Array a -> Int -> Maybe a
+index' = Array.index
+
 splitAt' :: forall a. Int -> Array a -> { after :: Array a, before :: Array a }
 splitAt' = Array.splitAt
 
