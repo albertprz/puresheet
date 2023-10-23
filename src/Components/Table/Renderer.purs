@@ -11,7 +11,7 @@ import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Utils.Dom (parseKeyCode)
 import App.Utils.Map (lookup2) as Map
 import Data.Map (lookup) as Map
-import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, textarea, th, thead_, tr_)
+import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
@@ -34,7 +34,7 @@ render
   div [ class_ mainContainer ]
     [ div [ class_ formulaContainer ]
         [ input
-            [ id selectedCellInputId
+            [ id $ show selectedCellInputId
             , tabIndex 0
             , classes [ selectedCellInput ]
             , value $ showCell selectedCell
@@ -43,21 +43,24 @@ render
                 (parseKeyCode $ KeyboardEvent.code ev)
                 ev
             ]
-        , textarea
-            [ id formulaBoxId
+        , div
+            [ id $ show formulaBoxId
             , tabIndex 0
+
             , classes [ formulaBox, formulaStateToClass formulaState ]
-            , style "resize: none"
-            , value $ foldMap _.formulaText $ Map.lookup2 selectedCell
-                formulaCache
-                tableFormulas
             , onKeyDown \ev -> FormulaKeyPress
                 (parseKeyCode $ KeyboardEvent.code ev)
                 ev
             , onFocusIn FocusInFormula
             ]
+            [ text
+                $ foldMap _.formulaText
+                $ Map.lookup2 selectedCell
+                    formulaCache
+                    tableFormulas
+            ]
         , input
-            [ id formulaCellInputId
+            [ id $ show formulaCellInputId
             , tabIndex 0
             , classes [ formulaCellInput ]
             , type_ $ if activeFormula then InputText else InputHidden
@@ -160,7 +163,7 @@ renderBodyCell
   -> HTML i Action
 renderBodyCell selected selection active cell cellValue =
   td
-    [ id $ cellId <> showCell cell
+    [ id $ show cellId <> showCell cell
     , tabIndex 0
     , classes $ bodyCellSelectionClasses selected selection cell
     , onClick $ ClickCell cell

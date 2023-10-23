@@ -5,15 +5,16 @@ import FatPrelude
 import App.CSS.Ids (formulaBoxId, formulaCellInputId, inputElement, selectedCellInputId)
 import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenciesMap)
-import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, emptyFormulaBox, focusById, focusCell, focusCellElem, getFormulaBoxContents, initialize, pasteCells, refreshCells, refreshCellsFromDeps, selectAllCells, selectCell)
+import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, loadPrelude, pasteCells, refreshCells, refreshCellsFromDeps, selectAllCells, selectCell, setRows)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Interpreter.Formula (runFormula)
-import App.Utils.Dom (KeyCode(..), ctrlKey, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, emptyFormulaBox, focusById, focusCell, focusCellElem, getFormulaBoxContents, prevent, shiftKey, toMouseEvent, withPrevent)
 import App.Utils.Map (lookup2) as Map
 import Data.Map (insert, keys, member, union, unionWith) as Map
 import Data.Set as Set
 import Effect.Class.Console as Logger
 import Halogen as H
+import Web.HTML.HTMLElement (setContentEditable)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
@@ -22,8 +23,10 @@ handleAction
   => Action
   -> H.HalogenM AppState Action slots o m Unit
 
-handleAction Initialize =
-  initialize
+handleAction Initialize = do
+  loadPrelude
+  setRows
+  actOnElementById formulaBoxId $ setContentEditable "true"
 
 handleAction (WriteSelectedCellInput cell) =
   traverse_ (selectCell <<< OtherCell) cell
@@ -52,12 +55,12 @@ handleAction (WriteCell cell value) = do
 
 handleAction (FormulaKeyPress Enter ev)
   | ctrlKey ev = withPrevent ev do
-      formulaText <- getFormulaBoxContents ev
+      formulaText <- getFormulaBoxContents
       st <- get
       case runFormula st st.formulaCell formulaText of
         Right { result, affectedCells, formulaCells, cellDeps } -> do
           let formulaId = newFormulaId $ Map.keys st.formulaCache
-          focusCell st.selectedCell
+          emptyFormulaBox
           modify_ _
             { tableData = Map.union result st.tableData
             , tableFormulas = Map.union (formulaId <$ result)
@@ -74,12 +77,15 @@ handleAction (FormulaKeyPress Enter ev)
             , formulaState = ValidFormula
             }
           refreshCellsFromDeps cellDeps
+          focusCell st.selectedCell
         Left err ->
           Logger.error (show err) *>
             modify_ _ { formulaState = InvalidFormula }
 
 handleAction (FormulaKeyPress Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell
+
+-- handleAction (FormulaKeyPress Space ev) =
 
 handleAction (FormulaKeyPress (CharKeyCode 'G') ev)
   | ctrlKey ev = withPrevent ev $ focusById formulaCellInputId
@@ -290,4 +296,3 @@ handleAction (DragHeader Over _ ev) =
 
 handleAction (DragHeader _ _ _) =
   pure unit
-

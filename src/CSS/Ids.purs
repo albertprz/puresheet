@@ -1,16 +1,28 @@
 module App.CSS.Ids where
 
-formulaBoxId :: String
-formulaBoxId = "formula-box"
+import Prelude
 
-cellId :: String
-cellId = "cell"
+newtype ElementId = ElementId String
 
-selectedCellInputId :: String
-selectedCellInputId = "selected-cell-input"
+newtype ElementType = ElementType String
 
-formulaCellInputId :: String
-formulaCellInputId = "formula-cell-input"
+instance Show ElementId where
+  show (ElementId x) = x
 
-inputElement :: String
-inputElement = "input"
+instance Show ElementType where
+  show (ElementType x) = x
+
+formulaBoxId :: ElementId
+formulaBoxId = ElementId "formula-box"
+
+cellId :: ElementId
+cellId = ElementId "cell"
+
+selectedCellInputId :: ElementId
+selectedCellInputId = ElementId "selected-cell-input"
+
+formulaCellInputId :: ElementId
+formulaCellInputId = ElementId "formula-cell-input"
+
+inputElement :: ElementType
+inputElement = ElementType "input"

@@ -1,10 +1,9 @@
 {
   "private": true,
   "scripts": {
-    "build": "purs-tidy format-in-place ./src/ && purs-tidy format-in-place ./test/ && spago build",
+    "build": "spago build",
     "test": "spago -x test.dhall test",
     "serve": "PARCEL_WORKER_BACKEND=process parcel dev/index.html --open",
-    "build-ci": "spago build",
     "build-prod": "rm -rf prod && mkdir -p prod && cp dev/index.html prod/ && spago bundle-app --to prod/index.js && parcel build prod/index.html"
   },
   "devDependencies": {

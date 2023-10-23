@@ -3,16 +3,14 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.CSS.Ids (cellId, formulaBoxId)
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues, showCell)
+import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues)
 import App.Components.Table.Formula (FormulaId, getDependencies)
 import App.Components.Table.Models (AppState)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (class IsEvent, getTarget, scrollByX, selectAllVisibleElements, selectElement, shiftKey, withPrevent)
+import App.Utils.Dom (class IsEvent, focusCell, getClipboard, getVisibleCols, getVisibleRows, parseElements, scrollByX, shiftKey, withPrevent)
 import App.Utils.Map (updateJust) as Map
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Data.Array as Array
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (delete, keys, lookup, union) as Map
 import Data.Set as Set
@@ -22,14 +20,10 @@ import Effect.Class.Console as Logger
 import Foreign (ForeignError, readString, unsafeToForeign)
 import Foreign.Index ((!))
 import Promise.Aff as Promise
-import Web.Clipboard (Clipboard, clipboard, readText, writeText)
+import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
-import Web.DOM.Element (id, scrollWidth)
-import Web.DOM.ParentNode (QuerySelector(..))
-import Web.HTML (HTMLElement, window)
-import Web.HTML.HTMLElement (focus)
-import Web.HTML.HTMLTextAreaElement as HTMLTextAreaElement
-import Web.HTML.Window (navigator)
+import Web.DOM.Element (scrollWidth)
+import Web.HTML (window)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
 cellArrowMove
@@ -107,9 +101,6 @@ deleteCells = do
     { tableData = foldl (flip Map.delete) st.tableData cellsToDelete }
   refreshCells $ Set.fromFoldable cellsToDelete
 
-getClipboard :: forall m. MonadEffect m => m Clipboard
-getClipboard = liftEffect $ clipboard =<< navigator =<< window
-
 getPrelude
   :: forall m. MonadEffect m => m (Either (NonEmptyList ForeignError) String)
 getPrelude = runExceptT
@@ -143,7 +134,7 @@ goToCell
   -> Cell
   -> m Unit
 goToCell visibleCols visibleRows allColumns allRows origin target = do
-  cols <- parseElems parseColumn visibleCols
+  cols <- parseElements parseColumn visibleCols
   sequence_ $ adjustRows (length visibleRows - 1) target.row <$> maximum allRows
     <*> minimum allRows
   liftEffect $ goToCellHelper cols allColumns origin target visibleCols
@@ -179,23 +170,6 @@ adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
 
   | otherwise = pure unit
 
-initialize :: forall m. MonadState AppState m => MonadEffect m => m Unit
-initialize = do
-  preludeLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
-  case preludeLoad of
-    Left err ->
-      Logger.error
-        ( "Prelude load error \n" <> "Parse Error: " <>
-            show err
-        )
-    _ -> pure unit
-  { selectedCell, rows } <- get
-  let Row (firstRow) = head rows
-  visibleRows <- parseElems parseRow =<< getVisibleRows
-  modify_ _
-    { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
-  focusCell selectedCell
-
 refreshCells :: forall m. MonadState AppState m => Set Cell -> m Unit
 refreshCells affectedCells = do
   st <- get
@@ -227,61 +201,23 @@ applyFormula formulaId = do
     Left _ ->
       pure unit
 
-parseElems
-  :: forall m a
-   . MonadEffect m
-  => (String -> Maybe a)
-  -> Array Element
-  -> m (Array a)
-parseElems f elems = liftEffect
-  (Array.catMaybes <$> traverse ((f <$> _) <<< id) elems)
+loadPrelude :: forall m. MonadEffect m => MonadState AppState m => m Unit
+loadPrelude = do
+  tryLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
+  case tryLoad of
+    Left err ->
+      Logger.error
+        ( "Prelude load error \n" <> "Parse Error: " <>
+            show err
+        )
+    Right _ -> pure unit
 
-getVisibleCols :: forall m. MonadEffect m => m (Array Element)
-getVisibleCols = selectAllVisibleElements $ QuerySelector "th.column-header"
+setRows :: forall m. MonadEffect m => MonadState AppState m => m Unit
+setRows = do
+  { selectedCell, rows } <- get
+  let Row (firstRow) = head rows
+  visibleRows <- parseElements parseRow =<< getVisibleRows
+  modify_ _
+    { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
+  focusCell selectedCell
 
-getVisibleRows :: forall m. MonadEffect m => m (Array Element)
-getVisibleRows = selectAllVisibleElements $ QuerySelector "th.row-header"
-
-focusCell :: forall m. MonadEffect m => Cell -> m Unit
-focusCell = (_ `focusCellElem` Nothing)
-
-focusCellElem :: forall m. MonadEffect m => Cell -> Maybe String -> m Unit
-focusCellElem cell subElem = actOnCellElem cell focus subElem
-
-focusById :: forall m. MonadEffect m => String -> m Unit
-focusById = (_ `actOnElemById` focus)
-
-actOnCellElem
-  :: forall m
-   . MonadEffect m
-  => Cell
-  -> (HTMLElement -> Effect Unit)
-  -> Maybe String
-  -> m Unit
-actOnCellElem cell action subElem =
-  actOnElemById (cellId <> showCell cell <> foldMap (" " <> _) subElem) action
-
-actOnElemById
-  :: forall m
-   . MonadEffect m
-  => String
-  -> (HTMLElement -> Effect Unit)
-  -> m Unit
-actOnElemById id action = do
-  element <- selectElement $ QuerySelector ("#" <> id)
-  liftEffect $ traverse_ action element
-
-getFormulaBoxContents
-  :: forall m ev. MonadEffect m => IsEvent ev => ev -> m String
-getFormulaBoxContents ev =
-  liftEffect $ fold <$>
-    ( traverse HTMLTextAreaElement.value
-        $ HTMLTextAreaElement.fromEventTarget
-        =<< getTarget ev
-    )
-
-emptyFormulaBox :: forall m. Bind m => MonadEffect m => m Unit
-emptyFormulaBox = do
-  formulaBox <- join <<< map HTMLTextAreaElement.fromHTMLElement <$>
-    selectElement (QuerySelector $ "#" <> formulaBoxId)
-  liftEffect $ traverse_ (HTMLTextAreaElement.setValue "") formulaBox

@@ -3,10 +3,13 @@ module App.CSS.Table where
 import CSSPrelude
 
 import App.CSS.Common (lighterRed, lighterYellow, yellow)
+import Tecton.Internal (Length, Measure)
 import Tecton.Rule as Rule
+import Type.Prelude (Proxy)
 
 css :: CSS
 css = do
+
   mainContainerCss
   formulaContainerCss
   formulaCss
@@ -30,50 +33,10 @@ formulaContainerCss = do
     flexDirection := row
     alignItems := center
 
-selectedCellInputCss :: CSS
-selectedCellInputCss = do
-
-  input &. selectedCellInput ? Rule.do
-
-    position := sticky
-    left := pct 7.5
-    height := vh 1.5
-    width := vw 3
-    margin := px 25
-    padding := px 15
-    borderColor := green
-    borderWidth := px 3
-    fontSize := px 18
-    textAlign := center
-    outlineStyle := solid
-    outlineColor := green
-    outlineWidth := px 3
-    outlineOffset := px (-3)
-
-formulaCellInputCss :: CSS
-formulaCellInputCss = do
-
-  input &. formulaCellInput ? Rule.do
-
-    position := sticky
-    left := pct 85
-    height := vh 1.5
-    width := vw 3
-    margin := px 25
-    padding := px 15
-    borderColor := green
-    borderWidth := px 3
-    fontSize := px 18
-    textAlign := center
-    outlineStyle := solid
-    outlineColor := green
-    outlineWidth := px 3
-    outlineOffset := px (-3)
-
 formulaCss :: CSS
 formulaCss = do
 
-  textarea &. formulaBox ? Rule.do
+  div &. formulaBox ? Rule.do
     position := sticky
     left := pct 23
     width := vw 50
@@ -84,17 +47,51 @@ formulaCss = do
     borderWidth := px 3
     fontSize := px 18
 
-  textarea &. unknownFormula ? Rule.do
+  div &. unknownFormula ? Rule.do
     backgroundColor := lighterYellow
     borderColor := yellow
 
-  textarea &. validFormula ? Rule.do
+  div &. validFormula ? Rule.do
     backgroundColor := lighterGreen
     borderColor := green
 
-  textarea &. invalidFormula ? Rule.do
+  div &. invalidFormula ? Rule.do
     backgroundColor := lighterRed
     borderColor := red
+
+selectedCellInputCss :: CSS
+selectedCellInputCss = do
+
+  input &. selectedCellInput ? Rule.do
+
+    left := pct 7.5
+    cellInputCommonCss
+
+formulaCellInputCss :: CSS
+formulaCellInputCss = do
+
+  input &. formulaCellInput ? Rule.do
+
+    left := pct 85
+    cellInputCommonCss
+
+cellInputCommonCss
+  :: Declarations (Proxy ("outline-offset" :: Measure Length))
+cellInputCommonCss = do
+
+  position := sticky
+  height := vh 1.5
+  width := vw 3
+  margin := px 25
+  padding := px 15
+  borderColor := green
+  borderWidth := px 3
+  fontSize := px 18
+  textAlign := center
+  outlineStyle := solid
+  outlineColor := green
+  outlineWidth := px 3
+  outlineOffset := px (-3)
 
 tableCss :: CSS
 tableCss = do
