@@ -27,6 +27,9 @@ wrapCurly = wrap "{" "}"
 wrapQuotes :: String -> String
 wrapQuotes = wrapBoth "'"
 
+wrapDoubleQuotes :: String -> String
+wrapDoubleQuotes = wrapBoth "\""
+
 wrapBackQuotes :: String -> String
 wrapBackQuotes = wrapBoth "`"
 
@@ -35,3 +38,9 @@ wrapParens = wrap "(" ")"
 
 showParensCsv :: forall a. Show a => Array a -> String
 showParensCsv = wrapParens <<< str ", "
+
+foreign import startsWith :: String -> String -> Boolean
+
+foreign import endsWith :: String -> String -> Boolean
+
+foreign import includes :: String -> String -> Boolean

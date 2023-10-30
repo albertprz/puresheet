@@ -1,6 +1,6 @@
 module App.Components.Table.Renderer where
 
-import FatPrelude hiding (div)
+import FatPrelude hiding (div, span)
 import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
@@ -8,10 +8,10 @@ import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, selectedCellInputI
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCell, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
-import App.Utils.Dom (parseKeyCode)
+import App.Utils.Dom (formulaElements, parseKeyCode)
 import App.Utils.Map (lookup2) as Map
 import Data.Map (lookup) as Map
-import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
+import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, span, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 import Web.UIEvent.KeyboardEvent as KeyboardEvent
@@ -39,26 +39,28 @@ render
             , classes [ selectedCellInput ]
             , value $ showCell selectedCell
             , onValueChange $ WriteSelectedCellInput <<< parseCell
-            , onKeyDown \ev -> SelectedCellInputKeyPress
+            , onKeyDown \ev -> SelectedCellInputKeyDown
                 (parseKeyCode $ KeyboardEvent.code ev)
                 ev
             ]
-        , div
+        , span
             [ id $ show formulaBoxId
             , tabIndex 0
-
             , classes [ formulaBox, formulaStateToClass formulaState ]
-            , onKeyDown \ev -> FormulaKeyPress
+            , onKeyDown \ev -> FormulaKeyDown
+                (parseKeyCode $ KeyboardEvent.code ev)
+                ev
+            , onKeyUp \ev -> FormulaKeyUp
                 (parseKeyCode $ KeyboardEvent.code ev)
                 ev
             , onFocusIn FocusInFormula
             ]
-            [ text
+            ( formulaElements
                 $ foldMap _.formulaText
                 $ Map.lookup2 selectedCell
                     formulaCache
                     tableFormulas
-            ]
+            )
         , input
             [ id $ show formulaCellInputId
             , tabIndex 0
@@ -66,7 +68,7 @@ render
             , type_ $ if activeFormula then InputText else InputHidden
             , value $ showCell formulaCell
             , onValueChange $ WriteFormulaCellInput <<< parseCell
-            , onKeyDown \ev -> FormulaCellInputKeyPress
+            , onKeyDown \ev -> FormulaCellInputKeyDown
                 (parseKeyCode $ KeyboardEvent.code ev)
                 ev
             ]
@@ -75,7 +77,7 @@ render
         [ classes $ whenMonoid (selectionState == CopySelection)
             [ copySelection ]
         , style "border-spacing: 0"
-        , onKeyDown \ev -> KeyPress (parseKeyCode $ KeyboardEvent.code ev) ev
+        , onKeyDown \ev -> KeyDown (parseKeyCode $ KeyboardEvent.code ev) ev
         , onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
         , onWheel WheelScroll
         ]

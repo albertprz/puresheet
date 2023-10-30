@@ -49,3 +49,21 @@ yellow = hex "#b3b300"
 
 lighterYellow :: Color
 lighterYellow = hex "#ffffcc"
+
+blue :: Color
+blue = hex "#0066cc"
+
+orange :: Color
+orange = hex "#ff6600"
+
+brown :: Color
+brown = hex "#993333"
+
+mustard :: Color
+mustard = hex "#cc9900"
+
+pink :: Color
+pink = hex "#ff3399"
+
+purple :: Color
+purple = hex "#993399"

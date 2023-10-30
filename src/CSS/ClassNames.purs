@@ -67,3 +67,24 @@ selectedCellInput = ClassName "selected-cell-input"
 
 formulaCellInput :: ClassName
 formulaCellInput = ClassName "formula-cell-input"
+
+cellSyntax :: ClassName
+cellSyntax = ClassName "cell-syntax"
+
+numberSyntax :: ClassName
+numberSyntax = ClassName "number-syntax"
+
+stringSyntax :: ClassName
+stringSyntax = ClassName "string-syntax"
+
+keywordSyntax :: ClassName
+keywordSyntax = ClassName "keyword-syntax"
+
+symbolSyntax :: ClassName
+symbolSyntax = ClassName "symbol-syntax"
+
+operatorSyntax :: ClassName
+operatorSyntax = ClassName "operator-syntax"
+
+regularSyntax :: ClassName
+regularSyntax = ClassName "regular-syntax"

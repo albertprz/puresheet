@@ -44,11 +44,12 @@ data Action
   | ClickCell Cell MouseEvent
   | DoubleClickCell Cell MouseEvent
   | FocusInCell Cell FocusEvent
-  | KeyPress KeyCode KeyboardEvent
+  | KeyDown KeyCode KeyboardEvent
   | KeyRelease KeyCode KeyboardEvent
-  | FormulaKeyPress KeyCode KeyboardEvent
-  | SelectedCellInputKeyPress KeyCode KeyboardEvent
-  | FormulaCellInputKeyPress KeyCode KeyboardEvent
+  | FormulaKeyDown KeyCode KeyboardEvent
+  | FormulaKeyUp KeyCode KeyboardEvent
+  | SelectedCellInputKeyDown KeyCode KeyboardEvent
+  | FormulaCellInputKeyDown KeyCode KeyboardEvent
   | FocusInFormula FocusEvent
   | WheelScroll WheelEvent
   | HoverCell EventTransition Cell MouseEvent
@@ -59,4 +60,3 @@ data EventTransition
   = Start
   | Over
   | End
-

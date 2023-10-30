@@ -5,10 +5,9 @@ import FatPrelude
 import App.Components.Table.Cell (CellValue(..), double, int)
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
-import Bookhound.ParserCombinators (class IsMatch, inverse, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|+), (|?), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, newLine, quote, underscore, upper)
+import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|?), (||*))
+import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, quote, underscore, upper)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
-import Data.String.CodeUnits (singleton) as String
 import Data.String.Unsafe (char) as String
 
 cellValue :: Parser CellValue
@@ -69,8 +68,7 @@ opSymbol :: Parser Char
 opSymbol = oneOf opSymbolChars
 
 token :: forall a. Parser a -> Parser a
-token =
-  withTransform (maybeWithin ((|+) lineComment) <<< maybeWithin spacing)
+token = withTransform (maybeWithin spacing)
 
 isToken :: forall a. IsMatch a => a -> Parser a
 isToken = token <<< is
@@ -79,13 +77,6 @@ qTerm :: forall a. Parser a -> Parser (Maybe Module /\ a)
 qTerm x = (/\) <$> (|?) (moduleParser <* dot) <*> x
   where
   moduleParser = Module <$> someSepBy dot (nonTokenIdent upper)
-
-lineComment :: Parser String
-lineComment = is "--" ->>-
-  ( ( String.singleton <$> newLine <|> noneOf opSymbolChars ->>-
-        (|*) (inverse newLine)
-    )
-  )
 
 notReserved :: Parser String -> Parser String
 notReserved = check "reserved"
@@ -135,16 +126,15 @@ reservedKeyWords =
 
 reservedSymbols :: Array String
 reservedSymbols =
-  [ ".."
-  , "..."
-  , "::"
+  [ "..."
+  , ".."
   , ":"
-  , "="
-  , "|"
-  , "?"
   , "<-"
   , "->"
   , "=>"
+  , "="
+  , "|"
+  , "?"
   , "@"
   , "["
   , "]"

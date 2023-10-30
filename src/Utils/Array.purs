@@ -67,6 +67,12 @@ last' = Array.last
 init' :: forall a. Array a -> Maybe (Array a)
 init' = Array.init
 
+uncons' :: forall a. Array a -> Maybe { head :: a, tail :: Array a }
+uncons' = Array.uncons
+
+unsnoc' :: forall a. Array a -> Maybe { init :: Array a, last :: a }
+unsnoc' = Array.unsnoc
+
 take' :: forall a. Int -> Array a -> Array a
 take' = Array.take
 

@@ -1,27 +1,40 @@
 module App.Utils.Dom where
 
-import FatPrelude
+import FatPrelude hiding (span)
 
 import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId)
 import App.Components.Table.Cell (Cell, showCell)
+import App.Components.Table.SyntaxAtom (condenseSyntaxAtoms, syntaxAtom, syntaxAtomToClassName)
+import App.Utils.Range as Range
+import App.Utils.Selection (Selection)
+import App.Utils.Selection as Selection
+import App.Utils.String (startsWith) as String
+import Bookhound.Parser (runParser)
+import Bookhound.Utils.UnsafeRead (unsafeFromJust)
+import Control.Alternative ((<|>))
 import Data.Array as Array
-import Data.String.CodePoints as String
+import Data.Int as Int
+import Data.Newtype (unwrap)
+import Data.String.CodePoints (length) as String
+import Data.Unfoldable as Unfoldable
+import Halogen.HTML (HTML, span, text)
+import Halogen.HTML.Properties (class_)
+import Halogen.VDom.DOM.StringRenderer as StringRenderer
 import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
-import Web.DOM (Element, ParentNode)
+import Web.DOM (Element, Node, ParentNode)
 import Web.DOM.Element (getBoundingClientRect, id)
-import Web.DOM.Node (childNodes, nodeValue)
-import Web.DOM.Node as Node
+import Web.DOM.Node (firstChild, nextSibling, nodeName, nodeValue, setTextContent, textContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
 import Web.Event.Event (Event, preventDefault, target)
 import Web.Event.EventTarget (EventTarget)
 import Web.HTML (HTMLElement, Window, window)
 import Web.HTML.Event.DragEvent (DragEvent)
+import Web.HTML.HTMLDocument (HTMLDocument)
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.HTMLElement (focus, toElement, toNode)
 import Web.HTML.HTMLElement as HTMLElement
-import Web.HTML.Window (innerHeight, innerWidth, navigator, scrollBy)
 import Web.HTML.Window as Window
 import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.InputEvent (InputEvent)
@@ -31,22 +44,39 @@ import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.MouseEvent as MouseEvent
 import Web.UIEvent.WheelEvent (WheelEvent)
 
+performSyntaxHighlight :: forall m. MonadEffect m => m Unit
+performSyntaxHighlight = liftEffect do
+  formulaBox <- justSelectElementById formulaBoxId
+  selection <- getSelection =<< window
+  caretPosition <- getCaretPosition selection (toNode formulaBox)
+  formulaText <- getFormulaBoxContents
+  let
+    innerHtml = fold $ StringRenderer.render (const mempty)
+      <<< unwrap
+      <$> formulaElements formulaText
+  emptyFormulaBox
+  setInnerHTML (toElement formulaBox) innerHtml
+  traverse_ (setCaretPosition selection (toNode formulaBox)) caretPosition
+
+formulaElements :: forall a b. String -> Array (HTML a b)
+formulaElements formulaText =
+  syntaxAtomToElement <$> condenseSyntaxAtoms atoms
+  where
+  syntaxAtomToElement atom = span
+    [ class_ $ syntaxAtomToClassName atom ]
+    [ text $ show atom ]
+  atoms = fold $ runParser
+    syntaxAtom
+    formulaText
+
 getFormulaBoxContents :: forall m. MonadEffect m => m String
-getFormulaBoxContents = liftEffect do
-  formulaBox <- selectElementById formulaBoxId
-  nodeList <- traverse (childNodes <<< toNode) formulaBox
-  childrenElems <- fold <$> traverse NodeList.toArray nodeList
-  childrenTexts <- traverse nodeValue childrenElems
-  pure $ foldMap fold childrenTexts
+getFormulaBoxContents = liftEffect
+  (innerText =<< justSelectElementById formulaBoxId)
 
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
-emptyFormulaBox = do
-  formulaBox <- selectElementById formulaBoxId
-  traverse_ (removeChildrenText <<< toNode) formulaBox
-  where
-  removeChildrenText node = liftEffect do
-    Node.normalize node
-    traverse_ (Node.setTextContent "") =<< Node.firstChild node
+emptyFormulaBox = liftEffect do
+  formulaBox <- justSelectElementById formulaBoxId
+  setTextContent mempty $ toNode formulaBox
 
 parseElements
   :: forall m a
@@ -119,6 +149,10 @@ selectElement query = liftEffect $ do
   maybeElem <- querySelectorHelper querySelector query
   pure $ HTMLElement.fromElement =<< maybeElem
 
+justSelectElementById
+  :: forall m. MonadEffect m => ElementId -> m HTMLElement
+justSelectElementById x = unsafeFromJust <$> selectElementById x
+
 selectElementById
   :: forall m. MonadEffect m => ElementId -> m (Maybe HTMLElement)
 selectElementById = selectElement <<< QuerySelector <<< ("#" <> _) <<< show
@@ -129,18 +163,67 @@ querySelectorHelper
   -> QuerySelector
   -> Effect a
 querySelectorHelper function query =
-  (function query <<< HTMLDocument.toParentNode <=< Window.document)
-    =<< window
+  function query <<< HTMLDocument.toParentNode =<< getDocument
+
+getDocument :: Effect HTMLDocument
+getDocument = Window.document =<< window
 
 getClipboard :: forall m. MonadEffect m => m Clipboard
-getClipboard = liftEffect $ clipboard =<< navigator =<< window
+getClipboard = liftEffect
+  (clipboard =<< Window.navigator =<< window)
+
+setCaretPosition :: Selection -> Node -> Int -> Effect Unit
+setCaretPosition selection parentNode offset = do
+  childNode <- unsafeFromJust <$> firstChild parentNode
+  anchor <- Selection.anchorNode selection
+  (rangeNode /\ rangeOffset) <- go childNode anchor offset
+  range <- Range.createCollapsedRange rangeNode rangeOffset
+  Selection.resetRange selection range
+  where
+  go node anchor position = do
+    len <- String.length <$> textContent node
+    if len >= position then
+      (_ /\ position) <$> getChildOrNode node
+    else do
+      sibling <- unsafeFromJust <$> nextSibling node
+      go sibling anchor (position - len)
+
+getCaretPosition :: Selection -> Node -> Effect (Maybe Int)
+getCaretPosition selection parentNode = do
+  childNode <- unsafeFromJust <$> firstChild parentNode
+  join $ go childNode
+    <$> Selection.anchorNode selection
+    <*> Selection.anchorOffset selection
+  where
+  go node anchor position = do
+    len <- String.length <$> textContent node
+    textNode <- getChildOrNode node
+    if node `refEquals` anchor || textNode `refEquals` anchor then
+      pure $ pure position
+    else runMaybeT do
+      sibling <- MaybeT $ nextSibling node
+      MaybeT $ go sibling anchor (position + len)
+
+getChildOrNode :: Node -> Effect Node
+getChildOrNode node = do
+  child <- firstChild node
+  pure $ unsafeFromJust (child <|> pure node)
+
+getNodeText :: Node -> Effect String
+getNodeText node = do
+  child <- firstChild node
+  childText <- join <$> traverse nodeValue child
+  nodeText <- nodeValue node
+  pure $ fold (brText <|> nodeText <|> childText)
+  where
+  brText = toMaybe' (nodeName node == "br") "\n"
 
 elemsInViewport
   :: forall m. MonadEffect m => NonEmptyArray Element -> m (Array Element)
 elemsInViewport elems = liftEffect $ do
   w <- window
-  wHeight <- Height <<< toNumber <$> innerHeight w
-  wWidth <- Width <<< toNumber <$> innerWidth w
+  wHeight <- Height <<< toNumber <$> Window.innerHeight w
+  wWidth <- Width <<< toNumber <$> Window.innerWidth w
   filterA (isInViewport wHeight wWidth) elems
 
 isInViewport
@@ -156,17 +239,17 @@ isInViewport (Height wHeight) (Width wWidth) element =
 withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
 
-prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
-prevent ev = liftEffect (preventDefault $ toEvent ev)
-
 scrollByX :: Number -> Window -> Effect Unit
-scrollByX x = scrollBy' x 0.0
+scrollByX = flip scrollBy 0.0
 
 scrollByY :: Number -> Window -> Effect Unit
-scrollByY = scrollBy' 0.0
+scrollByY = scrollBy 0.0
 
-scrollBy' :: Number -> Number -> Window -> Effect Unit
-scrollBy' x y = scrollBy (unsafeCoerce x) (unsafeCoerce y)
+scrollBy :: Number -> Number -> Window -> Effect Unit
+scrollBy x y = Window.scrollBy (unsafeCoerce x) (unsafeCoerce y)
+
+prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
+prevent ev = liftEffect (preventDefault $ toEvent ev)
 
 parseKeyCode :: String -> KeyCode
 parseKeyCode "ArrowLeft" = ArrowLeft
@@ -184,10 +267,16 @@ parseKeyCode "ControlLeft" = Control
 parseKeyCode "ControlRight" = Control
 parseKeyCode "MetaLeft" = Control
 parseKeyCode "MetaRight" = Control
+parseKeyCode "Comma" = Comma
 parseKeyCode str
-  | String.length str == 4
-  , String.take 3 str == "Key"
+  | String.startsWith "Key" str
   , Just ch <- last' $ toCharArray str = CharKeyCode ch
+parseKeyCode str
+  | String.startsWith "Digit" str
+  , Just n <-
+      Int.fromString $ fromCharArray $ Unfoldable.fromMaybe $ last' $
+        toCharArray str =
+      DigitKeyCode n
 parseKeyCode str = OtherKeyCode str
 
 toEvent :: forall a. IsEvent a => a -> Event
@@ -198,6 +287,14 @@ getTarget = target <<< toEvent
 
 toMouseEvent :: forall a. IsEvent a => a -> MouseEvent
 toMouseEvent = unsafeCoerce
+
+foreign import innerText :: HTMLElement -> Effect String
+
+foreign import setInnerHTML :: Element -> String -> Effect Unit
+
+foreign import getSelection :: Window -> Effect Selection
+
+foreign import refEquals :: forall a. a -> a -> Boolean
 
 newtype Height = Height Number
 newtype Width = Width Number
@@ -213,7 +310,9 @@ data KeyCode
   | Delete
   | Shift
   | Control
+  | Comma
   | CharKeyCode Char
+  | DigitKeyCode Int
   | OtherKeyCode String
 
 derive instance Eq KeyCode

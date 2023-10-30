@@ -2,7 +2,6 @@ module App.CSS.Table where
 
 import CSSPrelude
 
-import App.CSS.Common (lighterRed, lighterYellow, yellow)
 import Tecton.Internal (Length, Measure)
 import Tecton.Rule as Rule
 import Type.Prelude (Proxy)
@@ -36,7 +35,7 @@ formulaContainerCss = do
 formulaCss :: CSS
 formulaCss = do
 
-  div &. formulaBox ? Rule.do
+  universal &. formulaBox ? Rule.do
     position := sticky
     left := pct 23
     width := vw 50
@@ -45,19 +44,43 @@ formulaCss = do
     padding := px 20
     borderColor := grey2
     borderWidth := px 3
-    fontSize := px 18
+    fontSize := px 20
+    whiteSpace := nowrap
 
-  div &. unknownFormula ? Rule.do
+  universal &. unknownFormula ? Rule.do
     backgroundColor := lighterYellow
     borderColor := yellow
 
-  div &. validFormula ? Rule.do
+  universal &. validFormula ? Rule.do
     backgroundColor := lighterGreen
     borderColor := green
 
-  div &. invalidFormula ? Rule.do
+  universal &. invalidFormula ? Rule.do
     backgroundColor := lighterRed
     borderColor := red
+
+  span &. keywordSyntax ? Rule.do
+    color := blue
+    fontWeight := bold
+
+  span &. symbolSyntax ? Rule.do
+    color := red
+    fontWeight := bold
+
+  span &. operatorSyntax ? Rule.do
+    color := red
+    fontWeight := bold
+
+  span &. cellSyntax ? Rule.do
+    color := purple
+    fontWeight := bold
+
+  span &. numberSyntax ? Rule.do
+    color := mustard
+    fontWeight := bold
+
+  span &. stringSyntax ? Rule.do
+    color := green
 
 selectedCellInputCss :: CSS
 selectedCellInputCss = do

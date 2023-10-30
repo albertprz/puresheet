@@ -8,7 +8,7 @@ import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenc
 import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, loadPrelude, pasteCells, refreshCells, refreshCellsFromDeps, selectAllCells, selectCell, setRows)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Interpreter.Formula (runFormula)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, emptyFormulaBox, focusById, focusCell, focusCellElem, getFormulaBoxContents, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, emptyFormulaBox, focusById, focusCell, focusCellElem, getFormulaBoxContents, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
 import App.Utils.Map (lookup2) as Map
 import Data.Map (insert, keys, member, union, unionWith) as Map
 import Data.Set as Set
@@ -34,16 +34,16 @@ handleAction (WriteSelectedCellInput cell) =
 handleAction (WriteFormulaCellInput cell) =
   traverse_ (\x -> modify_ _ { formulaCell = x }) cell
 
-handleAction (SelectedCellInputKeyPress Tab ev) =
+handleAction (SelectedCellInputKeyDown Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell
 
-handleAction (SelectedCellInputKeyPress _ _) =
+handleAction (SelectedCellInputKeyDown _ _) =
   pure unit
 
-handleAction (FormulaCellInputKeyPress Tab ev) =
+handleAction (FormulaCellInputKeyDown Tab ev) =
   withPrevent ev $ focusById formulaBoxId
 
-handleAction (FormulaCellInputKeyPress _ _) =
+handleAction (FormulaCellInputKeyDown _ _) =
   pure unit
 
 handleAction (WriteCell cell value) = do
@@ -53,7 +53,7 @@ handleAction (WriteCell cell value) = do
     }
   refreshCells $ Set.singleton cell
 
-handleAction (FormulaKeyPress Enter ev)
+handleAction (FormulaKeyDown Enter ev)
   | ctrlKey ev = withPrevent ev do
       formulaText <- getFormulaBoxContents
       st <- get
@@ -82,16 +82,22 @@ handleAction (FormulaKeyPress Enter ev)
           Logger.error (show err) *>
             modify_ _ { formulaState = InvalidFormula }
 
-handleAction (FormulaKeyPress Tab ev) =
+handleAction (FormulaKeyDown Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell
 
--- handleAction (FormulaKeyPress Space ev) =
-
-handleAction (FormulaKeyPress (CharKeyCode 'G') ev)
+handleAction (FormulaKeyDown (CharKeyCode 'G') ev)
   | ctrlKey ev = withPrevent ev $ focusById formulaCellInputId
 
-handleAction (FormulaKeyPress _ _) =
+handleAction (FormulaKeyDown _ _) =
   modify_ _ { formulaState = UnknownFormula }
+
+handleAction (FormulaKeyUp x ev)
+  | elem x [ Space, Tab, Delete, Comma ]
+      || elem x (OtherKeyCode <$> [ "BracketLeft", "BracketRight" ])
+      || shiftKey ev
+      && elem x (DigitKeyCode <$> [ 9, 0 ]) =
+      performSyntaxHighlight
+  | otherwise = pure unit
 
 handleAction (FocusInFormula _) =
   whenM (not <$> gets _.activeFormula)
@@ -124,67 +130,67 @@ handleAction (FocusInCell cell _) = do
     { formulaState = formulaState
     , activeFormula = false
     }
-  when (formulaState /= ValidFormula) emptyFormulaBox
+  unless (formulaState == ValidFormula)
+    emptyFormulaBox
 
-handleAction (KeyPress x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
+handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn
 
-handleAction (KeyPress x ev) | x `elem` [ ArrowRight, CharKeyCode 'L' ] =
+handleAction (KeyDown x ev) | x `elem` [ ArrowRight, CharKeyCode 'L' ] =
   cellArrowMove ev NextColumn
 
-handleAction (KeyPress x ev) | x `elem` [ ArrowUp, CharKeyCode 'K' ] =
+handleAction (KeyDown x ev) | x `elem` [ ArrowUp, CharKeyCode 'K' ] =
   cellArrowMove ev PrevRow
 
-handleAction (KeyPress x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
+handleAction (KeyDown x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
   cellArrowMove ev NextRow
 
-handleAction (KeyPress Enter ev)
+handleAction (KeyDown Enter ev)
   | ctrlKey ev = withPrevent ev do
       modify_ _
         { activeInput = false
         , selectionState = NotStartedSelection
         }
       focusById formulaBoxId
+  | otherwise = withPrevent ev do
+      { selectedCell, activeInput } <- modify \st -> st
+        { activeInput = not st.activeInput }
+      focusCellElem selectedCell $ toMaybe' activeInput inputElement
 
-handleAction (KeyPress Enter ev) = withPrevent ev do
-  { selectedCell, activeInput } <- modify \st -> st
-    { activeInput = not st.activeInput }
-  focusCellElem selectedCell $ toMaybe' activeInput inputElement
-
-handleAction (KeyPress Tab ev) = selectCell move
+handleAction (KeyDown Tab ev) = selectCell move
   where
   move
     | shiftKey ev = PrevCell
     | otherwise = NextCell
 
-handleAction (KeyPress Space _) = do
+handleAction (KeyDown Space _) = do
   { selectedCell } <- modify _ { activeInput = true }
   focusCellElem selectedCell $ Just inputElement
 
-handleAction (KeyPress Delete _) =
+handleAction (KeyDown Delete _) =
   deleteCells
 
-handleAction (KeyPress Shift ev) = prevent ev
+handleAction (KeyDown Shift ev) = prevent ev
 
-handleAction (KeyPress Control ev) = withPrevent ev $
+handleAction (KeyDown Control ev) = withPrevent ev $
   modify_ _ { selectionState = InProgressSelection }
 
-handleAction (KeyPress (CharKeyCode 'A') ev)
+handleAction (KeyDown (CharKeyCode 'A') ev)
   | ctrlKey ev = selectAllCells ev
 
-handleAction (KeyPress (CharKeyCode 'C') ev)
+handleAction (KeyDown (CharKeyCode 'C') ev)
   | ctrlKey ev = copyCells ev
 
-handleAction (KeyPress (CharKeyCode 'V') ev)
+handleAction (KeyDown (CharKeyCode 'V') ev)
   | ctrlKey ev = pasteCells ev
 
-handleAction (KeyPress (CharKeyCode 'X') ev)
+handleAction (KeyDown (CharKeyCode 'X') ev)
   | ctrlKey ev = copyCells ev *> deleteCells
 
-handleAction (KeyPress (CharKeyCode 'G') ev)
+handleAction (KeyDown (CharKeyCode 'G') ev)
   | ctrlKey ev = withPrevent ev $ focusById selectedCellInputId
 
-handleAction (KeyPress _ _) =
+handleAction (KeyDown _ _) =
   pure unit
 
 handleAction (KeyRelease Control ev) = withPrevent ev $
