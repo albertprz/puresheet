@@ -12,7 +12,6 @@ import App.Utils.String (startsWith) as String
 import Bookhound.Parser (runParser)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Alternative ((<|>))
-import Data.Array as Array
 import Data.Int as Int
 import Data.Newtype (unwrap)
 import Data.String.CodePoints (length) as String
@@ -51,11 +50,10 @@ performSyntaxHighlight = liftEffect do
   caretPosition <- getCaretPosition selection (toNode formulaBox)
   formulaText <- getFormulaBoxContents
   let
-    innerHtml = fold $ StringRenderer.render (const mempty)
-      <<< unwrap
-      <$> formulaElements formulaText
+    htmlString = fold $ StringRenderer.render (const mempty) <$> html
+    html = unwrap <$> formulaElements formulaText
   emptyFormulaBox
-  setInnerHTML (toElement formulaBox) innerHtml
+  setInnerHTML (toElement formulaBox) htmlString
   traverse_ (setCaretPosition selection (toNode formulaBox)) caretPosition
 
 formulaElements :: forall a b. String -> Array (HTML a b)
@@ -74,9 +72,8 @@ getFormulaBoxContents = liftEffect
   (innerText =<< justSelectElementById formulaBoxId)
 
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
-emptyFormulaBox = liftEffect do
-  formulaBox <- justSelectElementById formulaBoxId
-  setTextContent mempty $ toNode formulaBox
+emptyFormulaBox = liftEffect
+  (setTextContent mempty <<< toNode =<< justSelectElementById formulaBoxId)
 
 parseElements
   :: forall m a
@@ -84,8 +81,8 @@ parseElements
   => (String -> Maybe a)
   -> Array Element
   -> m (Array a)
-parseElements f elems = liftEffect
-  (Array.catMaybes <$> traverse ((f <$> _) <<< id) elems)
+parseElements parseFn elems = liftEffect
+  (filterMap parseFn <$> traverse id elems)
 
 getVisibleCols :: forall m. MonadEffect m => m (Array Element)
 getVisibleCols = selectAllVisibleElements $ QuerySelector "th.column-header"
@@ -122,9 +119,8 @@ actOnElementById
   => ElementId
   -> (HTMLElement -> Effect Unit)
   -> m Unit
-actOnElementById id action = do
-  element <- selectElementById id
-  liftEffect $ traverse_ action element
+actOnElementById id action = liftEffect
+  (traverse_ action =<< selectElementById id)
 
 selectAllVisibleElements
   :: forall m. MonadEffect m => QuerySelector -> m (Array Element)
@@ -151,11 +147,13 @@ selectElement query = liftEffect $ do
 
 justSelectElementById
   :: forall m. MonadEffect m => ElementId -> m HTMLElement
-justSelectElementById x = unsafeFromJust <$> selectElementById x
+justSelectElementById x =
+  unsafeFromJust <$> selectElementById x
 
 selectElementById
   :: forall m. MonadEffect m => ElementId -> m (Maybe HTMLElement)
-selectElementById = selectElement <<< QuerySelector <<< ("#" <> _) <<< show
+selectElementById =
+  selectElement <<< QuerySelector <<< ("#" <> _) <<< show
 
 querySelectorHelper
   :: forall a
@@ -198,7 +196,7 @@ getCaretPosition selection parentNode = do
   go node anchor position = do
     len <- String.length <$> textContent node
     textNode <- getChildOrNode node
-    if node `refEquals` anchor || textNode `refEquals` anchor then
+    if any (refEquals anchor) [ node, textNode ] then
       pure $ pure position
     else runMaybeT do
       sibling <- MaybeT $ nextSibling node
@@ -250,6 +248,11 @@ scrollBy x y = Window.scrollBy (unsafeCoerce x) (unsafeCoerce y)
 
 prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
 prevent ev = liftEffect (preventDefault $ toEvent ev)
+
+mkKeyAction :: forall a. (KeyCode -> KeyboardEvent -> a) -> KeyboardEvent -> a
+mkKeyAction ctor ev = ctor (fetchKeyCode ev) ev
+  where
+  fetchKeyCode = parseKeyCode <<< KeyboardEvent.code
 
 parseKeyCode :: String -> KeyCode
 parseKeyCode "ArrowLeft" = ArrowLeft

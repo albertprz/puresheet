@@ -3,11 +3,12 @@ module App.Components.Table where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (CellValue(..), Column(..), MultiSelection(..), Row(..), SelectionState(..))
+import App.Components.Table.Cell (CellValue(..), Column(..), Row(..))
 import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
+import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import Data.Map as Map
 import Halogen as H
 

@@ -3,16 +3,15 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, formulaCellInputId, inputElement, selectedCellInputId)
-import App.Components.Table.Cell (CellMove(..), Header(..), MultiSelection(..), SelectionState(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.Formula (FormulaState(..), newFormulaId, toDependenciesMap)
-import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, loadPrelude, pasteCells, refreshCells, refreshCellsFromDeps, selectAllCells, selectCell, setRows)
+import App.Components.Table.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
+import App.Components.Table.Formula (FormulaState(..))
+import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, pasteCells, refreshCells, selectAllCells, selectCell, setRows)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
-import App.Interpreter.Formula (runFormula)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, emptyFormulaBox, focusById, focusCell, focusCellElem, getFormulaBoxContents, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, emptyFormulaBox, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
 import App.Utils.Map (lookup2) as Map
-import Data.Map (insert, keys, member, union, unionWith) as Map
+import Data.Map (insert, member) as Map
 import Data.Set as Set
-import Effect.Class.Console as Logger
 import Halogen as H
 import Web.HTML.HTMLElement (setContentEditable)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -54,33 +53,7 @@ handleAction (WriteCell cell value) = do
   refreshCells $ Set.singleton cell
 
 handleAction (FormulaKeyDown Enter ev)
-  | ctrlKey ev = withPrevent ev do
-      formulaText <- getFormulaBoxContents
-      st <- get
-      case runFormula st st.formulaCell formulaText of
-        Right { result, affectedCells, formulaCells, cellDeps } -> do
-          let formulaId = newFormulaId $ Map.keys st.formulaCache
-          emptyFormulaBox
-          modify_ _
-            { tableData = Map.union result st.tableData
-            , tableFormulas = Map.union (formulaId <$ result)
-                st.tableFormulas
-            , tableDependencies = Map.unionWith (<>)
-                (toDependenciesMap formulaId formulaCells)
-                st.tableDependencies
-            , formulaCache = Map.insert formulaId
-                { formulaText
-                , affectedCells
-                , startingCell: minimum1 affectedCells
-                }
-                st.formulaCache
-            , formulaState = ValidFormula
-            }
-          refreshCellsFromDeps cellDeps
-          focusCell st.selectedCell
-        Left err ->
-          Logger.error (show err) *>
-            modify_ _ { formulaState = InvalidFormula }
+  | ctrlKey ev = withPrevent ev insertFormula
 
 handleAction (FormulaKeyDown Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell

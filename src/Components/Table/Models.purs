@@ -3,8 +3,9 @@ module App.Components.Table.Models where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellValue, Column, Header, MultiSelection, Row, SelectionState)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header, Row)
 import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
+import App.Components.Table.Selection (MultiSelection, SelectionState)
 import App.SyntaxTree.Common (Module, QVar, QVarOp)
 import App.SyntaxTree.FnDef (FnInfo, OpInfo)
 import App.Utils.Dom (KeyCode)

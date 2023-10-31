@@ -3,19 +3,22 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, MultiSelection(..), Row(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, parseColumn, parseRow, serializeSelectionValues)
-import App.Components.Table.Formula (FormulaId, getDependencies)
+import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, parseRow, rowParser)
+import App.Components.Table.Formula (FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
 import App.Components.Table.Models (AppState)
+import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (class IsEvent, focusCell, getClipboard, getVisibleCols, getVisibleRows, parseElements, scrollByX, shiftKey, withPrevent)
+import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollByX, shiftKey, withPrevent)
 import App.Utils.Map (updateJust) as Map
+import Bookhound.Parser (runParser)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.List.NonEmpty (NonEmptyList)
-import Data.Map (delete, keys, lookup, union) as Map
+import Data.Map (delete, insert, keys, lookup, union, unionWith) as Map
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree (Forest)
+import Data.Witherable (withered)
 import Effect.Class.Console as Logger
 import Foreign (ForeignError, readString, unsafeToForeign)
 import Foreign.Index ((!))
@@ -138,6 +141,8 @@ goToCell visibleCols visibleRows allColumns allRows origin target = do
   sequence_ $ adjustRows (length visibleRows - 1) target.row <$> maximum allRows
     <*> minimum allRows
   liftEffect $ goToCellHelper cols allColumns origin target visibleCols
+  where
+  parseColumn = hush <<< runParser columnParser
 
 goToCellHelper
   :: Array Column
@@ -183,6 +188,35 @@ refreshCellsFromDeps
 refreshCellsFromDeps cellDeps =
   traverse_ (traverse_ applyFormula) cellDeps
 
+insertFormula :: forall m. MonadEffect m => MonadState AppState m => m Unit
+insertFormula = do
+  formulaText <- getFormulaBoxContents
+  st <- get
+  case runFormula st st.formulaCell formulaText of
+    Right { result, affectedCells, formulaCells, cellDeps } -> do
+      let formulaId = newFormulaId $ Map.keys st.formulaCache
+      emptyFormulaBox
+      modify_ _
+        { tableData = Map.union result st.tableData
+        , tableFormulas = Map.union (formulaId <$ result)
+            st.tableFormulas
+        , tableDependencies = Map.unionWith (<>)
+            (toDependenciesMap formulaId formulaCells)
+            st.tableDependencies
+        , formulaCache = Map.insert formulaId
+            { formulaText
+            , affectedCells
+            , startingCell: minimum1 affectedCells
+            }
+            st.formulaCache
+        , formulaState = ValidFormula
+        }
+      refreshCellsFromDeps cellDeps
+      focusCell st.selectedCell
+    Left err ->
+      Logger.error (show err) *>
+        modify_ _ { formulaState = InvalidFormula }
+
 applyFormula :: forall m. MonadState AppState m => FormulaId -> m Unit
 applyFormula formulaId = do
   st <- get
@@ -220,4 +254,5 @@ setRows = do
   modify_ _
     { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
   focusCell selectedCell
-
+  where
+  parseRow = hush <<< runParser rowParser

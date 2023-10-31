@@ -5,115 +5,124 @@ import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
 import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, selectedCellInputId)
-import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), MultiSelection, Row, SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected, parseCell, parseCellValue, showCell)
+import App.Components.Table.Cell (Cell, CellValue(..), Column, Header(..), Row, cellValueParser, parseCell, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
-import App.Utils.Dom (formulaElements, parseKeyCode)
+import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
+import App.Utils.Dom (formulaElements, mkKeyAction)
 import App.Utils.Map (lookup2) as Map
+import Bookhound.Parser (runParser)
 import Data.Map (lookup) as Map
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, span, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
-import Web.UIEvent.KeyboardEvent as KeyboardEvent
 
 render :: forall cs m. AppState -> ComponentHTML Action cs m
 render
-  { selectedCell
-  , formulaCell
-  , activeFormula
-  , activeInput
-  , formulaState
-  , tableData
-  , tableFormulas
-  , formulaCache
-  , columns
-  , rows
-  , multiSelection
-  , selectionState
-  } =
+  st@
+    { selectedCell
+    , formulaCell
+    , activeFormula
+    , formulaState
+    , selectionState
+    } =
   div [ class_ mainContainer ]
     [ div [ class_ formulaContainer ]
         [ input
             [ id $ show selectedCellInputId
-            , tabIndex 0
+            , tabIndex zero
             , classes [ selectedCellInput ]
             , value $ showCell selectedCell
             , onValueChange $ WriteSelectedCellInput <<< parseCell
-            , onKeyDown \ev -> SelectedCellInputKeyDown
-                (parseKeyCode $ KeyboardEvent.code ev)
-                ev
+            , onKeyDown $ mkKeyAction SelectedCellInputKeyDown
             ]
         , span
             [ id $ show formulaBoxId
-            , tabIndex 0
+            , tabIndex zero
             , classes [ formulaBox, formulaStateToClass formulaState ]
-            , onKeyDown \ev -> FormulaKeyDown
-                (parseKeyCode $ KeyboardEvent.code ev)
-                ev
-            , onKeyUp \ev -> FormulaKeyUp
-                (parseKeyCode $ KeyboardEvent.code ev)
-                ev
+            , onKeyDown $ mkKeyAction FormulaKeyDown
+            , onKeyUp $ mkKeyAction FormulaKeyUp
             , onFocusIn FocusInFormula
             ]
-            ( formulaElements
-                $ foldMap _.formulaText
-                $ Map.lookup2 selectedCell
-                    formulaCache
-                    tableFormulas
-            )
+            (renderFormulaDisplay st)
         , input
             [ id $ show formulaCellInputId
-            , tabIndex 0
+            , tabIndex zero
             , classes [ formulaCellInput ]
             , type_ $ if activeFormula then InputText else InputHidden
             , value $ showCell formulaCell
             , onValueChange $ WriteFormulaCellInput <<< parseCell
-            , onKeyDown \ev -> FormulaCellInputKeyDown
-                (parseKeyCode $ KeyboardEvent.code ev)
-                ev
+            , onKeyDown $ mkKeyAction FormulaCellInputKeyDown
             ]
         ]
     , table
         [ classes $ whenMonoid (selectionState == CopySelection)
             [ copySelection ]
         , style "border-spacing: 0"
-        , onKeyDown \ev -> KeyDown (parseKeyCode $ KeyboardEvent.code ev) ev
-        , onKeyUp \ev -> KeyRelease (parseKeyCode $ KeyboardEvent.code ev) ev
+        , onKeyDown $ mkKeyAction KeyDown
+        , onKeyUp $ mkKeyAction KeyRelease
         , onWheel WheelScroll
         ]
-        [ thead_
-            [ tr_
-                $ toArray
-                $ cons renderHeaderCorner
-                    (renderColumnHeader selectedCell multiSelection <$> columns)
-            ]
-        , tbody_ $ toArray $
-            do
-              row <- rows
-              pure $ tr_
-                $ toArray
-                $ cons
-                    (renderRowHeader selectedCell multiSelection row)
-                    ( do
-                        column <- columns
-                        let
-                          cell = { column, row }
-                          cellValue = Map.lookup cell tableData
-                        pure $ renderBodyCell selectedCell multiSelection
-                          activeInput
-                          cell
-                          cellValue
-                    )
+        [ renderHeader st
+        , renderBody st
         ]
     ]
+  where
+  parseCell = hush <<< runParser cellParser
 
-renderRowHeader :: forall i. Cell -> MultiSelection -> Row -> HTML i Action
-renderRowHeader selected selection row =
+renderFormulaDisplay :: forall i. AppState -> Array (HTML i Action)
+renderFormulaDisplay { selectedCell, formulaCache, tableFormulas } =
+  formulaElements
+    $ foldMap _.formulaText
+    $ Map.lookup2 selectedCell
+        formulaCache
+        tableFormulas
+
+renderHeader :: forall i. AppState -> HTML i Action
+renderHeader st@{ columns } =
+  thead_
+    [ tr_
+        $ toArray
+        $ cons
+            renderHeaderCorner
+            (renderColumnHeader st <$> columns)
+    ]
+  where
+  renderHeaderCorner =
+    th
+      [ class_ cornerHeader
+      , tabIndex zero
+      , onClick $ ClickHeader CornerHeader
+      ]
+      [ text mempty ]
+
+renderBody :: forall i. AppState -> HTML i Action
+renderBody
+  st@
+    { rows
+    , columns
+    , tableData
+    } =
+  tbody_ $ toArray do
+    row <- rows
+    pure $ tr_ $ toArray $ cons
+      (renderRowHeader st row)
+      (renderRow row)
+  where
+  renderRow row = do
+    column <- columns
+    let
+      cell = { column, row }
+      cellValue = Map.lookup cell tableData
+    pure $ renderBodyCell st cell cellValue
+
+renderRowHeader :: forall i. AppState -> Row -> HTML i Action
+renderRowHeader { selectedCell, multiSelection } row =
   th
     [ id $ show row
-    , tabIndex 0
+    , tabIndex zero
     , classes $ [ rowHeader ]
-        <>? isRowSelected selected selection row
+        <>? isRowSelected selectedCell multiSelection row
         /\ selectedHeader
     , draggable true
     , onClick $ ClickHeader $ RowHeader row
@@ -127,13 +136,13 @@ renderRowHeader selected selection row =
     [ text $ show row ]
 
 renderColumnHeader
-  :: forall i. Cell -> MultiSelection -> Column -> HTML i Action
-renderColumnHeader selected selection column =
+  :: forall i. AppState -> Column -> HTML i Action
+renderColumnHeader { selectedCell, multiSelection } column =
   th
     [ id $ show column
-    , tabIndex 0
+    , tabIndex zero
     , classes $ [ columnHeader ]
-        <>? isColumnSelected selected selection column
+        <>? isColumnSelected selectedCell multiSelection column
         /\ selectedHeader
     , draggable true
     , onClick $ ClickHeader $ ColumnHeader column
@@ -146,28 +155,17 @@ renderColumnHeader selected selection column =
     ]
     [ text $ show column ]
 
-renderHeaderCorner :: forall i. HTML i Action
-renderHeaderCorner =
-  th
-    [ class_ cornerHeader
-    , tabIndex 0
-    , onClick $ ClickHeader CornerHeader
-    ]
-    [ text mempty ]
-
 renderBodyCell
   :: forall i
-   . Cell
-  -> MultiSelection
-  -> Boolean
+   . AppState
   -> Cell
   -> Maybe CellValue
   -> HTML i Action
-renderBodyCell selected selection active cell cellValue =
+renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
   td
     [ id $ show cellId <> showCell cell
-    , tabIndex 0
-    , classes $ bodyCellSelectionClasses selected selection cell
+    , tabIndex zero
+    , classes $ bodyCellSelectionClasses st cell
     , onClick $ ClickCell cell
     , onDoubleClick $ DoubleClickCell cell
     , onMouseDown $ HoverCell Start cell
@@ -177,26 +175,29 @@ renderBodyCell selected selection active cell cellValue =
     ]
     [ input
         [ type_ InputText
-        , tabIndex 0
+        , tabIndex zero
         , autocomplete AutocompleteOff
-        , readOnly $ not $ cell == selected && active
+        , readOnly $ not $ cell == selectedCell && activeInput
         , value $ foldMap show cellValue
         , onValueChange $ WriteCell cell <<< parseCellValue
         ]
     ]
+  where
+  parseCellValue input =
+    fromRight (StringVal input) (runParser cellValueParser input)
 
-bodyCellSelectionClasses :: Cell -> MultiSelection -> Cell -> Array ClassName
-bodyCellSelectionClasses selected selection cell =
+bodyCellSelectionClasses :: AppState -> Cell -> Array ClassName
+bodyCellSelectionClasses { selectedCell, multiSelection } cell =
   [ sheetCell ]
-    <>? (selected == cell)
+    <>? (selectedCell == cell)
     /\ selectedSheetCell
-    <>? isCellInSelection selection cell
+    <>? isCellInSelection multiSelection cell
     /\ inSelection
-    <>? isCellAboveSelection selection cell
+    <>? isCellAboveSelection multiSelection cell
     /\ aboveSelection
-    <>? isCellBelowSelection selection cell
+    <>? isCellBelowSelection multiSelection cell
     /\ belowSelection
-    <>? isCellAtLeftSelection selection cell
+    <>? isCellAtLeftSelection multiSelection cell
     /\ atLeftSelection
-    <>? isCellAtRightSelection selection cell
+    <>? isCellAtRightSelection multiSelection cell
     /\ atRightSelection
