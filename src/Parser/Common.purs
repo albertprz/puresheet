@@ -80,7 +80,7 @@ qTerm x = (/\) <$> (|?) (moduleParser <* dot) <*> x
 
 notReserved :: Parser String -> Parser String
 notReserved = check "reserved"
-  (_ `notElem` (reservedSymbols <> reservedKeyWords))
+  (flip notElem (reservedSymbols <> reservedKeyWords))
 
 withinBackQuotes :: forall b. Parser b -> Parser b
 withinBackQuotes = within (isToken '`')

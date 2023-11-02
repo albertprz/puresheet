@@ -3,7 +3,7 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, parseRow, rowParser)
+import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
 import App.Components.Table.Formula (FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
 import App.Components.Table.Models (AppState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
@@ -18,7 +18,6 @@ import Data.Map (delete, insert, keys, lookup, union, unionWith) as Map
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree (Forest)
-import Data.Witherable (withered)
 import Effect.Class.Console as Logger
 import Foreign (ForeignError, readString, unsafeToForeign)
 import Foreign.Index ((!))

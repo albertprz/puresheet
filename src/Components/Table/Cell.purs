@@ -13,6 +13,10 @@ import Data.Map (keys) as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
 
+parseCellValue :: String -> CellValue
+parseCellValue input =
+  fromRight (StringVal input) (runParser cellValueParser input)
+
 rowParser :: Parser Row
 rowParser = Row <$> unsignedInt
 

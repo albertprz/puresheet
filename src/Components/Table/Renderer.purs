@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
 import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, selectedCellInputId)
-import App.Components.Table.Cell (Cell, CellValue(..), Column, Header(..), Row, cellValueParser, parseCell, showCell)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, cellParser, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
@@ -182,9 +182,6 @@ renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
         , onValueChange $ WriteCell cell <<< parseCellValue
         ]
     ]
-  where
-  parseCellValue input =
-    fromRight (StringVal input) (runParser cellValueParser input)
 
 bodyCellSelectionClasses :: AppState -> Cell -> Array ClassName
 bodyCellSelectionClasses { selectedCell, multiSelection } cell =

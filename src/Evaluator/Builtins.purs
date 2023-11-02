@@ -2,7 +2,7 @@ module App.Evaluator.Builtins
   ( builtinFnsMap
   ) where
 
-import App.Evaluator.Object (extractList, isElement, nonNullObj)
+import App.Evaluator.Object (extractList, isElement)
 import App.SyntaxTree.Common (Var(..))
 import App.SyntaxTree.FnDef (Arity(..), BuiltinFnInfo, Object(..))
 import Data.Array as Array
@@ -12,7 +12,7 @@ import Data.Foldable as Foldable
 import Data.Map as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, filter, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -24,10 +24,9 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
           { fn, arity, defaultParams: Set.fromFoldable nulls }
       )
   <$>
-    [ ("not" /\ (not /\ A1 /\ []))
+    [ ("null" /\ (null /\ A0 /\ []))
+    , ("not" /\ (not /\ A1 /\ []))
     , ("neg" /\ (neg /\ A1 /\ []))
-    , ("sum" /\ (sum /\ A1 /\ []))
-    , ("product" /\ (product /\ A1 /\ []))
     , ("concat" /\ (concat /\ A1 /\ []))
     , ("transpose" /\ (transpose /\ A1 /\ []))
     , ("head" /\ (head /\ A1 /\ []))
@@ -62,6 +61,10 @@ builtinFnsMap = unsafePartial $ Map.fromFoldable
     , ("range" /\ (range /\ A2 /\ []))
     , ("slice" /\ (slice /\ A3 /\ []))
     ]
+
+-- Null
+null :: Partial => Array Object -> Object
+null [] = NullObj
 
 -- Boolean Fns
 not :: Partial => Array Object -> Object
@@ -129,15 +132,6 @@ gcd [ IntObj a, IntObj b ] = IntObj $ Ring.gcd a b
 
 lcm :: Partial => Array Object -> Object
 lcm [ IntObj a, IntObj b ] = IntObj $ Ring.lcm a b
-
-sum :: Partial => Array Object -> Object
-sum [ ArrayObj xs ] = foldl1 (add <.. arr2) $ NonEmptyArray $ filter nonNullObj
-  xs
-
-product :: Partial => Array Object -> Object
-product [ ArrayObj xs ] = foldl1 (mult <.. arr2) $ NonEmptyArray $ filter
-  nonNullObj
-  xs
 
 -- List / String Fns
 append :: Partial => Array Object -> Object
@@ -221,4 +215,3 @@ dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
 slice :: Partial => Array Object -> Object
 slice [ IntObj n1, IntObj n2, ArrayObj xs ] = ArrayObj $ Array.slice n1 n2 xs
 slice [ IntObj n1, IntObj n2, StringObj xs ] = StringObj $ String.slice n1 n2 xs
-
