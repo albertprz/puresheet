@@ -145,11 +145,12 @@ getAvailableFns
 
 insertFnDef
   :: Scope -> FnDef -> Map (Scope /\ Var) FnInfo -> Map (Scope /\ Var) FnInfo
-insertFnDef scope (FnDef fnName params body) =
+insertFnDef scope (FnDef fnName paramsWithTypes _ body) =
   Map.insert (scope /\ fnName) fnInfo
   where
   fnInfo = FnInfo
     { id: Nothing, params, body, scope, argsMap: Map.empty }
+  params = fst <$> paramsWithTypes
 
 getNewFnState :: FnInfo -> Array FnBody -> EvalM LocalFormulaCtx
 getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =

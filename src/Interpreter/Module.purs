@@ -109,13 +109,12 @@ registerModuleFns fnModule fnDefs =
         st.fnsMap
     }
   where
-  toEntry (FnDef fnName params body) =
+  toEntry (FnDef fnName paramsWithTypes _ body) =
     QVar (Just fnModule) fnName /\
       FnInfo
         { id: Just { fnModule, fnName }
-        , params
+        , params: fst <$> paramsWithTypes
         , body
         , scope: zero
         , argsMap: Map.empty
         }
-

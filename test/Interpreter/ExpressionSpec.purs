@@ -280,7 +280,10 @@ formulaCtx = unsafePerformEffect $
   loadModuleFile = do
     fp <- liftEffect $ realpath "lib/Prelude.pursh"
     contents <- liftEffect $ readTextFile UTF8 fp
-    reloadModule contents
+    resultOrErr <- reloadModule contents
+    liftEffect $
+      either (throw <<< ("Parser Error: " <> _) <<< show) pure resultOrErr
+
   newFormulaCtx =
     { tableData: Map.empty
     , fnsMap: Map.empty

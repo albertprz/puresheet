@@ -54,7 +54,7 @@ extractCells (RightOpSection body _) =
 
 extractCells (WhereExpr fnBody bindings) =
   extractCells fnBody <>
-    foldMap (extractCells <<< (\(FnDef _ _ body) -> body)) bindings
+    foldMap (extractCells <<< (\(FnDef _ _ _ body) -> body)) bindings
 
 extractCells (CondExpr conds) =
   foldMap extractCellsFromGuardedBody conds

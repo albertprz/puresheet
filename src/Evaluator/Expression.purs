@@ -30,7 +30,7 @@ evalExpr (LambdaFn params body) = do
   { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }
   let lambdaVar = Var $ lambdaId lambdaCount
   evalExpr $ WhereExpr (FnVar $ QVar Nothing lambdaVar)
-    [ FnDef lambdaVar params body ]
+    [ FnDef lambdaVar ((_ /\ Nothing) <$> params) Nothing body ]
 
 evalExpr (InfixFnApply fnOps args) = do
   opInfos <- traverse (\x -> lookupOperator x) fnOps
@@ -277,14 +277,14 @@ evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
 evalPatternBinding (VarPattern param) result = do
   { scope } <- get
-  registerArg scope (FnDef param [] $ Object' result) $> true
+  registerArg scope (FnDef param [] Nothing $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
   pure $ cellValueToObj cellValue == result
 
 evalPatternBinding (AliasedPattern param pattern) result = do
   { scope } <- get
-  registerArg scope (FnDef param [] $ Object' result) *>
+  registerArg scope (FnDef param [] Nothing $ Object' result) *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ArrayPattern patterns) result

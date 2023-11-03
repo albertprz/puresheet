@@ -127,16 +127,16 @@ def foldRecur (f: A -> A -> A, xs: [A] | [[A]]): A =
 
 def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
     cond {
-        ? empty (xs) || empty (ys) = []
-        ? otherwise = zipWith(f, init (xs), init (ys))
-                    :+ f (tail (xs), tail (ys))
+        ? empty (xs) || empty (ys) => []
+        ? otherwise =>
+            zipWith(f, init (xs), init (ys)) :+ f (tail (xs), tail (ys))
     }
 
 def zipMatrixWith (f: A -> B -> C, xss: [[A]], yss: [[B]]): [[C]] =
     zipWith (zipWith (f), xss, yss)
 
 def iterate (f: A -> A, start: A, n: Int): [A] =
-    reverse (go (f, start, n) where {
+    reverse (go (f, start, n)) where {
         | go (f, start, n) = cond {
             ? n == 0     => start
             ? otherwise => go (f, f(start), n - 1) :+ start
