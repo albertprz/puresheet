@@ -81,14 +81,14 @@ def map (f: A -> B, xs: [A]): [B] =
 def mapMatrix (f: A -> B, xss: [[A]]): [[B]] =
     map (map (f), xss)
 
-def filter (f: A -> Bool, xs: [A]): [A] =
+def filter (f: A -> Boolean, xs: [A]): [A] =
     switch (xs) {
         | []                         => []
         | [ xs @ ... , x ] ? f(x)      => filter (f, xs) :+ x
                         ? otherwise => filter (f, xs)
     }
 
-def filterMatrix (f: A -> Bool, xss: [[A]]): [[A]] =
+def filterMatrix (f: A -> Boolean, xss: [[A]]): [[A]] =
     map (filter (f), xss)
 
 def reduce (f: B -> A -> B, start: B, xs: [A]): B =
@@ -143,43 +143,43 @@ def iterate (f: A -> A, start: A, n: Int): [A] =
         }
     }
 
-def empty (xs: [A]): Bool =
+def empty (xs: [A]): Boolean =
     length (xs) == 0
 
-def nonEmpty (xs: [A]): Bool =
+def nonEmpty (xs: [A]): Boolean =
     not (empty (xs))
 
 
 
-def sum (xs: [Num] | [[Num]]): Num  =
+def sum (xs: [Number] | [[Number]]): Number  =
     foldRecur (add, xs)
 
-def product (xs: [Num] | [[Num]]): Num =
+def product (xs: [Number] | [[Number]]): Number =
     foldRecur (mult, xs)
 
-def average (xs: [Num] | [[Num]]): Num =
+def average (xs: [Number] | [[Number]]): Number =
     sum (xs) / 2
 
-def arrayAdd (xs: [Num], ys: [Num]): [Num] =
+def arrayAdd (xs: [Number], ys: [Number]): [Number] =
     zipWith (add, xs, ys)
 
-def arraySub (xs: [Num], ys: [Num]): [Num] =
+def arraySub (xs: [Number], ys: [Number]): [Number] =
     zipWith (sub, xs, ys)
 
-def arrayMult (xs: [Num], ys: [Num]): [Num] =
+def arrayMult (xs: [Number], ys: [Number]): [Number] =
     zipWith (mult, xs, ys)
 
-def arrayDiv (xs: [Num], ys: [Num]): [Num] =
+def arrayDiv (xs: [Number], ys: [Number]): [Number] =
     zipWith (div, xs, ys)
 
-def matrixAdd (xss: [[Num]], ys: [[Num]]): [[Num]] =
+def matrixAdd (xss: [[Number]], ys: [[Number]]): [[Number]] =
     zipWithMatrix (add)
 
-def matrixSub (xss: [[Num]], ys: [[Num]]): [[Num]] =
+def matrixSub (xss: [[Number]], ys: [[Number]]): [[Number]] =
     zipWithMatrix (sub)
 
-def matrixMult (xss: [[Num]], ys: [[Num]]): [[Num]] =
+def matrixMult (xss: [[Number]], ys: [[Number]]): [[Number]] =
     zipWithMatrix (mult)
 
-def matrixDiv (xss: [[Num]], ys: [[Num]]): [[Num]] =
+def matrixDiv (xss: [[Number]], ys: [[Number]]): [[Number]] =
     zipWithMatrix (div)

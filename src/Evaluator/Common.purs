@@ -145,12 +145,11 @@ getAvailableFns
 
 insertFnDef
   :: Scope -> FnDef -> Map (Scope /\ Var) FnInfo -> Map (Scope /\ Var) FnInfo
-insertFnDef scope (FnDef fnName paramsWithTypes _ body) =
+insertFnDef scope (FnDef fnName params returnType body) =
   Map.insert (scope /\ fnName) fnInfo
   where
   fnInfo = FnInfo
-    { id: Nothing, params, body, scope, argsMap: Map.empty }
-  params = fst <$> paramsWithTypes
+    { id: Nothing, params, body, scope, argsMap: Map.empty, returnType }
 
 getNewFnState :: FnInfo -> Array FnBody -> EvalM LocalFormulaCtx
 getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
@@ -180,9 +179,10 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
             , scope
             , params: []
             , argsMap: Map.empty
+            , returnType: Nothing
             }
         )
-    <$> zip' ((scope /\ _) <$> params) args
+    <$> zip' ((scope /\ _) <<< fst <$> params) args
   args =
     if isJust maybeFnId then resetScope <$> fnArgs
     else fnArgs

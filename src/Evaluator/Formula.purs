@@ -2,7 +2,7 @@ module App.Evaluator.Formula where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell, CellValue, buildCell)
+import App.Components.Table.Cell (Cell, CellValue)
 import App.Components.Table.Models (AppState)
 import App.Evaluator.Common (LocalFormulaCtx, nonEmptyCellValue)
 import App.Evaluator.Errors (EvalError(..), SerializationError(..))
@@ -45,24 +45,27 @@ evalFormula appState { column, row } body = do
         ( getElemSat (_ + x) columns column /\
             getElemSat (_ + y) rows row
         )
+  buildCell column' row' = { column: column', row: row' }
 
 evalExprInApp
   :: AppState -> FnBody -> Either EvalError Object
-evalExprInApp appState =
-  evalExprInCtx
-    { tableData: appState.tableData
-    , fnsMap: appState.fnsMap
-    , operatorsMap: appState.operatorsMap
-    , aliasedModulesMap: appState.aliasedModulesMap
-    , importedModulesMap: appState.importedModulesMap
-    , localFnsMap: Map.empty
-    , argsMap: Map.empty
-    , module': preludeModule
-    , scope: zero
-    , scopeLoc: fromTree $ mkLeaf zero
-    , lambdaCount: zero
-    }
+evalExprInApp appState = evalExprInCtx $ mkLocalContext appState
 
 evalExprInCtx :: LocalFormulaCtx -> FnBody -> Either EvalError Object
 evalExprInCtx formulaCtx exprBody = do
   evalState (runExceptT (evalExpr exprBody)) formulaCtx
+
+mkLocalContext :: AppState -> LocalFormulaCtx
+mkLocalContext appState =
+  { tableData: appState.tableData
+  , fnsMap: appState.fnsMap
+  , operatorsMap: appState.operatorsMap
+  , aliasedModulesMap: appState.aliasedModulesMap
+  , importedModulesMap: appState.importedModulesMap
+  , localFnsMap: Map.empty
+  , argsMap: Map.empty
+  , module': preludeModule
+  , scope: zero
+  , scopeLoc: fromTree $ mkLeaf zero
+  , lambdaCount: zero
+  }

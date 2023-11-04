@@ -67,9 +67,10 @@ newtype FnInfo =
   FnInfo
     { id :: Maybe FnId
     , body :: FnBody
-    , params :: Array Var
+    , params :: Array (Var /\ Maybe Type)
     , scope :: Scope
     , argsMap :: Map (Scope /\ Var) FnInfo
+    , returnType :: Maybe Type
     }
 
 type FnId = { fnModule :: Module, fnName :: Var }

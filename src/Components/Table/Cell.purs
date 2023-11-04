@@ -151,9 +151,6 @@ swapTableMapRow origin target tableDict =
           (\cell -> cell.row == origin || cell.row == target)
           (Map.keys tableDict)
 
-buildCell :: Column -> Row -> Cell
-buildCell column row = { column, row }
-
 newtype Column = Column Char
 
 newtype Row = Row Int

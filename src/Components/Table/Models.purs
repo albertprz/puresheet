@@ -56,6 +56,7 @@ data Action
   | HoverCell EventTransition Cell MouseEvent
   | HoverHeader EventTransition Header MouseEvent
   | DragHeader EventTransition Header DragEvent
+  | SelectionChange
 
 data EventTransition
   = Start

@@ -8,12 +8,18 @@ import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, pasteCells, refreshCells, selectAllCells, selectCell, setRows)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, emptyFormulaBox, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Evaluator.Formula (mkLocalContext)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
 import App.Utils.Map (lookup2) as Map
 import Data.Map (insert, member) as Map
 import Data.Set as Set
 import Halogen as H
+import Halogen.Query.Event (eventListener)
+import Web.Event.Event (EventType(..))
+import Web.HTML (window)
+import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.HTMLElement (setContentEditable)
+import Web.HTML.Window (document)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
@@ -26,6 +32,11 @@ handleAction Initialize = do
   loadPrelude
   setRows
   actOnElementById formulaBoxId $ setContentEditable "true"
+  document' <- liftEffect $ document =<< window
+  H.subscribe' \_ -> eventListener
+    (EventType "selectionchange")
+    (HTMLDocument.toEventTarget document')
+    (const $ Just SelectionChange)
 
 handleAction (WriteSelectedCellInput cell) =
   traverse_ (selectCell <<< OtherCell) cell
@@ -275,3 +286,6 @@ handleAction (DragHeader Over _ ev) =
 
 handleAction (DragHeader _ _ _) =
   pure unit
+
+handleAction SelectionChange =
+  displayFunctionType <<< mkLocalContext =<< get

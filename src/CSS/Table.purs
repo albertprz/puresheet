@@ -2,6 +2,7 @@ module App.CSS.Table where
 
 import CSSPrelude
 
+import App.CSS.ClassNames (formulaBoxContainer, formulaSignature)
 import Tecton.Internal (Length, Measure)
 import Tecton.Rule as Rule
 import Type.Prelude (Proxy)
@@ -35,17 +36,30 @@ formulaContainerCss = do
 formulaCss :: CSS
 formulaCss = do
 
-  universal &. formulaBox ? Rule.do
+  div &. formulaBoxContainer ? Rule.do
+    display := flex
+    flexDirection := column
     position := sticky
     left := pct 23
+
+  universal &. formulaBox ? Rule.do
     width := vw 50
-    height := vh 12
-    margin := px 25
+    height := px 100
+    margin := px 20
+    marginTop := px 40
+    marginBottom := px 10
     padding := px 20
     borderColor := grey2
     borderWidth := px 3
     fontSize := px 20
     whiteSpace := nowrap
+
+  universal &. formulaSignature ? Rule.do
+    height := px 20
+    margin := px 20
+    marginTop := px 10
+    padding := px 0 ~ px 50
+    alignItems := center
 
   universal &. unknownFormula ? Rule.do
     backgroundColor := lighterYellow
@@ -86,7 +100,6 @@ selectedCellInputCss :: CSS
 selectedCellInputCss = do
 
   input &. selectedCellInput ? Rule.do
-
     left := pct 7.5
     cellInputCommonCss
 
@@ -94,7 +107,6 @@ formulaCellInputCss :: CSS
 formulaCellInputCss = do
 
   input &. formulaCellInput ? Rule.do
-
     left := pct 85
     cellInputCommonCss
 

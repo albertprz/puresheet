@@ -52,8 +52,7 @@ registerModuleDef
 registerModuleDef (ModuleDef module' imports opDefs fnDefs) =
   registerModuleImports module' imports
     *> registerModuleOps module' opDefs
-    *>
-      registerModuleFns module' fnDefs
+    *> registerModuleFns module' fnDefs
 
 registerModuleImports
   :: forall r m
@@ -105,16 +104,18 @@ registerModuleFns
   -> m Unit
 registerModuleFns fnModule fnDefs =
   modify_ \st -> st
-    { fnsMap = Map.union (Map.fromFoldable (toEntry <$> fnDefs))
+    { fnsMap = Map.union
+        (Map.fromFoldable (toEntry <$> fnDefs))
         st.fnsMap
     }
   where
-  toEntry (FnDef fnName paramsWithTypes _ body) =
+  toEntry (FnDef fnName params returnType body) =
     QVar (Just fnModule) fnName /\
       FnInfo
         { id: Just { fnModule, fnName }
-        , params: fst <$> paramsWithTypes
+        , params
         , body
         , scope: zero
         , argsMap: Map.empty
+        , returnType
         }

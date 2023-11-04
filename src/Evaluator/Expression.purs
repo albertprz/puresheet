@@ -151,7 +151,7 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     put st
     if isJust maybeFnId then
       pure $ resetFnScope $
-        substituteFnArgs result (params `zip'` args)
+        substituteFnArgs result (map fst params `zip'` args)
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
 

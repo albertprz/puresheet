@@ -2,11 +2,15 @@ module App.Utils.Dom where
 
 import FatPrelude hiding (span)
 
-import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId)
+import App.CSS.ClassNames (formulaSignature)
+import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, formulaSignatureId)
 import App.Components.Table.Cell (Cell, showCell)
 import App.Components.Table.SyntaxAtom (condenseSyntaxAtoms, syntaxAtom, syntaxAtomToClassName)
+import App.Evaluator.Common (LocalFormulaCtx, lookupModuleFn)
+import App.SyntaxTree.Common (QVar(..), Var(..))
+import App.SyntaxTree.FnDef (FnInfo(..))
 import App.Utils.Range as Range
-import App.Utils.Selection (Selection)
+import App.Utils.Selection (Selection, anchorNode)
 import App.Utils.Selection as Selection
 import App.Utils.String (startsWith) as String
 import Bookhound.Parser (runParser)
@@ -23,10 +27,10 @@ import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
 import Web.DOM.Element (getBoundingClientRect, id)
-import Web.DOM.Node (firstChild, nextSibling, nodeName, nodeValue, setTextContent, textContent)
+import Web.DOM.Node (firstChild, nextSibling, nodeName, nodeValue, parentNode, setTextContent, textContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
-import Web.Event.Event (Event, preventDefault, target)
+import Web.Event.Event (Event, EventType(..), preventDefault, target)
 import Web.Event.EventTarget (EventTarget)
 import Web.HTML (HTMLElement, Window, window)
 import Web.HTML.Event.DragEvent (DragEvent)
@@ -50,11 +54,28 @@ performSyntaxHighlight = liftEffect do
   caretPosition <- getCaretPosition selection (toNode formulaBox)
   formulaText <- getFormulaBoxContents
   let
-    htmlString = fold $ StringRenderer.render (const mempty) <$> html
     html = unwrap <$> formulaElements formulaText
+    htmlString = fold $ StringRenderer.render (const mempty) <$> html
   emptyFormulaBox
   setInnerHTML (toElement formulaBox) htmlString
-  traverse_ (setCaretPosition selection (toNode formulaBox)) caretPosition
+  traverse_ (setCaretPosition selection $ toNode formulaBox) caretPosition
+
+displayFunctionType :: forall m. MonadEffect m => LocalFormulaCtx -> m Unit
+displayFunctionType ctx = liftEffect do
+  formulaBox <- justSelectElementById formulaBoxId
+  formulaSignature <- justSelectElementById formulaSignatureId
+  selection <- getSelection =<< window
+  ancestors <- getAncestorNodes =<< Selection.anchorNode selection
+  when (any (refEquals $ toNode formulaBox) ancestors) do
+    index <- getCaretPosition selection (toNode formulaBox)
+    formulaText <- getFormulaBoxContents
+    let
+      fnName = fromMaybe (QVar Nothing $ Var "")
+        (getCurrentFnName formulaText =<< index)
+      fnInfo = hush $ evalState (runExceptT $ lookupModuleFn fnName) ctx
+      html = unwrap <$> foldMap fnInfoElements fnInfo
+      htmlString = fold $ StringRenderer.render (const mempty) <$> html
+    setInnerHTML (toElement formulaSignature) htmlString
 
 formulaElements :: forall a b. String -> Array (HTML a b)
 formulaElements formulaText =
@@ -66,6 +87,12 @@ formulaElements formulaText =
   atoms = fold $ runParser
     syntaxAtom
     formulaText
+
+fnInfoElements :: forall a b. FnInfo -> Array (HTML a b)
+fnInfoElements fnInfo = []
+
+getCurrentFnName :: String -> Int -> Maybe QVar
+getCurrentFnName index formulaText = Nothing
 
 getFormulaBoxContents :: forall m. MonadEffect m => m String
 getFormulaBoxContents = liftEffect
@@ -206,6 +233,12 @@ getChildOrNode :: Node -> Effect Node
 getChildOrNode node = do
   child <- firstChild node
   pure $ unsafeFromJust (child <|> pure node)
+
+getAncestorNodes :: Node -> Effect (Array Node)
+getAncestorNodes node = do
+  parentNode' <- parentNode node
+  grandParentNode <- join <$> traverse parentNode parentNode'
+  pure $ filterMap identity [ parentNode', grandParentNode ]
 
 getNodeText :: Node -> Effect String
 getNodeText node = do

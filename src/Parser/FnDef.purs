@@ -2,16 +2,16 @@ module App.Parser.FnDef (opDef, fnDef, fnBody, statements) where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Column(..), Row(..), buildCell)
+import App.Components.Table.Cell (cellParser)
 import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, var, varOp)
 import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
 import Bookhound.Parser (ParseError(..), Parser, errorParser, withError)
 import Bookhound.ParserCombinators (is, someSepBy, within, (<|>), (|+), (|?))
-import Bookhound.Parsers.Char (comma, quote, upper)
+import Bookhound.Parsers.Char (comma, quote)
 import Bookhound.Parsers.Collections (listOf)
-import Bookhound.Parsers.Number (posInt, unsignedInt)
+import Bookhound.Parsers.Number (unsignedInt)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
 import Data.Array as Array
@@ -81,7 +81,7 @@ fnBody = whereExpr <|> token openForm
   array = defer \_ -> Array' <$> (token (listOf openForm))
   fnOp = defer \_ -> FnOp <$> (token quote *> qVarOp)
   fnVar = defer \_ -> FnVar <$> qVar
-  cell = buildCell <$> (Column <$> upper) <*> (Row <$> posInt)
+  cell = cellParser
 
   infixArgForm = defer \_ ->
     complexInfixForm <|> singleForm
