@@ -63,23 +63,19 @@ data Object
   | BuiltinFnObj BuiltinFnInfo
   | NullObj
 
-newtype FnInfo =
-  FnInfo
-    { id :: Maybe FnId
-    , body :: FnBody
-    , params :: Array (Var /\ Maybe Type)
-    , scope :: Scope
-    , argsMap :: Map (Scope /\ Var) FnInfo
-    , returnType :: Maybe Type
-    }
+newtype FnInfo = FnInfo
+  ( FnSig
+      ( id :: Maybe FnId
+      , body :: FnBody
+      , scope :: Scope
+      , argsMap :: Map (Scope /\ Var) FnInfo
+      )
+  )
 
-type FnId = { fnModule :: Module, fnName :: Var }
-
-type BuiltinFnInfo =
-  { fn :: Array Object -> Object
-  , arity :: Arity
+type BuiltinFnInfo = FnSig
+  ( fn :: Array Object -> Object
   , defaultParams :: Set Int
-  }
+  )
 
 type OpInfo =
   { id :: FnOpId
@@ -88,19 +84,15 @@ type OpInfo =
   , associativity :: Associativity
   }
 
-type FnOpId = { opModule :: Module, opName :: VarOp }
+type FnId = { fnModule :: Module, fnName :: Var }
 
-data Arity
-  = A0
-  | A1
-  | A2
-  | A3
-  | A4
-  | A5
-  | A6
-  | A7
-  | A8
-  | A9
+type FnSig r =
+  { params :: Array (Var /\ Maybe Type)
+  , returnType :: Maybe Type
+  | r
+  }
+
+type FnOpId = { opModule :: Module, opName :: VarOp }
 
 data Precedence
   = P0
@@ -186,22 +178,7 @@ instance BoundedEnum Precedence where
   fromEnum = genericFromEnum
   toEnum = genericToEnum
 
-derive instance Eq Arity
-derive instance Ord Arity
-derive instance Generic Arity _
-
-instance Enum Arity where
-  succ = genericSucc
-  pred = genericPred
-
-instance Bounded Arity where
-  bottom = genericBottom
-  top = genericTop
-
-instance BoundedEnum Arity where
-  cardinality = genericCardinality
-  fromEnum = genericFromEnum
-  toEnum = genericToEnum
+derive instance Newtype FnInfo _
 
 derive instance Generic FnInfo _
 instance Show FnInfo where

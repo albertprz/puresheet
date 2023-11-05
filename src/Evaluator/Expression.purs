@@ -2,12 +2,11 @@ module App.Evaluator.Expression where
 
 import FatPrelude
 
-import App.Evaluator.Builtins as Builtins
-import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupFn, lookupOperator, registerArg, registerBindings, resetFnScope, substituteFnArgs, varFn)
-import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..), raiseError)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupBuiltinFn, lookupFn, lookupOperator, registerArg, registerBindings, resetFnScope, substituteFnArgs, varFn)
+import App.Evaluator.Errors (EvalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
-import App.SyntaxTree.FnDef (Arity(..), Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
+import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (hasSome)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
@@ -133,7 +132,7 @@ evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
 evalExpr (Object' (FnObj fnInfo@(FnInfo { params: [] }))) =
   evalFn fnInfo []
 
-evalExpr (Object' (BuiltinFnObj fnInfo@{ arity: A0 })) =
+evalExpr (Object' (BuiltinFnObj fnInfo@{ params: [] })) =
   evalBuiltinFn fnInfo []
 
 evalExpr (Object' obj) = pure obj
@@ -144,20 +143,20 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
   st <- get
   newSt <- getNewFnState (FnInfo fnInfo) args
 
-  if unappliedArgsNum == 0 then do
+  if length unappliedParams == 0 then do
     put newSt
     result <- evalExpr body
     newScopeLoc <- gets _.scopeLoc
     put st
     if isJust maybeFnId then
-      pure $ resetFnScope $
-        substituteFnArgs result (map fst params `zip'` args)
+      pure $ resetFnScope
+        $ substituteFnArgs result (map fst params `zip'` args)
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
 
-  else if unappliedArgsNum > 0 then
+  else if length unappliedParams > 0 then
     pure $ FnObj $ FnInfo $ fnInfo
-      { params = takeEnd' unappliedArgsNum params
+      { params = unappliedParams
       , argsMap = newSt.argsMap
       }
 
@@ -169,25 +168,26 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     evalExpr $ FnApply (Object' fn) postArgs
 
   where
-  unappliedArgsNum = length params - length args
+  unappliedParams = drop' (length args) params
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
-evalBuiltinFn { fn, arity, defaultParams } args =
-  if unappliedArgsNum == 0 then
+evalBuiltinFn { fn, params, defaultParams } args =
+  if length unappliedParams == 0 then
     except
       $ note (TypeError' $ InvalidArgumentTypes args)
       $ fromMaybe' (\_ -> partialMaybe fn args) (pure <$> defaultResult)
-  else if unappliedArgsNum > 0 then
+  else if length unappliedParams > 0 then
     pure $ BuiltinFnObj
       { fn: \newArgs -> fn (args <> newArgs)
-      , arity: unsafeFromJust $ toEnum unappliedArgsNum
+      , params: unappliedParams
       , defaultParams: Set.filter zeroOrPos
           $ Set.map (_ - length args) defaultParams
+      , returnType: Nothing
       }
   else
     raiseError $ TypeError' $ TooManyArguments $ length args
   where
-  unappliedArgsNum = fromEnum arity - length args
+  unappliedParams = drop' (length args) params
   defaultResult =
     if NullObj `elem` args && hasSome defaultParams then
       find
@@ -330,7 +330,4 @@ getFnInfo fnName = do
 
 getBuiltinFnInfo :: Var -> EvalM Object
 getBuiltinFnInfo fnName =
-  except
-    $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
-    $ BuiltinFnObj
-    <$> Map.lookup fnName Builtins.builtinFnsMap
+  BuiltinFnObj <$> lookupBuiltinFn fnName

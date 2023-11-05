@@ -177,14 +177,13 @@ cellCss = do
   td &. atLeftSelection /\ td &. atRightSelection ? Rule.do
     borderLeftColor := green
 
-  table &. copySelection |* td &. aboveSelection /\ table &. copySelection |* td
-    &. belowSelection
+  table &. copySelection |* td &. aboveSelection
+    /\ (table &. copySelection |* td &. belowSelection)
     ? Rule.do
         borderBottomStyle := dashed
 
-  table &. copySelection |* td &. atLeftSelection /\ table &. copySelection
-    |* td
-    &. atRightSelection
+  table &. copySelection |* td &. atLeftSelection
+    /\ (table &. copySelection |* td &. atRightSelection)
     ? Rule.do
         borderLeftStyle := dashed
 

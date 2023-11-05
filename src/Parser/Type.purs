@@ -22,7 +22,7 @@ type' = defer \_ -> arrow <|> union <|> atom
   where
 
   typeApply = defer \_ ->
-    CtorTypeApply <$> typeVar <*> argListOf type'
+    VarTypeApply <$> typeVar <*> argListOf type'
       <|> (ParamTypeApply <$> typeParam <*> argListOf type')
 
   arrow = defer \_ -> ArrowTypeApply <$> multipleSepBy (isToken "->")

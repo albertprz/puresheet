@@ -3,10 +3,11 @@ module App.Evaluator.Common where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue(..))
+import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.Parser.Common (var)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
-import App.SyntaxTree.FnDef (Associativity(..), FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Precedence(..), Scope(..))
+import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Precedence(..), Scope(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.FatPrelude (findJust)
 import Bookhound.Parser (runParser)
@@ -123,6 +124,12 @@ lookupOperator qVarOp@(QVarOp opModule opName) = do
     $ findJust
     $ flip Map.lookup st.operatorsMap
     <$> ops
+
+lookupBuiltinFn :: Var -> EvalM BuiltinFnInfo
+lookupBuiltinFn fnName =
+  except
+    $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
+    $ Map.lookup fnName Builtins.builtinFnsMap
 
 getAvailableFns
   :: forall a b

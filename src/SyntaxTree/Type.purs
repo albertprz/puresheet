@@ -12,7 +12,7 @@ newtype TypeParam = TypeParam Char
 newtype TypeVar = TypeVar String
 
 data Type
-  = CtorTypeApply TypeVar (Array Type)
+  = VarTypeApply TypeVar (Array Type)
   | ParamTypeApply TypeParam (Array Type)
   | ArrowTypeApply (Array Type)
   | UnionTypeApply (Array Type)

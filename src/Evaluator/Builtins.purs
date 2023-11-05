@@ -2,17 +2,22 @@ module App.Evaluator.Builtins
   ( builtinFnsMap
   ) where
 
+import Prim hiding (Type)
+
 import App.Evaluator.Object (extractList, isElement)
 import App.SyntaxTree.Common (Var(..))
-import App.SyntaxTree.FnDef (Arity(..), BuiltinFnInfo, Object(..))
+import App.SyntaxTree.FnDef (BuiltinFnInfo, Object(..))
+import App.SyntaxTree.Type (Type(..), TypeParam(..), TypeVar(..))
 import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
+import Data.Bifunctor (rmap)
 import Data.EuclideanRing as Ring
 import Data.Foldable as Foldable
 import Data.Map as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<=), (<>), (==), (>), (>=), (||))
+import Data.Tuple.Nested (type (/\))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -20,138 +25,208 @@ builtinFnsMap :: Map Var BuiltinFnInfo
 builtinFnsMap = unsafePartial $ Map.fromFoldable
   $
     bimap Var
-      ( \(fn /\ arity /\ nulls) ->
-          { fn, arity, defaultParams: Set.fromFoldable nulls }
+      ( \(fn /\ (params /\ returnType) /\ nulls) ->
+          { fn
+          , params: rmap Just <$> params
+          , returnType: Just returnType
+          , defaultParams: Set.fromFoldable nulls
+          }
       )
   <$>
-    [ ("null" /\ (null /\ A0 /\ []))
-    , ("not" /\ (not /\ A1 /\ []))
-    , ("neg" /\ (neg /\ A1 /\ []))
-    , ("concat" /\ (concat /\ A1 /\ []))
-    , ("transpose" /\ (transpose /\ A1 /\ []))
-    , ("head" /\ (head /\ A1 /\ []))
-    , ("tail" /\ (tail /\ A1 /\ []))
-    , ("init" /\ (init /\ A1 /\ []))
-    , ("last" /\ (last /\ A1 /\ []))
-    , ("reverse" /\ (reverse /\ A1 /\ []))
-    , ("length" /\ (length /\ A1 /\ []))
-    , ("and" /\ (and /\ A2 /\ [ 0, 1 ]))
-    , ("or" /\ (or /\ A2 /\ [ 0, 1 ]))
-    , ("add" /\ (add /\ A2 /\ [ 0, 1 ]))
-    , ("mult" /\ (mult /\ A2 /\ [ 0, 1 ]))
-    , ("gcd" /\ (gcd /\ A2 /\ [ 0, 1 ]))
-    , ("lcm" /\ (lcm /\ A2 /\ [ 0, 1 ]))
-    , ("append" /\ (append /\ A2 /\ [ 0, 1 ]))
-    , ("sub" /\ (sub /\ A2 /\ [ 0 ]))
-    , ("div" /\ (div /\ A2 /\ [ 0 ]))
-    , ("mod" /\ (mod /\ A2 /\ [ 0 ]))
-    , ("take" /\ (take /\ A2 /\ [ 0 ]))
-    , ("takeLast" /\ (takeLast /\ A2 /\ [ 0 ]))
-    , ("drop" /\ (drop /\ A2 /\ [ 0 ]))
-    , ("dropLast" /\ (dropLast /\ A2 /\ [ 0 ]))
-    , ("contains" /\ (contains /\ A2 /\ []))
-    , ("eq" /\ (eq /\ A2 /\ []))
-    , ("notEq" /\ (notEq /\ A2 /\ []))
-    , ("gt" /\ (gt /\ A2 /\ []))
-    , ("gtOrEq" /\ (gtOrEq /\ A2 /\ []))
-    , ("lt" /\ (lt /\ A2 /\ []))
-    , ("ltOrEq" /\ (ltOrEq /\ A2 /\ []))
-    , ("cons" /\ (cons /\ A2 /\ []))
-    , ("snoc" /\ (snoc /\ A2 /\ []))
-    , ("range" /\ (range /\ A2 /\ []))
-    , ("slice" /\ (slice /\ A3 /\ []))
+    [ ("null" /\ (null /\ nullSig /\ []))
+    , ("not" /\ (not /\ notSig /\ []))
+    , ("neg" /\ (neg /\ negSig /\ []))
+    , ("concat" /\ (concat /\ concatSig /\ []))
+    , ("transpose" /\ (transpose /\ transposeSig /\ []))
+    , ("head" /\ (head /\ headSig /\ []))
+    , ("tail" /\ (tail /\ tailSig /\ []))
+    , ("init" /\ (init /\ initSig /\ []))
+    , ("last" /\ (last /\ lastSig /\ []))
+    , ("reverse" /\ (reverse /\ reverseSig /\ []))
+    , ("length" /\ (length /\ lengthSig /\ []))
+    , ("and" /\ (and /\ andSig /\ [ 0, 1 ]))
+    , ("or" /\ (or /\ orSig /\ [ 0, 1 ]))
+    , ("add" /\ (add /\ addSig /\ [ 0, 1 ]))
+    , ("mult" /\ (mult /\ multSig /\ [ 0, 1 ]))
+    , ("gcd" /\ (gcd /\ gcdSig /\ [ 0, 1 ]))
+    , ("lcm" /\ (lcm /\ lcmSig /\ [ 0, 1 ]))
+    , ("append" /\ (append /\ appendSig /\ [ 0, 1 ]))
+    , ("sub" /\ (sub /\ subSig /\ [ 0 ]))
+    , ("div" /\ (div /\ divSig /\ [ 0 ]))
+    , ("mod" /\ (mod /\ modSig /\ [ 0 ]))
+    , ("take" /\ (take /\ takeSig /\ [ 0 ]))
+    , ("takeLast" /\ (takeLast /\ takeLastSig /\ [ 0 ]))
+    , ("drop" /\ (drop /\ dropSig /\ [ 0 ]))
+    , ("dropLast" /\ (dropLast /\ dropLastSig /\ [ 0 ]))
+    , ("contains" /\ (contains /\ containsSig /\ []))
+    , ("eq" /\ (eq /\ eqSig /\ []))
+    , ("notEq" /\ (notEq /\ notEqSig /\ []))
+    , ("gt" /\ (gt /\ gtSig /\ []))
+    , ("gtOrEq" /\ (gtOrEq /\ gtOrEqSig /\ []))
+    , ("lt" /\ (lt /\ ltSig /\ []))
+    , ("ltOrEq" /\ (ltOrEq /\ ltOrEqSig /\ []))
+    , ("cons" /\ (cons /\ consSig /\ []))
+    , ("snoc" /\ (snoc /\ snocSig /\ []))
+    , ("range" /\ (range /\ rangeSig /\ []))
+    , ("slice" /\ (slice /\ sliceSig /\ []))
     ]
 
 -- Null
 null :: Partial => Array Object -> Object
 null [] = NullObj
 
+nullSig :: Sig
+nullSig = [] /\ a
+
 -- Boolean Fns
 not :: Partial => Array Object -> Object
 not [ BoolObj x ] = BoolObj $ Prelude.not x
 
+notSig :: Sig
+notSig = [ Var "x" /\ bool ] /\ bool
+
 and :: Partial => Array Object -> Object
-and [ BoolObj a, BoolObj b ] = BoolObj $ a && b
+and [ BoolObj x, BoolObj y ] = BoolObj $ x && y
+
+andSig :: Sig
+andSig = [ Var "x" /\ bool, Var "y" /\ bool ] /\ bool
 
 or :: Partial => Array Object -> Object
-or [ BoolObj a, BoolObj b ] = BoolObj $ a || b
+or [ BoolObj x, BoolObj y ] = BoolObj $ x || y
+
+orSig :: Sig
+orSig = [ Var "x" /\ bool, Var "y" /\ bool ] /\ bool
 
 eq :: Partial => Array Object -> Object
-eq [ obj1, obj2 ] = BoolObj $ obj1 == obj2
+eq [ x, y ] = BoolObj $ x == y
+
+eqSig :: Sig
+eqSig = [ Var "x" /\ a, Var "y" /\ a ] /\ bool
 
 notEq :: Partial => Array Object -> Object
-notEq [ obj1, obj2 ] = BoolObj $ obj1 /= obj2
+notEq [ x, y ] = BoolObj $ x /= y
+
+notEqSig :: Sig
+notEqSig = [ Var "x" /\ a, Var "y" /\ a ] /\ bool
 
 gt :: Partial => Array Object -> Object
-gt [ obj1, obj2 ] = BoolObj $ obj1 > obj2
+gt [ x, y ] = BoolObj $ x > y
+
+gtSig :: Sig
+gtSig = [ Var "x" /\ a, Var "y" /\ a ] /\ bool
 
 gtOrEq :: Partial => Array Object -> Object
-gtOrEq [ obj1, obj2 ] = BoolObj $ obj1 >= obj2
+gtOrEq [ x, y ] = BoolObj $ x >= y
+
+gtOrEqSig :: Sig
+gtOrEqSig = [ Var "x" /\ a, Var "y" /\ a ] /\ bool
 
 lt :: Partial => Array Object -> Object
-lt [ obj1, obj2 ] = BoolObj $ obj1 < obj2
+lt [ x, y ] = BoolObj $ x < y
+
+ltSig :: Sig
+ltSig = [ Var "x" /\ a, Var "y" /\ a ] /\ bool
 
 ltOrEq :: Partial => Array Object -> Object
-ltOrEq [ obj1, obj2 ] = BoolObj $ obj1 <= obj2
+ltOrEq [ x, y ] = BoolObj $ x <= y
+
+ltOrEqSig :: Sig
+ltOrEqSig = [ Var "x" /\ a, Var "y" /\ a ] /\ bool
 
 -- Number Fns
 neg :: Partial => Array Object -> Object
 neg [ IntObj x ] = IntObj $ Prelude.negate x
 neg [ FloatObj x ] = FloatObj $ Prelude.negate x
 
+negSig :: Sig
+negSig = [ Var "x" /\ number ] /\ number
+
 add :: Partial => Array Object -> Object
-add [ IntObj a, IntObj b ] = IntObj $ a + b
-add [ FloatObj a, FloatObj b ] = FloatObj $ a + b
-add [ FloatObj a, IntObj b ] = FloatObj $ a + toNumber b
-add [ IntObj a, FloatObj b ] = FloatObj $ toNumber a + b
+add [ IntObj x, IntObj y ] = IntObj $ x + y
+add [ FloatObj x, FloatObj y ] = FloatObj $ x + y
+add [ FloatObj x, IntObj y ] = FloatObj $ x + toNumber y
+add [ IntObj x, FloatObj y ] = FloatObj $ toNumber x + y
+
+addSig :: Sig
+addSig = [ Var "x" /\ number, Var "y" /\ number ] /\ number
 
 sub :: Partial => Array Object -> Object
-sub [ IntObj a, IntObj b ] = IntObj $ a - b
-sub [ FloatObj a, FloatObj b ] = FloatObj $ a - b
-sub [ FloatObj a, IntObj b ] = FloatObj $ a - toNumber b
-sub [ IntObj a, FloatObj b ] = FloatObj $ toNumber a - b
+sub [ IntObj x, IntObj y ] = IntObj $ x - y
+sub [ FloatObj x, FloatObj y ] = FloatObj $ x - y
+sub [ FloatObj x, IntObj y ] = FloatObj $ x - toNumber y
+sub [ IntObj x, FloatObj y ] = FloatObj $ toNumber x - y
+
+subSig :: Sig
+subSig = [ Var "x" /\ number, Var "y" /\ number ] /\ number
 
 mult :: Partial => Array Object -> Object
-mult [ IntObj a, IntObj b ] = IntObj $ a * b
-mult [ FloatObj a, FloatObj b ] = FloatObj $ a * b
-mult [ FloatObj a, IntObj b ] = FloatObj $ a * toNumber b
-mult [ IntObj a, FloatObj b ] = FloatObj $ toNumber a * b
+mult [ IntObj x, IntObj y ] = IntObj $ x * y
+mult [ FloatObj x, FloatObj y ] = FloatObj $ x * y
+mult [ FloatObj x, IntObj y ] = FloatObj $ x * toNumber y
+mult [ IntObj x, FloatObj y ] = FloatObj $ toNumber x * y
+
+multSig :: Sig
+multSig = [ Var "x" /\ number, Var "y" /\ number ] /\ number
 
 div :: Partial => Array Object -> Object
-div [ IntObj a, IntObj b ] = FloatObj $ toNumber a / toNumber b
-div [ FloatObj a, FloatObj b ] = FloatObj $ a / b
-div [ FloatObj a, IntObj b ] = FloatObj $ a / toNumber b
-div [ IntObj a, FloatObj b ] = FloatObj $ toNumber a / b
+div [ IntObj x, IntObj y ] = FloatObj $ toNumber x / toNumber y
+div [ FloatObj x, FloatObj y ] = FloatObj $ x / y
+div [ FloatObj x, IntObj y ] = FloatObj $ x / toNumber y
+div [ IntObj x, FloatObj y ] = FloatObj $ toNumber x / y
+
+divSig :: Sig
+divSig = [ Var "x" /\ number, Var "y" /\ number ] /\ float
 
 -- Int Fns
 mod :: Partial => Array Object -> Object
-mod [ IntObj a, IntObj b ] = IntObj $ Ring.mod a b
+mod [ IntObj x, IntObj y ] = IntObj $ Ring.mod x y
+
+modSig :: Sig
+modSig = [ Var "x" /\ int, Var "y" /\ int ] /\ int
 
 gcd :: Partial => Array Object -> Object
-gcd [ IntObj a, IntObj b ] = IntObj $ Ring.gcd a b
+gcd [ IntObj x, IntObj y ] = IntObj $ Ring.gcd x y
+
+gcdSig :: Sig
+gcdSig = [ Var "x" /\ int, Var "y" /\ int ] /\ int
 
 lcm :: Partial => Array Object -> Object
-lcm [ IntObj a, IntObj b ] = IntObj $ Ring.lcm a b
+lcm [ IntObj x, IntObj y ] = IntObj $ Ring.lcm x y
+
+lcmSig :: Sig
+lcmSig = [ Var "x" /\ int, Var "y" /\ int ] /\ int
 
 -- List / String Fns
 append :: Partial => Array Object -> Object
-append [ ArrayObj a, ArrayObj b ] = ArrayObj $ a <> b
-append [ StringObj a, StringObj b ] = StringObj $ a <> b
+append [ ArrayObj x, ArrayObj y ] = ArrayObj $ x <> y
+append [ StringObj x, StringObj y ] = StringObj $ x <> y
+
+appendSig :: Sig
+appendSig = [ Var "xs" /\ arrayOf a, Var "ys" /\ arrayOf a ] /\ arrayOf a
 
 cons :: Partial => Array Object -> Object
-cons [ a, ArrayObj b ] = ArrayObj $ Array.cons a b
-cons [ NullObj, ArrayObj a ] = ArrayObj $ Array.cons NullObj a
-cons [ CharObj a, StringObj b ] = StringObj $ String.singleton a <> b
-cons [ NullObj, StringObj a ] = StringObj a
+cons [ x, ArrayObj y ] = ArrayObj $ Array.cons x y
+cons [ NullObj, ArrayObj x ] = ArrayObj $ Array.cons NullObj x
+cons [ CharObj x, StringObj y ] = StringObj $ String.singleton x <> y
+cons [ NullObj, StringObj x ] = StringObj x
+
+consSig :: Sig
+consSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ arrayOf a
 
 snoc :: Partial => Array Object -> Object
-snoc [ ArrayObj a, b ] = ArrayObj $ Array.snoc a b
-snoc [ ArrayObj a, NullObj ] = ArrayObj $ Array.snoc a NullObj
-snoc [ StringObj a, CharObj b ] = StringObj $ a <> String.singleton b
-snoc [ StringObj a, NullObj ] = StringObj a
+snoc [ ArrayObj x, y ] = ArrayObj $ Array.snoc x y
+snoc [ ArrayObj x, NullObj ] = ArrayObj $ Array.snoc x NullObj
+snoc [ StringObj x, CharObj y ] = StringObj $ x <> String.singleton y
+snoc [ StringObj x, NullObj ] = StringObj x
+
+snocSig :: Sig
+snocSig = [ Var "xs" /\ arrayOf a, Var "y" /\ a ] /\ arrayOf a
 
 concat :: Partial => Array Object -> Object
 concat [ ArrayObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
+
+concatSig :: Sig
+concatSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ arrayOf a
 
 transpose :: Partial => Array Object -> Object
 transpose [ ArrayObj xs ] | Just xss <- traverse extractList xs =
@@ -159,59 +234,131 @@ transpose [ ArrayObj xs ] | Just xss <- traverse extractList xs =
 transpose [ ArrayObj xs ] | all isElement xs =
   ArrayObj $ (ArrayObj <$> Array.transpose [ xs ])
 
+transposeSig :: Sig
+transposeSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ]
+  /\ (arrayOf $ arrayOf a)
+
 contains :: Partial => Array Object -> Object
-contains [ a, ArrayObj b ] = BoolObj $ elem a b
-contains [ CharObj a, StringObj b ] = BoolObj $ elem a (String.toCharArray b)
+contains [ x, ArrayObj y ] = BoolObj $ elem x y
+contains [ CharObj x, StringObj y ] = BoolObj $ elem x (String.toCharArray y)
+
+containsSig :: Sig
+containsSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ bool
 
 range :: Partial => Array Object -> Object
-range [ IntObj a, IntObj b ] = ArrayObj $ IntObj <$> (a .. b)
-range [ CharObj a, CharObj b ] = ArrayObj $ CharObj <$> (a .. b)
+range [ IntObj x, IntObj y ] = ArrayObj $ IntObj <$> (x .. y)
+range [ CharObj x, CharObj y ] = ArrayObj $ CharObj <$> (x .. y)
+
+rangeSig :: Sig
+rangeSig = [ Var "start" /\ a, Var "end" /\ a ] /\ arrayOf a
 
 head :: Partial => Array Object -> Object
-head [ ArrayObj a ] = fromMaybe NullObj $ Array.head a
-head [ StringObj a ] = fromMaybe NullObj $ CharObj <$>
-  (Array.head $ toCharArray a)
+head [ ArrayObj x ] = fromMaybe NullObj $ Array.head x
+head [ StringObj x ] = fromMaybe NullObj $ CharObj <$>
+  (Array.head $ toCharArray x)
+
+headSig :: Sig
+headSig = [ Var "xs" /\ arrayOf a ] /\ a
 
 tail :: Partial => Array Object -> Object
-tail [ ArrayObj a ] = fromMaybe NullObj $ ArrayObj <$> Array.tail a
-tail [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
-  (Array.tail $ toCharArray a)
+tail [ ArrayObj x ] = fromMaybe NullObj $ ArrayObj <$> Array.tail x
+tail [ StringObj x ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
+  (Array.tail $ toCharArray x)
+
+tailSig :: Sig
+tailSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 last :: Partial => Array Object -> Object
-last [ ArrayObj a ] = fromMaybe NullObj $ Array.last a
-last [ StringObj a ] = fromMaybe NullObj $ CharObj <$>
-  (Array.last $ toCharArray a)
+last [ ArrayObj x ] = fromMaybe NullObj $ Array.last x
+last [ StringObj x ] = fromMaybe NullObj $ CharObj <$>
+  (Array.last $ toCharArray x)
+
+lastSig :: Sig
+lastSig = [ Var "xs" /\ arrayOf a ] /\ a
 
 init :: Partial => Array Object -> Object
-init [ ArrayObj a ] = fromMaybe NullObj $ ArrayObj <$> Array.init a
-init [ StringObj a ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
-  (Array.init $ toCharArray a)
+init [ ArrayObj x ] = fromMaybe NullObj $ ArrayObj <$> Array.init x
+init [ StringObj x ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
+  (Array.init $ toCharArray x)
+
+initSig :: Sig
+initSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 reverse :: Partial => Array Object -> Object
 reverse [ ArrayObj xs ] = ArrayObj $ Array.reverse xs
 reverse [ StringObj xs ] = StringObj $ fromCharArray $ Array.reverse $
   toCharArray xs
 
+reverseSig :: Sig
+reverseSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
+
 length :: Partial => Array Object -> Object
-length [ ArrayObj a ] = IntObj $ Foldable.length a
-length [ StringObj a ] = IntObj $ String.length a
+length [ ArrayObj x ] = IntObj $ Foldable.length x
+length [ StringObj x ] = IntObj $ String.length x
+
+lengthSig :: Sig
+lengthSig = [ Var "xs" /\ arrayOf a ] /\ int
 
 take :: Partial => Array Object -> Object
 take [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.take n xs
 take [ IntObj n, StringObj xs ] = StringObj $ String.take n xs
 
+takeSig :: Sig
+takeSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
+
 takeLast :: Partial => Array Object -> Object
 takeLast [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.takeEnd n xs
 takeLast [ IntObj n, StringObj xs ] = StringObj $ String.takeRight n xs
+
+takeLastSig :: Sig
+takeLastSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 drop :: Partial => Array Object -> Object
 drop [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.drop n xs
 drop [ IntObj n, StringObj xs ] = StringObj $ String.drop n xs
 
+dropSig :: Sig
+dropSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
+
 dropLast :: Partial => Array Object -> Object
 dropLast [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.dropEnd n xs
 dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
 
+dropLastSig :: Sig
+dropLastSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
+
 slice :: Partial => Array Object -> Object
-slice [ IntObj n1, IntObj n2, ArrayObj xs ] = ArrayObj $ Array.slice n1 n2 xs
-slice [ IntObj n1, IntObj n2, StringObj xs ] = StringObj $ String.slice n1 n2 xs
+slice [ IntObj n1, IntObj n2, ArrayObj xs ] =
+  ArrayObj $ Array.slice n1 n2 xs
+slice [ IntObj n1, IntObj n2, StringObj xs ] =
+  StringObj $ String.slice n1 n2 xs
+
+sliceSig :: Sig
+sliceSig = [ Var "start" /\ int, Var "end" /\ int, Var "xs" /\ arrayOf a ]
+  /\ arrayOf a
+
+a :: Type
+a = typeParam 'A'
+
+bool :: Type
+bool = typeVar "Boolean"
+
+int :: Type
+int = typeVar "Int"
+
+number :: Type
+number = typeVar "Number"
+
+float :: Type
+float = typeVar "Float"
+
+typeVar :: String -> Type
+typeVar = TypeVar' <<< TypeVar
+
+typeParam :: Char -> Type
+typeParam = TypeParam' <<< TypeParam
+
+arrayOf :: Type -> Type
+arrayOf = ArrayTypeApply
+
+type Sig = Array (Var /\ Type) /\ Type

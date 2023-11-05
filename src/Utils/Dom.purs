@@ -4,18 +4,16 @@ import FatPrelude hiding (span)
 
 import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, formulaSignatureId)
 import App.Components.Table.Cell (Cell, showCell)
-import App.Components.Table.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnInfoToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
-import App.Evaluator.Common (LocalFormulaCtx, lookupModuleFn)
+import App.Components.Table.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
+import App.Evaluator.Common (LocalFormulaCtx, lookupBuiltinFn, lookupModuleFn)
 import App.Parser.Common (qVar)
-import App.SyntaxTree.Common (QVar(..), Var(..))
-import App.SyntaxTree.FnDef (FnInfo)
+import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
+import App.SyntaxTree.FnDef (FnId, FnSig)
 import App.Utils.Range as Range
 import App.Utils.Selection (Selection)
 import App.Utils.Selection as Selection
 import App.Utils.String (startsWith) as String
 import Bookhound.Parser (runParser)
-import Bookhound.ParserCombinators (maybeWithin, within)
-import Bookhound.Parsers.String (spacing)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Alternative ((<|>))
 import Data.Int as Int
@@ -23,10 +21,10 @@ import Data.String (Pattern(..), indexOf', lastIndexOf')
 import Data.String.CodePoints (length) as String
 import Data.String.CodeUnits (slice) as String
 import Data.Unfoldable as Unfoldable
-import Debug (spy)
 import Halogen.HTML (HTML, span, text)
 import Halogen.HTML.Properties (class_)
 import Halogen.VDom.DOM.StringRenderer as StringRenderer
+import Record.Extra (pick)
 import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
@@ -74,12 +72,21 @@ displayFunctionType ctx = liftEffect do
     index <- getCaretPosition selection (toNode formulaBox)
     formulaText <- getFormulaBoxContents
     let
-      fnName = fromMaybe (QVar Nothing $ Var "")
-        (getCurrentFnName formulaText =<< index)
-      fnInfo = hush $ evalState
-        (runExceptT $ lookupModuleFn fnName)
+      fnId = fromMaybe { fnModule: preludeModule, fnName: Var mempty }
+        (getCurrentFnId formulaText =<< index)
+      fnQVar = (QVar (Just fnId.fnModule) fnId.fnName)
+
+      fnInfo = map unwrap $ hush $ evalState
+        (runExceptT $ lookupModuleFn fnQVar)
         ctx
-      html = unwrap <$> foldMap fnInfoElements fnInfo
+      builtinFnInfo = hush $ evalState
+        (runExceptT $ lookupBuiltinFn fnId.fnName)
+        ctx
+
+      fnSig :: Maybe (FnSig ())
+      fnSig = pick <$> builtinFnInfo <|> pick <$> fnInfo
+
+      html = unwrap <$> foldMap (fnSigElements fnId) fnSig
       htmlString = fold
         $ StringRenderer.render (const mempty)
         <$> html
@@ -96,19 +103,21 @@ formulaElements :: forall a b. String -> Array (HTML a b)
 formulaElements =
   syntaxAtomsToElements <<< fold <<< runParser syntaxAtomParser
 
-fnInfoElements :: forall a b. FnInfo -> Array (HTML a b)
-fnInfoElements =
-  syntaxAtomsToElements <<< fnInfoToSyntaxAtoms
+fnSigElements :: forall a b r. FnId -> FnSig r -> Array (HTML a b)
+fnSigElements id sig =
+  syntaxAtomsToElements $ fnSigToSyntaxAtoms id sig
 
-getCurrentFnName :: String -> Int -> Maybe QVar
-getCurrentFnName formulaText index =
-  hush $ runParser qVar currentWord
+getCurrentFnId :: String -> Int -> Maybe FnId
+getCurrentFnId formulaText index =
+  hush $ runParser (qVarToFnId <$> qVar) currentWord
   where
-  startIndex = fromMaybe 0 $ map inc $ spy "start"
+  qVarToFnId (QVar module' var) =
+    { fnModule: fromMaybe preludeModule module', fnName: var }
+  startIndex = fromMaybe 0 $ map inc
     $ maximum
     $ filterMap (myLastIndexOf' (dec index) formulaText)
     $ (Pattern <$> (separators <> [ "(", "[" ]))
-  endIndex = fromMaybe (String.length formulaText) $ spy "end"
+  endIndex = fromMaybe (String.length formulaText)
     $ minimum
     $ filterMap (myIndexOf' index formulaText)
     $ (Pattern <$> (separators <> [ ")", "]" ]))

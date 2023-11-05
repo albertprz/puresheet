@@ -28,6 +28,7 @@
   , "point-free"
   , "prelude"
   , "psci-support"
+  , "record-extra"
   , "strings"
   , "tecton"
   , "tecton-halogen"

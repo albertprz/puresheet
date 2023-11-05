@@ -6,8 +6,8 @@ import Prim hiding (Type)
 import App.CSS.ClassNames (cellSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Table.Cell (cellParser, double, int, showCell)
 import App.Parser.Common (notReserved, opSymbol, reservedKeyWords, reservedSymbols)
-import App.SyntaxTree.Common (Module(..), QVar(..))
-import App.SyntaxTree.FnDef (FnInfo(..))
+import App.SyntaxTree.Common (QVar(..), preludeModule)
+import App.SyntaxTree.FnDef (FnId, FnSig)
 import App.SyntaxTree.Type (Type(..))
 import App.Utils.String (wrapDoubleQuotes)
 import Bookhound.Parser (Parser, anyOf)
@@ -67,27 +67,25 @@ syntaxAtomParser = (|+) atom
     <|> (is "<" ->>- var ->>- is "|")
     <|> notReserved (operator opSymbol)
 
-fnInfoToSyntaxAtoms :: FnInfo -> Array SyntaxAtom
-fnInfoToSyntaxAtoms (FnInfo { id: fnId, params, returnType })
-  | Just { fnModule, fnName } <- fnId =
-      fnName' <> params' <> returnType'
-      where
-      prettyModule =
-        if fnModule == Module [ "Prelude" ] then
-          Nothing
-        else
-          Just fnModule
-      fnName' = [ Keyword (show (QVar prettyModule fnName) <> " ") ]
-      params' = wrapArgList (param <$> params)
-      returnType' = foldMap annotation returnType
-      annotation = ([ Symbol ": " ] <> _) <$> typeToSyntaxAtoms
-      param (var /\ type') = [ Keyword $ show var ]
-        <> foldMap annotation type'
-  | otherwise = mempty
+fnSigToSyntaxAtoms :: forall r. FnId -> FnSig r -> Array SyntaxAtom
+fnSigToSyntaxAtoms { fnModule, fnName } { params, returnType } =
+  fnName' <> params' <> returnType'
+  where
+  prettyModule =
+    if fnModule == preludeModule then
+      Nothing
+    else
+      Just fnModule
+  fnName' = [ Keyword (show (QVar prettyModule fnName) <> " ") ]
+  params' = wrapArgList (param <$> params)
+  returnType' = foldMap annotation returnType
+  annotation = ([ Symbol ": " ] <> _) <$> typeToSyntaxAtoms
+  param (var /\ type') = [ Keyword $ show var ]
+    <> foldMap annotation type'
 
 typeToSyntaxAtoms :: Type -> Array SyntaxAtom
 typeToSyntaxAtoms = case _ of
-  CtorTypeApply x ys -> typeApply x ys
+  VarTypeApply x ys -> typeApply x ys
   ParamTypeApply x ys -> typeApply x ys
   ArrowTypeApply xs -> infixTypeApply "➾" xs
   UnionTypeApply xs -> infixTypeApply "|" xs
