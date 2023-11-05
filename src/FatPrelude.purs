@@ -50,7 +50,7 @@ module FatPrelude
 
 import Prelude
 
-import App.Utils.Array (arr2, deleteAt', drop', dropEnd', filterByIndexes, findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, index', init', insertAt', last', maybeToArray, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith', (!!!)) as ArrayUtils
+import App.Utils.Array (arr2, catMaybes', deleteAt', drop', dropEnd', filterByIndexes, findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, index', init', insertAt', intersperse', last', maybeToArray, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith', (!!!)) as ArrayUtils
 import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUtils
 import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as FoldableUtils

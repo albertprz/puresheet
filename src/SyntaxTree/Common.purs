@@ -5,22 +5,20 @@ import Prim hiding (Row)
 
 newtype Var = Var String
 
-derive instance Eq Var
-derive instance Ord Var
-instance Show Var where
-  show (Var x) = x
+derive newtype instance Eq Var
+derive newtype instance Ord Var
+derive newtype instance Show Var
 
 newtype VarOp = VarOp String
 
-derive instance Eq VarOp
-derive instance Ord VarOp
-instance Show VarOp where
-  show (VarOp x) = x
+derive newtype instance Eq VarOp
+derive newtype instance Ord VarOp
+derive newtype instance Show VarOp
 
 newtype Module = Module (Array String)
 
-derive instance Eq Module
-derive instance Ord Module
+derive newtype instance Eq Module
+derive newtype instance Ord Module
 instance Show Module where
   show (Module x) = intercalate "." x
 

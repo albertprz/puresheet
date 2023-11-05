@@ -6,14 +6,13 @@ import App.Components.Table.Cell (CellValue(..), double, int)
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|?), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, quote, underscore, upper)
+import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, upper)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
 import Data.String.Unsafe (char) as String
 
 cellValue :: Parser CellValue
 cellValue = token
-  $
-    (FloatVal <$> double)
+  $ (FloatVal <$> double)
   <|> (IntVal <$> int)
   <|> (BoolVal <$> (true <$ is "true" <|> false <$ is "false"))
   <|> (CharVal <$> withinQuotes (charLit <|> charLitEscaped))
@@ -22,16 +21,16 @@ cellValue = token
         ((||*) (stringLit <|> charLitEscaped))
     )
   where
-  charLit = noneOf [ '\'', '\\' ]
-  charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha) <|>
-    (is '\\' *> char)
   stringLit = noneOf [ '"', '\\' ]
+  charLit = noneOf [ '\'', '\\' ]
+  charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
+    <|> (is '\\' *> char)
 
 var :: Parser Var
 var = Var <$> notReserved (ident lower)
 
 varOp :: Parser VarOp
-varOp = VarOp <$> notReserved (operator opSymbol)
+varOp = VarOp <$> notReserved operator
 
 module' :: Parser Module
 module' = Module <$> someSepBy dot (ident upper)
@@ -41,9 +40,8 @@ qVar = uncurry QVar <$> qTerm var
 
 qVarOp :: Parser QVarOp
 qVarOp = uncurry QVarOp <$> qTerm
-  ( VarOp <$> (is "|" ->>- (extractVar <$> var) ->>- is ">")
-      <|> VarOp
-      <$> (is "<" ->>- (extractVar <$> var) ->>- is "|")
+  ( VarOp <$> (is "|" ->>- map extractVar var ->>- is ">")
+      <|> (VarOp <$> (is "<" ->>- map extractVar var ->>- is "|"))
       <|> varOp
   )
   where
@@ -53,16 +51,16 @@ argListOf :: forall a. Parser a -> Parser (Array a)
 argListOf = withinParens <<< someSepBy comma
 
 ident :: Parser Char -> Parser String
-ident start = token $ start ->>- ((|*) idChar)
+ident start = token $ start ->>- (|*) alphaNum
 
-operator :: Parser Char -> Parser String
-operator start = token $ start ->>- ((|*) (opSymbol <|> colon))
+operator :: Parser String
+operator = token $ (||*) colon
 
 nonTokenIdent :: Parser Char -> Parser String
-nonTokenIdent start = start ->>- (|*) idChar
+nonTokenIdent start = start ->>- (|*) alphaNum
 
 idChar :: Parser Char
-idChar = alphaNum <|> underscore <|> quote
+idChar = alphaNum
 
 opSymbol :: Parser Char
 opSymbol = oneOf opSymbolChars
@@ -80,10 +78,10 @@ qTerm x = (/\) <$> (|?) (moduleParser <* dot) <*> x
 
 notReserved :: Parser String -> Parser String
 notReserved = check "reserved"
-  (flip notElem (reservedSymbols <> reservedKeyWords))
+  $ flip notElem (reservedSymbols <> reservedKeyWords)
 
 withinBackQuotes :: forall b. Parser b -> Parser b
-withinBackQuotes = within (isToken '`')
+withinBackQuotes = within $ isToken '`'
 
 opSymbolChars :: Array Char
 opSymbolChars =
@@ -114,14 +112,14 @@ reservedKeyWords =
   [ "module"
   , "import"
   , "as"
-  , "data"
   , "op"
   , "def"
   , "where"
   , "switch"
   , "cond"
-  , "otherwise"
   , "_"
+  , "otherwise"
+  , "data"
   ]
 
 reservedSymbols :: Array String

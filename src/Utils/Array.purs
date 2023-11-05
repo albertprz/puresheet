@@ -120,3 +120,9 @@ zip' = Array.zip
 
 zipWith' :: forall a b c. (a -> b -> c) -> Array a -> Array b -> Array c
 zipWith' = Array.zipWith
+
+intersperse' :: forall a. a -> Array a -> Array a
+intersperse' = Array.intersperse
+
+catMaybes' :: forall a. Array (Maybe a) -> Array a
+catMaybes' = Array.catMaybes

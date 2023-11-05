@@ -2,15 +2,15 @@ module App.Utils.Dom where
 
 import FatPrelude hiding (span)
 
-import App.CSS.ClassNames (formulaSignature)
 import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, formulaSignatureId)
 import App.Components.Table.Cell (Cell, showCell)
-import App.Components.Table.SyntaxAtom (condenseSyntaxAtoms, syntaxAtom, syntaxAtomToClassName)
+import App.Components.Table.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnInfoToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
 import App.Evaluator.Common (LocalFormulaCtx, lookupModuleFn)
+import App.Parser.Common (qVar)
 import App.SyntaxTree.Common (QVar(..), Var(..))
-import App.SyntaxTree.FnDef (FnInfo(..))
+import App.SyntaxTree.FnDef (FnInfo)
 import App.Utils.Range as Range
-import App.Utils.Selection (Selection, anchorNode)
+import App.Utils.Selection (Selection)
 import App.Utils.Selection as Selection
 import App.Utils.String (startsWith) as String
 import Bookhound.Parser (runParser)
@@ -18,7 +18,9 @@ import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Alternative ((<|>))
 import Data.Int as Int
 import Data.Newtype (unwrap)
+import Data.String (Pattern(..), indexOf', lastIndexOf')
 import Data.String.CodePoints (length) as String
+import Data.String.CodeUnits (slice) as String
 import Data.Unfoldable as Unfoldable
 import Halogen.HTML (HTML, span, text)
 import Halogen.HTML.Properties (class_)
@@ -30,7 +32,7 @@ import Web.DOM.Element (getBoundingClientRect, id)
 import Web.DOM.Node (firstChild, nextSibling, nodeName, nodeValue, parentNode, setTextContent, textContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
-import Web.Event.Event (Event, EventType(..), preventDefault, target)
+import Web.Event.Event (Event, preventDefault, target)
 import Web.Event.EventTarget (EventTarget)
 import Web.HTML (HTMLElement, Window, window)
 import Web.HTML.Event.DragEvent (DragEvent)
@@ -77,22 +79,41 @@ displayFunctionType ctx = liftEffect do
       htmlString = fold $ StringRenderer.render (const mempty) <$> html
     setInnerHTML (toElement formulaSignature) htmlString
 
-formulaElements :: forall a b. String -> Array (HTML a b)
-formulaElements formulaText =
-  syntaxAtomToElement <$> condenseSyntaxAtoms atoms
+syntaxAtomsToElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
+syntaxAtomsToElements = map toElement <<< condenseSyntaxAtoms
   where
-  syntaxAtomToElement atom = span
+  toElement atom = span
     [ class_ $ syntaxAtomToClassName atom ]
     [ text $ show atom ]
-  atoms = fold $ runParser
-    syntaxAtom
-    formulaText
+
+formulaElements :: forall a b. String -> Array (HTML a b)
+formulaElements =
+  syntaxAtomsToElements <<< fold <<< runParser syntaxAtomParser
 
 fnInfoElements :: forall a b. FnInfo -> Array (HTML a b)
-fnInfoElements fnInfo = []
+fnInfoElements =
+  syntaxAtomsToElements <<< fnInfoToSyntaxAtoms
 
 getCurrentFnName :: String -> Int -> Maybe QVar
-getCurrentFnName index formulaText = Nothing
+getCurrentFnName formulaText index =
+  hush $ runParser qVar currentWord
+  where
+  startIndex = join $ maximum
+    $ myLastIndexOf' index formulaText
+    <<< Pattern
+    <$> (separators <> [ "(", "[" ])
+  endIndex = join $ minimum
+    $ myIndexOf' index formulaText
+    <<< Pattern
+    <$> (separators <> [ ")", "]" ])
+  currentWord = foldMap
+    (mySlice formulaText)
+    (bisequence (startIndex /\ endIndex))
+  separators = [ " ", "\t", "\n", "," ]
+
+  mySlice str (x /\ y) = String.slice x y str
+  myLastIndexOf' n str pattern = lastIndexOf' pattern n str
+  myIndexOf' n str pattern = indexOf' pattern n str
 
 getFormulaBoxContents :: forall m. MonadEffect m => m String
 getFormulaBoxContents = liftEffect
