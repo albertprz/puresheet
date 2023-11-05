@@ -10,6 +10,9 @@ infixl 5 whenMonoidAppend as <>?
 whenMonoid :: forall m. Monoid m => Boolean -> m -> m
 whenMonoid cond m = if cond then m else mempty
 
+unlessMonoid :: forall m. Monoid m => Boolean -> m -> m
+unlessMonoid cond = whenMonoid (not cond)
+
 whenMonoidAppend
   :: forall f a
    . Monoid (f a)

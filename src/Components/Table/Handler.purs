@@ -9,7 +9,7 @@ import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, 
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
 import App.Utils.Map (lookup2) as Map
 import Data.Map (insert, member) as Map
 import Data.Set as Set
@@ -114,6 +114,7 @@ handleAction (FocusInCell cell _) = do
     { formulaState = formulaState
     , activeFormula = false
     }
+  emptyFormulaSignature
   unless (formulaState == ValidFormula)
     emptyFormulaBox
 

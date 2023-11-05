@@ -3,17 +3,23 @@ module App.SyntaxTree.Common where
 import FatPrelude
 import Prim hiding (Row)
 
+import Bookhound.FatPrelude (class Newtype, unwrap)
+
 newtype Var = Var String
 
 derive newtype instance Eq Var
 derive newtype instance Ord Var
-derive newtype instance Show Var
+derive instance Newtype Var _
+instance Show Var where
+  show = unwrap
 
 newtype VarOp = VarOp String
 
 derive newtype instance Eq VarOp
 derive newtype instance Ord VarOp
-derive newtype instance Show VarOp
+derive instance Newtype VarOp _
+instance Show VarOp where
+  show = unwrap
 
 newtype Module = Module (Array String)
 

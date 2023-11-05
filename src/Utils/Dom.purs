@@ -14,14 +14,16 @@ import App.Utils.Selection (Selection)
 import App.Utils.Selection as Selection
 import App.Utils.String (startsWith) as String
 import Bookhound.Parser (runParser)
+import Bookhound.ParserCombinators (maybeWithin, within)
+import Bookhound.Parsers.String (spacing)
 import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Control.Alternative ((<|>))
 import Data.Int as Int
-import Data.Newtype (unwrap)
 import Data.String (Pattern(..), indexOf', lastIndexOf')
 import Data.String.CodePoints (length) as String
 import Data.String.CodeUnits (slice) as String
 import Data.Unfoldable as Unfoldable
+import Debug (spy)
 import Halogen.HTML (HTML, span, text)
 import Halogen.HTML.Properties (class_)
 import Halogen.VDom.DOM.StringRenderer as StringRenderer
@@ -74,9 +76,13 @@ displayFunctionType ctx = liftEffect do
     let
       fnName = fromMaybe (QVar Nothing $ Var "")
         (getCurrentFnName formulaText =<< index)
-      fnInfo = hush $ evalState (runExceptT $ lookupModuleFn fnName) ctx
+      fnInfo = hush $ evalState
+        (runExceptT $ lookupModuleFn fnName)
+        ctx
       html = unwrap <$> foldMap fnInfoElements fnInfo
-      htmlString = fold $ StringRenderer.render (const mempty) <$> html
+      htmlString = fold
+        $ StringRenderer.render (const mempty)
+        <$> html
     setInnerHTML (toElement formulaSignature) htmlString
 
 syntaxAtomsToElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
@@ -98,20 +104,17 @@ getCurrentFnName :: String -> Int -> Maybe QVar
 getCurrentFnName formulaText index =
   hush $ runParser qVar currentWord
   where
-  startIndex = join $ maximum
-    $ myLastIndexOf' index formulaText
-    <<< Pattern
-    <$> (separators <> [ "(", "[" ])
-  endIndex = join $ minimum
-    $ myIndexOf' index formulaText
-    <<< Pattern
-    <$> (separators <> [ ")", "]" ])
-  currentWord = foldMap
-    (mySlice formulaText)
-    (bisequence (startIndex /\ endIndex))
-  separators = [ " ", "\t", "\n", "," ]
+  startIndex = fromMaybe 0 $ map inc $ spy "start"
+    $ maximum
+    $ filterMap (myLastIndexOf' (dec index) formulaText)
+    $ (Pattern <$> (separators <> [ "(", "[" ]))
+  endIndex = fromMaybe (String.length formulaText) $ spy "end"
+    $ minimum
+    $ filterMap (myIndexOf' index formulaText)
+    $ (Pattern <$> (separators <> [ ")", "]" ]))
+  currentWord = String.slice startIndex endIndex formulaText
+  separators = [ " ", " ", "\n", "\t", "," ]
 
-  mySlice str (x /\ y) = String.slice x y str
   myLastIndexOf' n str pattern = lastIndexOf' pattern n str
   myIndexOf' n str pattern = indexOf' pattern n str
 
@@ -122,6 +125,12 @@ getFormulaBoxContents = liftEffect
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
 emptyFormulaBox = liftEffect
   (setTextContent mempty <<< toNode =<< justSelectElementById formulaBoxId)
+
+emptyFormulaSignature :: forall m. MonadEffect m => m Unit
+emptyFormulaSignature = liftEffect
+  ( setTextContent mempty <<< toNode
+      =<< justSelectElementById formulaSignatureId
+  )
 
 parseElements
   :: forall m a

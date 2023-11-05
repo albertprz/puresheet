@@ -5,6 +5,7 @@ import Prim hiding (Type)
 
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Data.String.CodeUnits as String
 
 newtype TypeParam = TypeParam Char
 
@@ -19,8 +20,13 @@ data Type
   | TypeVar' TypeVar
   | TypeParam' TypeParam
 
-derive newtype instance Show TypeVar
-derive newtype instance Show TypeParam
+derive instance Newtype TypeVar _
+instance Show TypeVar where
+  show = unwrap
+
+derive instance Newtype TypeParam _
+instance Show TypeParam where
+  show = String.singleton <<< unwrap
 
 derive instance Generic Type _
 instance Show Type where

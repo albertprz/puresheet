@@ -6,7 +6,7 @@ import Prim hiding (Type)
 import App.CSS.ClassNames (cellSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Table.Cell (cellParser, double, int, showCell)
 import App.Parser.Common (notReserved, opSymbol, reservedKeyWords, reservedSymbols)
-import App.SyntaxTree.Common (QVar(..))
+import App.SyntaxTree.Common (Module(..), QVar(..))
 import App.SyntaxTree.FnDef (FnInfo(..))
 import App.SyntaxTree.Type (Type(..))
 import App.Utils.String (wrapDoubleQuotes)
@@ -72,18 +72,24 @@ fnInfoToSyntaxAtoms (FnInfo { id: fnId, params, returnType })
   | Just { fnModule, fnName } <- fnId =
       fnName' <> params' <> returnType'
       where
-      fnName' = [ Keyword (show (QVar (Just fnModule) fnName) <> " ") ]
-      params' = wrapArgList $ foldMap param params
-      returnType' = foldMap typeToSyntaxAtoms returnType
-      param (var /\ type') = [ Keyword $ show var, Symbol ": " ]
-        <> foldMap typeToSyntaxAtoms type'
+      prettyModule =
+        if fnModule == Module [ "Prelude" ] then
+          Nothing
+        else
+          Just fnModule
+      fnName' = [ Keyword (show (QVar prettyModule fnName) <> " ") ]
+      params' = wrapArgList (param <$> params)
+      returnType' = foldMap annotation returnType
+      annotation = ([ Symbol ": " ] <> _) <$> typeToSyntaxAtoms
+      param (var /\ type') = [ Keyword $ show var ]
+        <> foldMap annotation type'
   | otherwise = mempty
 
 typeToSyntaxAtoms :: Type -> Array SyntaxAtom
 typeToSyntaxAtoms = case _ of
   CtorTypeApply x ys -> typeApply x ys
   ParamTypeApply x ys -> typeApply x ys
-  ArrowTypeApply xs -> infixTypeApply "->" xs
+  ArrowTypeApply xs -> infixTypeApply "➾" xs
   UnionTypeApply xs -> infixTypeApply "|" xs
   ArrayTypeApply x -> wrapSquare $ typeToSyntaxAtoms x
   TypeVar' x -> [ var x ]
@@ -97,13 +103,13 @@ typeToSyntaxAtoms = case _ of
 
   typeApply :: forall a. Show a => a -> Array Type -> Array SyntaxAtom
   typeApply x ys = [ var x, OtherText " " ]
-    <> wrapArgList (foldMap typeToSyntaxAtoms ys)
+    <> wrapArgList (typeToSyntaxAtoms <$> ys)
 
   infixTypeApply op = intersperse' (Operator (" " <> op <> " "))
     <<< foldMap typeToSyntaxAtoms
 
-wrapArgList :: Array SyntaxAtom -> Array SyntaxAtom
-wrapArgList = wrapParens <<< intersperse' (OtherText ", ")
+wrapArgList :: Array (Array SyntaxAtom) -> Array SyntaxAtom
+wrapArgList = wrapParens <<< intercalate [ OtherText ", " ]
   where
   wrapParens xs = [ OtherText "(" ] <> xs <> [ OtherText ")" ]
 

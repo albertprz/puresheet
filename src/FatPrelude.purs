@@ -46,6 +46,7 @@ module FatPrelude
   , module PSCISupport
   , module PointFree
   , module Foldable
+  , module Newtype
   ) where
 
 import Prelude
@@ -56,9 +57,9 @@ import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
 import App.Utils.Maybe (toMaybe, toMaybe', wrapMaybe) as MaybeUtils
-import App.Utils.Monoid (whenMonoid, (<>?)) as MonoidUtils
+import App.Utils.Monoid (unlessMonoid, whenMonoid, (<>?)) as MonoidUtils
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as NumberUtils
-import App.Utils.String (newline, showParensCsv, str, tab, wrap, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as StringUtils
+import App.Utils.String (newline, showParensCsv, str, tab, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as StringUtils
 import App.Utils.Tree (ancestorsValues, appendChildren, childrenValues, findValues, goToNode, mkLeaf, nodeValues, siblingsValues) as TreeUtils
 import App.Utils.Unfoldable (class Range, range, (..)) as UnfoldableUtils
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchError, catchJust, liftEither, liftMaybe, throwError, try, withResource) as MonadError
@@ -79,6 +80,7 @@ import Data.Int (Parity(..), Radix, base36, binary, ceil, decimal, even, floor, 
 import Data.List (List(..), (:)) as List
 import Data.Map (Map) as Map
 import Data.Maybe (Maybe(..), fromJust, fromMaybe, fromMaybe', isJust, isNothing, maybe, maybe', optional) as Maybe
+import Data.Newtype hiding (modify, over2, traverse) as Newtype
 import Data.Semigroup.Foldable hiding (intercalate, maximum, maximumBy, minimum, minimumBy) as SemiFoldable
 import Data.Set (Set) as Set
 import Data.Set.NonEmpty (NonEmptySet) as NonEmptySet

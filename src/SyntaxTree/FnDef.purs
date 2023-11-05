@@ -161,7 +161,9 @@ instance Ord Object where
 derive newtype instance Eq Scope
 derive newtype instance Ord Scope
 derive newtype instance Semiring Scope
-derive newtype instance Show Scope
+derive instance Newtype Scope _
+instance Show Scope where
+  show = show <<< unwrap
 
 instance Range Scope where
   range (Scope a) (Scope b) = Scope <$> (a .. b)

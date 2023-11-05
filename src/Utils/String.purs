@@ -2,7 +2,7 @@ module App.Utils.String where
 
 import Prelude
 
-import App.Utils.Monoid (whenMonoid)
+import App.Utils.Monoid (unlessMonoid)
 import Data.Foldable (intercalate)
 import Data.String as String
 
@@ -16,7 +16,7 @@ str :: forall a. Show a => String -> Array a -> String
 str sep xs = intercalate sep $ show <$> xs
 
 wrap :: String -> String -> String -> String
-wrap beg end x = whenMonoid (not $ String.null x) $ beg <> x <> end
+wrap beg end x = unlessMonoid (String.null x) $ beg <> x <> end
 
 wrapBoth :: String -> String -> String
 wrapBoth x = wrap x x

@@ -59,7 +59,8 @@ formulaCss = do
     margin := px 20
     marginTop := px 10
     padding := px 0 ~ px 50
-    alignItems := center
+    fontSize := px 22
+    textAlign := center
 
   universal &. unknownFormula ? Rule.do
     backgroundColor := lighterYellow

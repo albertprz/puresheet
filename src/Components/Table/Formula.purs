@@ -8,6 +8,7 @@ import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Array as Array
 import Data.List as List
 import Data.Map as Map
+import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Data.Set.NonEmpty (toSet)
 import Data.Set.NonEmpty as NonEmptySet
@@ -96,7 +97,9 @@ derive instance Eq FormulaState
 derive instance Eq FormulaId
 derive instance Ord FormulaId
 derive newtype instance Semiring FormulaId
-derive newtype instance Show FormulaId
+derive instance Newtype FormulaId _
+instance Show FormulaId where
+  show = show <<< unwrap
 
 data DependencyError =
   CycleDependency
