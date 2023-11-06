@@ -18,17 +18,19 @@ import Data.Array as Array
 
 opDef :: Parser OpDef
 opDef = defer \_ -> withError "Operator definition"
-  $ (OpDef <$> varOp)
+  $ OpDef
+  <$> varOp
   <*> (isToken "=" *> var)
   <*> (L <$ is 'L' <|> R <$ is 'R')
   <*>
-    ( mandatory "precedence must be between 0 and 12"
+    ( mandatory "Precedence must be between 0 and 12"
         (toEnum <$> unsignedInt)
     )
 
 fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
-  $ (FnDef <$> var)
+  $ FnDef
+  <$> var
   <*> (argListOf annotatedVar <|> pure [])
   <*> annotation
   <*> (isToken "=" *> fnBody)
@@ -86,7 +88,7 @@ fnBody = whereExpr <|> token openForm
   infixArgForm = defer \_ ->
     complexInfixForm <|> singleForm
   openForm = defer \_ ->
-    condExpr <|> switchExpr <|> complexForm <|> singleForm
+    switchExpr <|> condExpr <|> complexForm <|> singleForm
 
   fnForm = defer \_ -> fnVar <|> fnOp
   singleForm = defer \_ ->

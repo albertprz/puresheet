@@ -13,7 +13,7 @@ moduleDef = ModuleDef
   <$> (is "module" *> module')
   <*> (fold <$> (|?) (statements "import" moduleImport))
   <*> (fold <$> (|?) (statements "op" opDef))
-  <*> statements "def" fnDef
+  <*> (fold <$> (|?) (statements "def" fnDef))
 
 moduleImport :: Parser ModuleImport
 moduleImport = ModuleImport

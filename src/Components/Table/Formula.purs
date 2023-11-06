@@ -8,7 +8,6 @@ import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Array as Array
 import Data.List as List
 import Data.Map as Map
-import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Data.Set.NonEmpty (toSet)
 import Data.Set.NonEmpty as NonEmptySet

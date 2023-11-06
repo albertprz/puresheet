@@ -6,7 +6,7 @@ import App.Components.Table.Cell (CellValue(..), double, int)
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, check, withTransform)
 import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|?), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, char, colon, comma, dot, lower, upper)
+import Bookhound.Parsers.Char (alpha, alphaNum, char, comma, dot, lower, upper)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
 import Data.String.Unsafe (char) as String
 
@@ -54,7 +54,7 @@ ident :: Parser Char -> Parser String
 ident start = token $ start ->>- (|*) alphaNum
 
 operator :: Parser String
-operator = token $ (||*) colon
+operator = token $ (||*) opSymbol
 
 nonTokenIdent :: Parser Char -> Parser String
 nonTokenIdent start = start ->>- (|*) alphaNum

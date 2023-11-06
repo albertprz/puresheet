@@ -40,10 +40,10 @@ spec = describe "Interpreter.Expression" do
       it "Map" $
         runExpr
           """
-          map' (x -> x * x, [1 .. 4]) where {
-              | map' (f, xs) = switch (xs) {
+          myMap (x -> x * x, [1 .. 4]) where {
+              | myMap (f, xs) = switch (xs) {
                   | [] => []
-                  | [ xs @ ... , x ] => map' (f, xs) :+ f (x)
+                  | [ xs @ ... , x ] => myMap (f, xs) :+ f (x)
               }
           }
           """ `shouldEqual` pure
@@ -73,8 +73,8 @@ spec = describe "Interpreter.Expression" do
         runExpr
           """
           f (5) where {
-              | f = compose' (_ * 2, _ + 3)
-              | compose' (f, g) = h where {
+              | f = myCompose (_ * 2, _ + 3)
+              | myCompose (f, g) = h where {
                   | h (x) = f (g (x))
               }
           }

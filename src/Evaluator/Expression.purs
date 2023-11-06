@@ -143,7 +143,7 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
   st <- get
   newSt <- getNewFnState (FnInfo fnInfo) args
 
-  if length unappliedParams == 0 then do
+  if unappliedArgsNum == 0 then do
     put newSt
     result <- evalExpr body
     newScopeLoc <- gets _.scopeLoc
@@ -154,9 +154,9 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
 
-  else if length unappliedParams > 0 then
+  else if unappliedArgsNum > 0 then
     pure $ FnObj $ FnInfo $ fnInfo
-      { params = unappliedParams
+      { params = takeEnd' unappliedArgsNum params
       , argsMap = newSt.argsMap
       }
 
@@ -168,26 +168,29 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     evalExpr $ FnApply (Object' fn) postArgs
 
   where
-  unappliedParams = drop' (length args) params
+  unappliedArgsNum = length params - length args
 
 evalBuiltinFn :: BuiltinFnInfo -> Array Object -> EvalM Object
-evalBuiltinFn { fn, params, defaultParams } args =
-  if length unappliedParams == 0 then
+evalBuiltinFn fnInfo@{ fn, params, defaultParams } args =
+
+  if unappliedArgsNum == 0 then
     except
       $ note (TypeError' $ InvalidArgumentTypes args)
       $ fromMaybe' (\_ -> partialMaybe fn args) (pure <$> defaultResult)
-  else if length unappliedParams > 0 then
-    pure $ BuiltinFnObj
-      { fn: \newArgs -> fn (args <> newArgs)
-      , params: unappliedParams
-      , defaultParams: Set.filter zeroOrPos
+
+  else if unappliedArgsNum > 0 then
+    pure $ BuiltinFnObj $ fnInfo
+      { fn = \newArgs -> fn (args <> newArgs)
+      , params = takeEnd' unappliedArgsNum params
+      , defaultParams = Set.filter zeroOrPos
           $ Set.map (_ - length args) defaultParams
-      , returnType: Nothing
       }
+
   else
     raiseError $ TypeError' $ TooManyArguments $ length args
+
   where
-  unappliedParams = drop' (length args) params
+  unappliedArgsNum = length params - length args
   defaultResult =
     if NullObj `elem` args && hasSome defaultParams then
       find
@@ -232,9 +235,8 @@ evalCaseBinding
   -> CaseBinding
   -> Either EvalError Object
 evalCaseBinding st matchee (CaseBinding pattern body) =
-  evalState action st
-  where
-  action = runExceptT
+  flip evalState st
+    $ runExceptT
     $ ifM (evalPatternBinding pattern matchee)
         (evalMaybeGuardedFnBody body)
         (raiseError $ MatchError' NonExhaustiveMatch)
@@ -253,9 +255,8 @@ evalGuardedFnBody
   -> GuardedFnBody
   -> Either EvalError Object
 evalGuardedFnBody st (GuardedFnBody guard body) =
-  evalState action st
-  where
-  action = runExceptT
+  flip evalState st
+    $ runExceptT
     $ ifM (evalGuard guard)
         (evalExpr body)
         (raiseError $ MatchError' NonExhaustiveGuard)

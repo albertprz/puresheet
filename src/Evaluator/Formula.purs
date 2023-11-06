@@ -53,7 +53,7 @@ evalExprInApp appState = evalExprInCtx $ mkLocalContext appState
 
 evalExprInCtx :: LocalFormulaCtx -> FnBody -> Either EvalError Object
 evalExprInCtx formulaCtx exprBody = do
-  evalState (runExceptT (evalExpr exprBody)) formulaCtx
+  flip evalState formulaCtx $ runExceptT $ evalExpr exprBody
 
 mkLocalContext :: AppState -> LocalFormulaCtx
 mkLocalContext appState =
