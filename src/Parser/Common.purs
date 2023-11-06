@@ -14,7 +14,7 @@ cellValue :: Parser CellValue
 cellValue = token
   $ (FloatVal <$> double)
   <|> (IntVal <$> int)
-  <|> (BoolVal <$> (true <$ is "true" <|> false <$ is "false"))
+  <|> (BoolVal <$> (true <$ isToken "true" <|> false <$ isToken "false"))
   <|> (CharVal <$> withinQuotes (charLit <|> charLitEscaped))
   <|>
     ( StringVal <$> withinDoubleQuotes
@@ -23,8 +23,8 @@ cellValue = token
   where
   stringLit = noneOf [ '"', '\\' ]
   charLit = noneOf [ '\'', '\\' ]
-  charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
-    <|> (is '\\' *> char)
+  charLitEscaped = String.char <<< wrapQuotes <$> (isToken '\\' ->>- alpha)
+    <|> (isToken '\\' *> char)
 
 var :: Parser Var
 var = Var <$> notReserved (ident lower)
@@ -40,8 +40,8 @@ qVar = uncurry QVar <$> qTerm var
 
 qVarOp :: Parser QVarOp
 qVarOp = uncurry QVarOp <$> qTerm
-  ( VarOp <$> (is "|" ->>- map extractVar var ->>- is ">")
-      <|> (VarOp <$> (is "<" ->>- map extractVar var ->>- is "|"))
+  ( VarOp <$> (isToken "|" ->>- map extractVar var ->>- isToken ">")
+      <|> (VarOp <$> (isToken "<" ->>- map extractVar var ->>- isToken "|"))
       <|> varOp
   )
   where

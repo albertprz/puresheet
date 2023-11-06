@@ -59,9 +59,9 @@ syntaxAtomParser = (|+) atom
   charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
     <|> (is '\\' *> Parsers.char)
   stringLit = noneOf [ '"', '\\' ]
-  operator start = start ->>- ((|*) opSymbol)
+  operator start = start ->>- (|*) opSymbol
   idChar = alphaNum <|> underscore <|> quote
-  ident start = start ->>- ((|*) idChar)
+  ident start = start ->>- (|*) idChar
   var = notReserved (ident lower)
   varOp = (is "|" ->>- var ->>- is ">")
     <|> (is "<" ->>- var ->>- is "|")

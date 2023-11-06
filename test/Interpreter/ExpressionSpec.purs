@@ -171,7 +171,7 @@ spec = describe "Interpreter.Expression" do
               ? length (xs) == 0 => "empty"
               ? length (xs) == 1 => "one elem"
               ? length (xs) == 2 => "two elems"
-              ? otherwise       => "any number of elems"
+              ? otherwise        => "more elems"
           } where {
               | xs = [1, 2]
           }

@@ -1,21 +1,22 @@
 module App.Parser.Type where
 
+import FatPrelude
 import Prim hiding (Type)
 
 import App.Parser.Common (argListOf, ident, isToken)
 import App.SyntaxTree.Type (Type(..), TypeParam(..), TypeVar(..))
 import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators (multipleSepBy, (<|>))
+import Bookhound.ParserCombinators (multipleSepBy, satisfies, (<|>))
 import Bookhound.Parsers.Char (upper)
 import Bookhound.Parsers.String (withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
-import FatPrelude ((<$>), (<*>))
+import Data.String.CodePoints as String
 
 typeParam :: Parser TypeParam
 typeParam = TypeParam <$> upper
 
 typeVar :: Parser TypeVar
-typeVar = TypeVar <$> ident upper
+typeVar = TypeVar <$> satisfies ((_ > 0) <<< String.length) (ident upper)
 
 type' :: Parser Type
 type' = defer \_ -> arrow <|> union <|> atom
@@ -36,4 +37,4 @@ type' = defer \_ -> arrow <|> union <|> atom
   typeVar' = TypeVar' <$> typeVar
   typeParam' = TypeParam' <$> typeParam
 
-  atom = defer \_ -> typeVar' <|> typeParam' <|> typeApply <|> array
+  atom = defer \_ -> typeApply <|> typeVar' <|> typeParam' <|> array

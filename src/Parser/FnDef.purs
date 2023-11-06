@@ -39,7 +39,7 @@ fnDef = defer \_ -> withError "Function definition"
   annotation = (|?) (isToken ":" *> type')
 
 fnBody :: Parser FnBody
-fnBody = whereExpr <|> token openForm
+fnBody = whereExpr <|> topLevelExpr
   where
 
   fnApply = defer \_ -> FnApply
@@ -50,7 +50,7 @@ fnBody = whereExpr <|> token openForm
     <$> (argListOf var <|> pure <$> var)
     <*> (isToken "->" *> fnBody)
 
-  infixFnApply = defer \_ ->
+  infixFnApply = token $ defer \_ ->
     uncurry InfixFnApply <$> sepByOps qVarOp infixArgForm
 
   leftOpSection = defer \_ -> uncurry LeftOpSection <$>
@@ -60,7 +60,7 @@ fnBody = whereExpr <|> token openForm
   opSection = defer \_ -> leftOpSection <|> rightOpSection
 
   whereExpr = defer \_ -> WhereExpr
-    <$> openForm
+    <$> topLevelExpr
     <*> (isToken "where" *> withinContext "|" fnDef)
 
   condExpr = defer \_ -> CondExpr <$>
@@ -85,27 +85,24 @@ fnBody = whereExpr <|> token openForm
   fnVar = defer \_ -> FnVar <$> qVar
   cell = cellParser
 
-  infixArgForm = defer \_ ->
-    complexInfixForm <|> singleForm
-  openForm = defer \_ ->
-    switchExpr <|> condExpr <|> complexForm <|> singleForm
+  topLevelExpr = switchExpr <|> condExpr <|> openForm
+  infixArgForm = defer \_ -> complexInfixForm <|> singleForm
+  openForm = defer \_ -> complexForm <|> singleForm
 
   fnForm = defer \_ -> fnVar <|> fnOp
   singleForm = defer \_ ->
-    fnApply
-      <|> array
+    array
       <|> cellMatrixRange
       <|> cellArrayRange
       <|> arrayRange
       <|> (CellValue' <$> cellValue)
       <|> (Cell' <$> cell)
       <|> fnOp
+      <|> fnApply
       <|> fnVar
 
-  complexForm = defer \_ -> lambdaFn <|> opSection <|> infixFnApply <|>
-    complexInfixForm
-  complexInfixForm = defer \_ ->
-    withinParens (lambdaFn <|> opSection <|> infixFnApply)
+  complexForm = defer \_ -> lambdaFn <|> opSection <|> infixFnApply
+  complexInfixForm = defer \_ -> withinParens complexForm
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding
