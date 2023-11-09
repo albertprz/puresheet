@@ -5,7 +5,6 @@ import FatPrelude
 import App.Parser.Common (cellValue, isToken, token, var)
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators ((<|>))
 import Bookhound.Parsers.Char (underscore)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.String (withinParens)

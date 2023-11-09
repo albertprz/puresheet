@@ -8,10 +8,7 @@ import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
-import Bookhound.FatPrelude (hasSome)
-import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Control.Alternative ((<|>))
-import Data.Map (lookup) as Map
+import Data.Map as Map
 import Data.Set as Set
 import Data.Tree.Zipper (insertChild, toTree)
 
@@ -192,7 +189,7 @@ evalBuiltinFn fnInfo@{ fn, params, defaultParams } args =
   where
   unappliedArgsNum = length params - length args
   defaultResult =
-    if NullObj `elem` args && hasSome defaultParams then
+    if NullObj `elem` args && not (Set.isEmpty defaultParams) then
       find
         (_ /= NullObj)
         (filterByIndexes defaultParams args)

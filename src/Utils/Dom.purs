@@ -12,16 +12,12 @@ import App.SyntaxTree.FnDef (FnId, FnSig)
 import App.Utils.Range as Range
 import App.Utils.Selection (Selection)
 import App.Utils.Selection as Selection
-import App.Utils.String (startsWith) as String
+import App.Utils.String (last, startsWith) as String
 import Bookhound.Parser (runParser)
-import Bookhound.ParserCombinators as Combinators
-import Bookhound.Utils.UnsafeRead (unsafeFromJust)
-import Control.Alternative ((<|>))
 import Data.Int as Int
-import Data.String (Pattern(..), indexOf', lastIndexOf')
-import Data.String.CodePoints (length) as String
-import Data.String.CodeUnits (slice) as String
-import Data.Unfoldable as Unfoldable
+import Data.String (Pattern(..))
+import Data.String.CodeUnits (indexOf', lastIndexOf')
+import Data.String.CodeUnits (length, slice, takeRight) as String
 import Halogen.HTML (HTML, span, text)
 import Halogen.HTML.Properties (class_)
 import Halogen.VDom.DOM.StringRenderer as StringRenderer
@@ -116,7 +112,7 @@ getCurrentFnId :: LocalFormulaCtx -> String -> Int -> Maybe FnId
 getCurrentFnId ctx formulaText index =
   qVarToFnId <$> join (hush $ runParser fnParser currentWord)
   where
-  fnParser = Just <$> qVar Combinators.<|> lookupOp <$> qVarOp
+  fnParser = Just <$> qVar <|> lookupOp <$> qVarOp
   lookupOp op = _.fnName
     <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
   qVarToFnId (QVar module' var) =
@@ -303,8 +299,8 @@ elemsInViewport
   :: forall m. MonadEffect m => NonEmptyArray Element -> m (Array Element)
 elemsInViewport elems = liftEffect $ do
   w <- window
-  wHeight <- Height <<< toNumber <$> Window.innerHeight w
-  wWidth <- Width <<< toNumber <$> Window.innerWidth w
+  wHeight <- Height <<< Int.toNumber <$> Window.innerHeight w
+  wWidth <- Width <<< Int.toNumber <$> Window.innerWidth w
   filterA (isInViewport wHeight wWidth) elems
 
 isInViewport
@@ -356,13 +352,10 @@ parseKeyCode "MetaRight" = Control
 parseKeyCode "Comma" = Comma
 parseKeyCode str
   | String.startsWith "Key" str
-  , Just ch <- last' $ toCharArray str = CharKeyCode ch
+  , Just ch <- String.last str = CharKeyCode ch
 parseKeyCode str
   | String.startsWith "Digit" str
-  , Just n <-
-      Int.fromString $ fromCharArray $ Unfoldable.fromMaybe $ last' $
-        toCharArray str =
-      DigitKeyCode n
+  , Just n <- Int.fromString $ String.takeRight 1 str = DigitKeyCode n
 parseKeyCode str = OtherKeyCode str
 
 toEvent :: forall a. IsEvent a => a -> Event

@@ -9,10 +9,8 @@ import App.Parser.Common (var)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, FnBody(..), FnDef(..), FnInfo(..), Object(..), OpInfo, Precedence(..), Scope(..))
 import App.SyntaxTree.Pattern (Pattern(..))
-import Bookhound.FatPrelude (findJust)
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is)
-import Control.Alternative ((<|>))
 import Data.Array as Array
 import Data.List as List
 import Data.Map as Map
@@ -88,7 +86,7 @@ lookupLocalFn fnName = do
     freeVarsLookup = lookupVarOrArg <$> ancestorsValues scope scopeLoc
   except
     $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
-    $ findJust
+    $ findMap identity
         (childrenLookup <> argsLookup <> siblingsLookup <> freeVarsLookup)
 
 lookupModuleFn :: QVar -> EvalM FnInfo
@@ -97,7 +95,7 @@ lookupModuleFn qVar@(QVar fnModule fnName) = do
   let fns = getAvailableFns QVar (fnModule /\ fnName) st
   except
     $ note (LexicalError' $ UnknownValue qVar)
-    $ findJust
+    $ findMap identity
     $ flip Map.lookup st.fnsMap
     <$> fns
 
@@ -121,7 +119,7 @@ lookupOperator qVarOp@(QVarOp opModule opName) = do
   let ops = getAvailableFns QVarOp (opModule /\ opName) st
   except
     $ note (LexicalError' $ UnknownOperator qVarOp)
-    $ findJust
+    $ findMap identity
     $ flip Map.lookup st.operatorsMap
     <$> ops
 

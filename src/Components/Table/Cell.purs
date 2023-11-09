@@ -4,11 +4,10 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Utils.Map (swapKey) as Map
-import Bookhound.Parser (Parser, char, runParser)
-import Bookhound.ParserCombinators (is, (->>-), (<|>), (|?))
-import Bookhound.Parsers.Char (dash, dot, upper)
-import Bookhound.Parsers.Number (negInt, unsignedInt)
-import Bookhound.Utils.UnsafeRead (unsafeRead)
+import Bookhound.Parser (Parser, runParser)
+import Bookhound.ParserCombinators (is)
+import Bookhound.Parsers.Char (anyChar, upper)
+import Bookhound.Parsers.Number (double, int, unsignedInt)
 import Data.Map (keys) as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
@@ -38,17 +37,7 @@ cellValueParser =
     <|> BoolVal
     <$> (true <$ is "true" <|> false <$ is "false")
     <|> CharVal
-    <$> char
-
-int :: Parser Int
-int = unsignedInt <|> negInt
-
-double :: Parser Number
-double = unsafeRead
-  <$> (|?) dash
-  ->>- unsignedInt
-  ->>- dot
-  ->>- unsignedInt
+    <$> anyChar
 
 showCell :: Cell -> String
 showCell { column, row } = show column <> show row
@@ -187,7 +176,7 @@ derive newtype instance Ord Row
 derive instance Eq CellValue
 
 instance Show Column where
-  show (Column x) = fromCharArray [ x ]
+  show (Column x) = String.singleton x
 
 instance Show Row where
   show (Row x) = show x

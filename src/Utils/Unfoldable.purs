@@ -2,8 +2,8 @@ module App.Utils.Unfoldable where
 
 import Prelude
 
+import App.Utils.Maybe (unsafeFromJust)
 import Bookhound.FatPrelude (fromCharCode)
-import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Char (toCharCode)
 import Data.Traversable (class Traversable, traverse)
 import Data.Unfoldable (class Unfoldable1)

@@ -19,6 +19,7 @@ module FatPrelude
   , module Map
   , module Enum
   , module Set
+  , module Data.Array
   , module NonEmptySet
   , module Maybe
   , module Either
@@ -37,12 +38,12 @@ module FatPrelude
   , module Function
   , module Char
   , module String
-  , module Int
   , module CodeUnits
   , module AffClass
   , module EffClass
   , module MonadState
   , module MonadError
+  , module MonadPlus
   , module PSCISupport
   , module PointFree
   , module Foldable
@@ -56,7 +57,7 @@ import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as CharUti
 import App.Utils.Common (partialMaybe) as CommonUtils
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as FoldableUtils
 import App.Utils.Functor (mapp, (<$$>)) as FunctorUtils
-import App.Utils.Maybe (toMaybe, toMaybe', wrapMaybe) as MaybeUtils
+import App.Utils.Maybe (toMaybe, toMaybe', unsafeFromJust) as MaybeUtils
 import App.Utils.Monoid (unlessMonoid, whenMonoid, (<>?)) as MonoidUtils
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as NumberUtils
 import App.Utils.String (newline, showParensCsv, str, tab, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as StringUtils
@@ -67,6 +68,8 @@ import Control.Monad.Except.Trans (ExceptT(..), except, mapExceptT, runExceptT, 
 import Control.Monad.Maybe.Trans (MaybeT(..), mapMaybeT, runMaybeT) as MaybeT
 import Control.Monad.State (class MonadState, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as MonadState
 import Control.Monad.Trans.Class (class MonadTrans, lift) as Trans
+import Control.MonadPlus (class Alt, class Alternative, class Applicative, class Apply, class Bind, class Functor, class Monad, class MonadPlus, class Plus, alt, ap, apply, bind, empty, guard, ifM, join, liftA1, liftM1, map, pure, unless, void, when, ($>), (*>), (<#>), (<$), (<$>), (<*), (<*>), (<=<), (<|>), (=<<), (>=>), (>>=)) as MonadPlus
+import Data.Array (length)
 import Data.Array.NonEmpty hiding (all, any, elem, filter, find, findMap, fold1, foldM, foldMap1, foldl1, foldr1, fromFoldable, fromFoldable1, fromNonEmpty, intercalate, length, notElem, partition, range, scanl, scanr, toNonEmpty, toUnfoldable, toUnfoldable1, (..), (:)) as NonEmptyArray
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as Bifunctor
 import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldl, bifoldr, bifor, bifor_, bisequence, bisequence_, bitraverse, bitraverse_, lfor, ltraverse, rfor, rtraverse) as Bitraversable
@@ -74,9 +77,8 @@ import Data.Char (fromCharCode, toCharCode) as Char
 import Data.Either (Either(..), blush, choose, either, fromLeft, fromLeft', fromRight, fromRight', hush, isLeft, isRight, note, note') as Either
 import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, downFrom, downFromIncluding, enumFromThenTo, enumFromTo, fromEnum, pred, succ, toEnum, toEnumWithDefaults, upFrom, upFromIncluding) as Enum
 import Data.Filterable (class Compactable, class Filterable, cleared, compact, eitherBool, filter, filterMap, maybeBool, partition, partitionMap, separate) as Filterable
-import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldl, foldr, for_, indexl, indexr, intercalate, length, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
+import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldl, foldr, for_, indexl, indexr, intercalate, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sequence_, sum, surround, surroundMap, traverse_) as Foldable
 import Data.Function (applyN, const, flip, identity, on, (#), ($), (<<<), (>>>)) as Function
-import Data.Int (Parity(..), Radix, base36, binary, ceil, decimal, even, floor, fromNumber, fromString, fromStringAs, hexadecimal, octal, odd, parity, pow, quot, radix, rem, round, toNumber, toStringAs, trunc) as Int
 import Data.List (List(..), (:)) as List
 import Data.Map (Map) as Map
 import Data.Maybe (Maybe(..), fromJust, fromMaybe, fromMaybe', isJust, isNothing, maybe, maybe', optional) as Maybe

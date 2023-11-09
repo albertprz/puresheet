@@ -5,18 +5,18 @@ import Prim hiding (Type)
 
 import App.Parser.Common (argListOf, ident, isToken)
 import App.SyntaxTree.Type (Type(..), TypeParam(..), TypeVar(..))
-import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators (multipleSepBy, satisfies, (<|>))
+import Bookhound.Parser (Parser, satisfy)
+import Bookhound.ParserCombinators (multipleSepBy)
 import Bookhound.Parsers.Char (upper)
 import Bookhound.Parsers.String (withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
-import Data.String.CodePoints as String
+import Data.String as String
 
 typeParam :: Parser TypeParam
 typeParam = TypeParam <$> upper
 
 typeVar :: Parser TypeVar
-typeVar = TypeVar <$> satisfies ((_ > 0) <<< String.length) (ident upper)
+typeVar = TypeVar <$> satisfy (not <<< String.null) (ident upper)
 
 type' :: Parser Type
 type' = defer \_ -> arrow <|> union <|> atom

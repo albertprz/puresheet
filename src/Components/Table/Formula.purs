@@ -4,7 +4,6 @@ import FatPrelude
 
 import App.CSS.ClassNames (invalidFormula, unknownFormula, validFormula)
 import App.Components.Table.Cell (Cell)
-import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.Array as Array
 import Data.List as List
 import Data.Map as Map

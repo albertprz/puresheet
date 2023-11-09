@@ -1,14 +1,14 @@
 module App.Parser.FnDef (opDef, fnDef, fnBody, statements) where
 
-import FatPrelude
+import FatPrelude hiding (guard)
 
 import App.Components.Table.Cell (cellParser)
 import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, var, varOp)
 import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
-import Bookhound.Parser (ParseError(..), Parser, errorParser, withError)
-import Bookhound.ParserCombinators (is, someSepBy, within, (<|>), (|+), (|?))
+import Bookhound.Parser (Parser, withError)
+import Bookhound.ParserCombinators (is, someSepBy, within, (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (unsignedInt)
@@ -22,10 +22,7 @@ opDef = defer \_ -> withError "Operator definition"
   <$> varOp
   <*> (isToken "=" *> var)
   <*> (L <$ is 'L' <|> R <$ is 'R')
-  <*>
-    ( mandatory "Precedence must be between 0 and 12"
-        (toEnum <$> unsignedInt)
-    )
+  <*> mandatory (toEnum <$> unsignedInt)
 
 fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
@@ -115,16 +112,13 @@ maybeGuardedFnBody sep =
     <|> (Standard <$> (sep *> fnBody))
 
 guardedFnBody :: forall a. Parser a -> Parser GuardedFnBody
-guardedFnBody sep = GuardedFnBody <$> guard <* sep <*>
-  fnBody
+guardedFnBody sep = GuardedFnBody <$> guard <* sep <*> fnBody
 
 guard :: Parser Guard
-guard = defer \_ -> isToken "?"
-  *>
-    ( Otherwise <$ isToken "otherwise"
-        <|> Guard
-        <$> someSepBy comma patternGuard
-    )
+guard = defer \_ -> isToken "?" *>
+  ( Otherwise <$ isToken "otherwise"
+      <|> (Guard <$> someSepBy comma patternGuard)
+  )
 
 patternGuard :: Parser PatternGuard
 patternGuard = defer \_ ->
@@ -143,6 +137,6 @@ sepByOps sep p = do
   y <- (|+) ((/\) <$> sep <*> p)
   pure $ ((fst <$> y) /\ Array.cons x (snd <$> y))
 
-mandatory :: forall a. String -> Parser (Maybe a) -> Parser a
-mandatory tag maybeP =
-  fromMaybe (errorParser $ NoMatch tag) <<< (map pure) =<< maybeP
+mandatory :: forall a. Parser (Maybe a) -> Parser a
+mandatory maybeP =
+  fromMaybe empty <<< (map pure) =<< maybeP

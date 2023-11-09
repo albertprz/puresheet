@@ -4,16 +4,17 @@ import FatPrelude
 import Prim hiding (Type)
 
 import App.CSS.ClassNames (cellSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
-import App.Components.Table.Cell (cellParser, double, int, showCell)
+import App.Components.Table.Cell (cellParser, showCell)
 import App.Parser.Common (notReserved, opSymbol, reservedKeyWords, reservedSymbols)
 import App.SyntaxTree.Common (QVar(..), preludeModule)
 import App.SyntaxTree.FnDef (FnId, FnSig)
 import App.SyntaxTree.Type (Type(..))
 import App.Utils.String (wrapDoubleQuotes)
 import Bookhound.Parser (Parser, anyOf)
-import Bookhound.ParserCombinators (is, noneOf, (->>-), (<|>), (|*), (|+), (||*))
+import Bookhound.ParserCombinators (is, noneOf, (->>-), (|*), (|+), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore)
 import Bookhound.Parsers.Char as Parsers
+import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (withinDoubleQuotes, withinQuotes)
 import Data.String.CodeUnits (singleton) as String
 import Data.String.Unsafe (char) as String
@@ -49,7 +50,7 @@ syntaxAtomParser = (|+) atom
       <|> (Keyword <$> (anyOf $ map is reservedKeyWords))
       <|> (Symbol <$> (anyOf $ map is reservedSymbols))
       <|> (Operator <$> varOp)
-      <|> (OtherText <<< String.singleton <$> Parsers.char)
+      <|> (OtherText <<< String.singleton <$> Parsers.anyChar)
 
   char = wrapQuotes <<< String.singleton
     <$> withinQuotes (charLit <|> charLitEscaped)
@@ -57,7 +58,7 @@ syntaxAtomParser = (|+) atom
     <$> withinDoubleQuotes ((||*) (stringLit <|> charLitEscaped))
   charLit = noneOf [ '\'', '\\' ]
   charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
-    <|> (is '\\' *> Parsers.char)
+    <|> (is '\\' *> Parsers.anyChar)
   stringLit = noneOf [ '"', '\\' ]
   operator start = start ->>- (|*) opSymbol
   idChar = alphaNum <|> underscore <|> quote

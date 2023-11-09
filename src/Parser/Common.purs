@@ -2,11 +2,12 @@ module App.Parser.Common where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellValue(..), double, int)
+import App.Components.Table.Cell (CellValue(..))
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
-import Bookhound.Parser (Parser, check, withTransform)
-import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (<|>), (|*), (|?), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, char, comma, dot, lower, upper)
+import Bookhound.Parser (Parser, satisfy, withTransform)
+import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (|*), (|?), (||*))
+import Bookhound.Parsers.Char (alpha, alphaNum, anyChar, comma, dot, lower, upper)
+import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
 import Data.String.Unsafe (char) as String
 
@@ -23,8 +24,8 @@ cellValue = token
   where
   stringLit = noneOf [ '"', '\\' ]
   charLit = noneOf [ '\'', '\\' ]
-  charLitEscaped = String.char <<< wrapQuotes <$> (isToken '\\' ->>- alpha)
-    <|> (isToken '\\' *> char)
+  charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
+    <|> (is '\\' *> anyChar)
 
 var :: Parser Var
 var = Var <$> notReserved (ident lower)
@@ -77,7 +78,7 @@ qTerm x = (/\) <$> (|?) (moduleParser <* dot) <*> x
   moduleParser = Module <$> someSepBy dot (nonTokenIdent upper)
 
 notReserved :: Parser String -> Parser String
-notReserved = check "reserved"
+notReserved = satisfy
   $ flip notElem (reservedSymbols <> reservedKeyWords)
 
 withinBackQuotes :: forall b. Parser b -> Parser b

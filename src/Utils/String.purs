@@ -4,7 +4,9 @@ import Prelude
 
 import App.Utils.Monoid (unlessMonoid)
 import Data.Foldable (intercalate)
-import Data.String as String
+import Data.Maybe (Maybe)
+import Data.String (null) as String
+import Data.String.CodeUnits (take, takeRight, toChar)
 
 newline :: String
 newline = "\n"
@@ -39,8 +41,12 @@ wrapParens = wrap "(" ")"
 showParensCsv :: forall a. Show a => Array a -> String
 showParensCsv = wrapParens <<< str ", "
 
+head :: String -> Maybe Char
+head = toChar <<< take 1
+
+last :: String -> Maybe Char
+last = toChar <<< takeRight 1
+
 foreign import startsWith :: String -> String -> Boolean
 
 foreign import endsWith :: String -> String -> Boolean
-
-foreign import includes :: String -> String -> Boolean

@@ -12,12 +12,12 @@ import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Bifunctor (rmap)
 import Data.EuclideanRing as Ring
-import Data.Foldable as Foldable
+import Data.Int (toNumber)
 import Data.Map as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
 import Data.Tuple.Nested (type (/\))
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, toNumber, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -293,7 +293,7 @@ reverseSig :: Sig
 reverseSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 length :: Partial => Array Object -> Object
-length [ ArrayObj x ] = IntObj $ Foldable.length x
+length [ ArrayObj x ] = IntObj $ Array.length x
 length [ StringObj x ] = IntObj $ String.length x
 
 lengthSig :: Sig

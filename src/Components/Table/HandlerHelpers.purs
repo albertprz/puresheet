@@ -12,7 +12,6 @@ import App.Interpreter.Module (reloadModule)
 import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollByX, shiftKey, withPrevent)
 import App.Utils.Map (updateJust) as Map
 import Bookhound.Parser (runParser)
-import Bookhound.Utils.UnsafeRead (unsafeFromJust)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (delete, insert, keys, lookup, union, unionWith) as Map
 import Data.Set as Set
