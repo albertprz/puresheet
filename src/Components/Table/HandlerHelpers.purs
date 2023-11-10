@@ -39,8 +39,6 @@ cellArrowMove ev move =
     modify_ \st -> st
       { multiSelection = computeNextSelection st.multiSelection st.selectedCell
           move
-          st.columns
-          st.rows
       }
   else
     cellMove ev move
@@ -117,7 +115,7 @@ selectCell move = do
   { selectedCell, columns, rows } <- modify \st -> st
     { activeInput = false
     , multiSelection = NoSelection
-    , selectedCell = getCellFromMove move st.columns st.rows st.selectedCell
+    , selectedCell = getCellFromMove move st.selectedCell
     }
   visibleCols <- getVisibleCols
   visibleRows <- getVisibleRows

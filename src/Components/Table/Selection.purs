@@ -63,34 +63,29 @@ isCellInSelection (CellsSelection origin target) { column, row } =
   inRange origin.row target.row row &&
     inRange origin.column target.column column
 
-getCellFromMove
-  :: CellMove -> NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Cell
-getCellFromMove move columns rows cell =
-  fromMaybe cell $ (interpretCellMove move) columns rows cell
+getCellFromMove :: CellMove -> Cell -> Cell
+getCellFromMove move cell =
+  fromMaybe cell $ interpretCellMove move cell
 
 computeNextSelection
   :: MultiSelection
   -> Cell
   -> CellMove
-  -> NonEmptyArray Column
-  -> NonEmptyArray Row
   -> MultiSelection
-computeNextSelection (CellsSelection origin target) _ move columns rows =
+computeNextSelection (CellsSelection origin target) _ move =
   CellsSelection origin
-    $ getCellFromMove move columns rows target
-computeNextSelection (ColumnsSelection origin target) _ move columns _ =
+    $ getCellFromMove move target
+computeNextSelection (ColumnsSelection origin target) _ move =
   ColumnsSelection origin
-    (fromMaybe origin $ interpretColumnMove move columns target)
-computeNextSelection (RowsSelection origin target) _ move _ rows =
-  RowsSelection origin (fromMaybe origin $ interpretRowMove move rows target)
-computeNextSelection NoSelection selectedCell move columns rows =
+    (fromMaybe origin $ interpretColumnMove move target)
+computeNextSelection (RowsSelection origin target) _ move =
+  RowsSelection origin (fromMaybe origin $ interpretRowMove move target)
+computeNextSelection NoSelection selectedCell move =
   CellsSelection selectedCell
-    $ getCellFromMove move columns rows selectedCell
-computeNextSelection AllSelection _ _ _ _ = AllSelection
+    $ getCellFromMove move selectedCell
+computeNextSelection AllSelection _ _ = AllSelection
 
-interpretCellMove
-  :: CellMove
-  -> (NonEmptyArray Column -> NonEmptyArray Row -> Cell -> Maybe Cell)
+interpretCellMove :: CellMove -> Cell -> Maybe Cell
 interpretCellMove = case _ of
   NextRow -> getRowCell inc
   PrevRow -> getRowCell dec
@@ -98,22 +93,22 @@ interpretCellMove = case _ of
   PrevColumn -> getColumnCell dec
   NextCell -> getCell inc
   PrevCell -> getCell dec
-  OtherColumn column -> \_ _ cell -> Just $ cell { column = column }
-  OtherRow row -> \_ _ cell -> Just $ cell { row = row }
-  OtherCell cell -> \_ _ _ -> Just cell
+  OtherColumn column -> \cell -> Just $ cell { column = column }
+  OtherRow row -> \cell -> Just $ cell { row = row }
+  OtherCell cell -> const $ Just cell
 
 interpretColumnMove
-  :: CellMove -> NonEmptyArray Column -> Column -> Maybe Column
+  :: CellMove -> Column -> Maybe Column
 interpretColumnMove = case _ of
-  NextColumn -> getElemSat inc
-  PrevColumn -> getElemSat dec
-  _ -> \_ _ -> Nothing
+  NextColumn -> getElemSat <<< inc
+  PrevColumn -> getElemSat <<< dec
+  _ -> const Nothing
 
-interpretRowMove :: CellMove -> NonEmptyArray Row -> Row -> Maybe Row
+interpretRowMove :: CellMove -> Row -> Maybe Row
 interpretRowMove = case _ of
-  NextRow -> getElemSat inc
-  PrevRow -> getElemSat dec
-  _ -> \_ _ -> Nothing
+  NextRow -> getElemSat <<< inc
+  PrevRow -> getElemSat <<< dec
+  _ -> const Nothing
 
 serializeSelectionValues
   :: MultiSelection
@@ -129,7 +124,7 @@ serializeSelectionValues selection selectedCell columns tableData =
 
 deserializeSelectionValues
   :: Cell -> NonEmptyArray Column -> String -> HashMap Cell CellValue
-deserializeSelectionValues selectedCell columns str = HashMap.fromFoldable
+deserializeSelectionValues selectedCell columns str = HashMap.fromArray
   do
     rowValues /\ row <- zip' values (selectedCell.row .. maxRow)
     value /\ column <- zip' rowValues (selectedCell.column .. last columns)

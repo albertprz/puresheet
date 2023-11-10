@@ -2,12 +2,12 @@ module FatPrelude
   ( module X
   ) where
 
-import App.Utils.Array (arr2, catMaybes', deleteAt', drop', dropEnd', filterByIndexes, findIndex', findLastIndex', getElemSat, getNextElemSat, getPrevElemSat, head', inRange, index', init', insertAt', intersperse', last', maybeToArray, satIndex, slice', sliceNext', splitAt', switchElements, tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith', (!!!)) as X
-import App.Utils.Char (isAplha, isLower, isUpper, nextChar, prevChar) as X
+import App.Utils.Array (arr2, deleteAt', drop', dropEnd', findIndex', findLastIndex', getElemSat, head', inRange, index', init', insertAt', intersperse', last', slice', sliceNext', splitAt', tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith') as X
+import App.Utils.Char (fromUpper, nextChar, prevChar, toUpper, upperEndCode, upperStartCode) as X
 import App.Utils.Common (partialMaybe) as X
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as X
-import App.Utils.Functor (mapp, (<$$>)) as X
-import App.Utils.Maybe (toMaybe, toMaybe', unsafeFromJust) as X
+import App.Utils.Functor (filterByIndex, filterByIndexes, mapp, (<$$>)) as X
+import App.Utils.Maybe (unlessMaybe, unlessMaybe', unsafeFromJust, whenMaybe, whenMaybe') as X
 import App.Utils.Monoid (unlessMonoid, whenMonoid, (<>?)) as X
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as X
 import App.Utils.String (newline, showParensCsv, str, tab, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as X
@@ -20,7 +20,7 @@ import Control.Monad.State (class MonadState, StateT(..), evalState, evalStateT,
 import Control.Monad.Trans.Class (class MonadTrans, lift) as X
 import Control.MonadPlus (class Alt, class Alternative, class MonadPlus, class Plus, alt, empty, guard, (<|>)) as X
 import Data.Array (length) as X
-import Data.Array.NonEmpty (NonEmptyArray, alterAt, appendArray, catMaybes, concat, concatMap, cons, cons', delete, deleteAt, deleteBy, difference, difference', drop, dropEnd, dropWhile, elemIndex, elemLastIndex, filterA, findIndex, findLastIndex, foldRecM, fromArray, group, groupAll, groupAllBy, groupBy, head, index, init, insert, insertAt, insertBy, intersect, intersect', intersectBy, intersectBy', intersperse, last, mapMaybe, mapWithIndex, modifyAt, modifyAtIndices, nub, nubBy, nubByEq, nubEq, prependArray, replicate, reverse, singleton, slice, snoc, snoc', some, sort, sortBy, sortWith, span, splitAt, tail, take, takeEnd, takeWhile, toArray, transpose, transpose', uncons, union, union', unionBy, unionBy', unsafeIndex, unsnoc, unzip, updateAt, updateAtIndices, zip, zipWith, zipWithA, (!!), (\\)) as X
+import Data.Array.NonEmpty (NonEmptyArray, alterAt, appendArray, concat, concatMap, cons, cons', delete, deleteAt, deleteBy, difference, difference', drop, dropEnd, dropWhile, elemIndex, elemLastIndex, filterA, findIndex, findLastIndex, foldRecM, fromArray, group, groupAll, groupAllBy, groupBy, head, index, init, insert, insertAt, insertBy, intersect, intersect', intersectBy, intersectBy', intersperse, last, modifyAt, modifyAtIndices, nub, nubBy, nubByEq, nubEq, prependArray, replicate, reverse, singleton, slice, snoc, snoc', some, sort, sortBy, sortWith, span, splitAt, tail, take, takeEnd, takeWhile, toArray, transpose, transpose', uncons, union, union', unionBy, unionBy', unsafeIndex, unsnoc, unzip, updateAt, updateAtIndices, zip, zipWith, zipWithA, (!!), (\\)) as X
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as X
 import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldl, bifoldr, bifor, bifor_, bisequence, bisequence_, bitraverse, bitraverse_, lfor, ltraverse, rfor, rtraverse) as X
 import Data.Char (fromCharCode, toCharCode) as X
@@ -29,6 +29,7 @@ import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, d
 import Data.Filterable (class Compactable, class Filterable, cleared, compact, eitherBool, filter, filterMap, maybeBool, partition, partitionMap, separate) as X
 import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldl, foldr, for_, indexl, indexr, intercalate, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sum, surround, surroundMap) as X
 import Data.Function (applyN, on) as X
+import Data.FunctorWithIndex (class FunctorWithIndex, mapWithIndex) as X
 import Data.HashMap (HashMap) as X
 import Data.HashSet (HashSet) as X
 import Data.Hashable (class Hashable, class HashableRecord, hash, hashRecord) as X
@@ -40,7 +41,7 @@ import Data.Semigroup.Foldable (class Foldable1, fold1, foldMap1, foldMap1Defaul
 import Data.Set (Set) as X
 import Data.Set.NonEmpty (NonEmptySet) as X
 import Data.String.CodeUnits (fromCharArray, toCharArray) as X
-import Data.String.Common (joinWith, localeCompare, replace, replaceAll, split, toLower, toUpper, trim) as X
+import Data.String.Common (joinWith, localeCompare, replace, replaceAll, split, trim) as X
 import Data.Traversable (class Traversable, Accum, mapAccumL, mapAccumR, scanl, scanr, sequence, sequence_, traverse, traverse_) as X
 import Data.Tuple (Tuple(..), curry, fst, snd, swap, uncurry) as X
 import Data.Tuple.Nested (type (/\), curry3, curry4, get1, get2, get3, get4, over1, over2, over3, over4, tuple3, tuple4, uncurry3, uncurry4, (/\)) as X

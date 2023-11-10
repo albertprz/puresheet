@@ -8,7 +8,7 @@ import App.SyntaxTree.FnDef (FnDef(..), FnInfo(..), OpDef(..), OpInfo)
 import App.SyntaxTree.ModuleDef (ModuleDef(..), ModuleImport(..))
 import App.Utils.HashMap (deleteWhen) as HashMap
 import Bookhound.Parser (ParseError, runParser)
-import Data.HashMap (delete, empty, fromFoldable, insertWith, union) as HashMap
+import Data.HashMap (delete, empty, fromArray, insertWith, union) as HashMap
 import Data.Set as Set
 
 type RegisterModuleCtx r =
@@ -84,7 +84,7 @@ registerModuleOps
   -> m Unit
 registerModuleOps opModule opDefs =
   modify_ \st -> st
-    { operatorsMap = HashMap.union (HashMap.fromFoldable (toEntry <$> opDefs))
+    { operatorsMap = HashMap.union (HashMap.fromArray $ map toEntry opDefs)
         st.operatorsMap
     }
   where
@@ -105,7 +105,7 @@ registerModuleFns
 registerModuleFns fnModule fnDefs =
   modify_ \st -> st
     { fnsMap = HashMap.union
-        (HashMap.fromFoldable (toEntry <$> fnDefs))
+        (HashMap.fromArray $ map toEntry fnDefs)
         st.fnsMap
     }
   where

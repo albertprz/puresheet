@@ -189,7 +189,7 @@ evalBuiltinFn fnInfo@{ fn, params, defaultParams } args =
   where
   unappliedArgsNum = length params - length args
   defaultResult =
-    if NullObj `elem` args && not (Set.isEmpty defaultParams) then
+    if elem NullObj args && not (Set.isEmpty defaultParams) then
       find
         (_ /= NullObj)
         (filterByIndexes defaultParams args)

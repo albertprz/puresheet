@@ -33,19 +33,17 @@ evalFormula appState { column, row } body = do
     =<< toCellMap
     <$> join (partialMaybe objectToCellValues objectResult)
   where
-  { columns, rows } = appState
   toCellMap cellMatrix =
     HashMap.filter nonEmptyCellValue
-      $ HashMap.fromFoldable
+      $ HashMap.fromArray
       $ filterMap toCellPair
       $ Matrix.toIndexedArray cellMatrix
   toCellPair { x, y, value } =
-    (_ /\ value) <<< uncurry buildCell <$>
+    (_ /\ value) <<< uncurry { column: _, row: _ } <$>
       bisequence
-        ( getElemSat (_ + x) columns column /\
-            getElemSat (_ + y) rows row
+        ( getElemSat (column + wrap x) /\
+            getElemSat (row + wrap y)
         )
-  buildCell column' row' = { column: column', row: row' }
 
 evalExprInApp
   :: AppState -> FnBody -> Either EvalError Object

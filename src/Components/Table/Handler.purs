@@ -101,7 +101,7 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   selectCell (OtherCell cell)
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  focusCellElem selectedCell $ toMaybe' activeInput inputElement
+  focusCellElem selectedCell $ whenMaybe activeInput inputElement
 
 handleAction (FocusInCell cell _) = do
   { tableFormulas } <- get
@@ -140,7 +140,7 @@ handleAction (KeyDown Enter ev)
   | otherwise = withPrevent ev do
       { selectedCell, activeInput } <- modify \st -> st
         { activeInput = not st.activeInput }
-      focusCellElem selectedCell $ toMaybe' activeInput inputElement
+      focusCellElem selectedCell $ whenMaybe activeInput inputElement
 
 handleAction (KeyDown Tab ev) = selectCell move
   where

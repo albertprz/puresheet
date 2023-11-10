@@ -2,6 +2,7 @@ module App.Utils.Monoid where
 
 import Prelude
 
+import Control.Plus (class Plus, empty)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 
@@ -11,7 +12,13 @@ whenMonoid :: forall m. Monoid m => Boolean -> m -> m
 whenMonoid cond m = if cond then m else mempty
 
 unlessMonoid :: forall m. Monoid m => Boolean -> m -> m
-unlessMonoid cond = whenMonoid (not cond)
+unlessMonoid = whenMonoid <<< not
+
+whenPlus :: forall m a. Plus m => Boolean -> m a -> m a
+whenPlus cond m = if cond then m else empty
+
+unlessPlus :: forall m a. Plus m => Boolean -> m a -> m a
+unlessPlus = whenPlus <<< not
 
 whenMonoidAppend
   :: forall f a

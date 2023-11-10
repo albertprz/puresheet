@@ -51,7 +51,7 @@ dependenciesTreeHelper ctx loc =
   if isRecursive then
     Left CycleDependency
   else
-    (_ `appendChildrenLocs` loc)
+    flip appendChildrenLocs loc
       <$> traverse (dependenciesTreeHelper ctx)
         (fromTree <<< mkLeaf <$> formulaDeps)
   where
@@ -59,7 +59,8 @@ dependenciesTreeHelper ctx loc =
   { affectedCells } = unsafeFromJust $ HashMap.lookup formulaId ctx.formulaCache
   formulaDeps = List.fromFoldable
     $ foldMap toSet
-    $ filterMap (_ `HashMap.lookup` ctx.tableDependencies)
+    $ filterMap
+        (flip HashMap.lookup ctx.tableDependencies)
         (Array.fromFoldable affectedCells)
   isRecursive = elem formulaId (value <$> parents loc)
   appendChildrenLocs = appendChildren <<< map toTree

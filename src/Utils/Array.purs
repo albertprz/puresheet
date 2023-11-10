@@ -2,54 +2,18 @@ module App.Utils.Array where
 
 import Prelude
 
-import App.Utils.Number (dec, inc)
-import App.Utils.Unfoldable ((..))
+import App.Utils.Maybe (whenMaybe')
 import Data.Array as Array
-import Data.Array.NonEmpty (findIndex, head, last, toArray, updateAtIndices, (!!))
+import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray)
-import Data.Filterable (filter)
-import Data.Foldable (class Foldable, elem)
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Tuple (Tuple, fst)
-import Data.Tuple.Nested ((/\))
+import Data.Maybe (Maybe, maybe)
+import Data.Tuple (Tuple)
 
-filterByIndexes :: forall a f. Foldable f => f Int -> Array a -> Array a
-filterByIndexes idxs arr = fst <$>
-  filter (\(_ /\ idx) -> idx `elem` idxs)
-    (arr `zip'` (0 .. (Array.length arr - 1)))
-
-getNextElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
-getNextElemSat = getElemSat inc
-
-getPrevElemSat :: forall a. Eq a => NonEmptyArray a -> a -> Maybe a
-getPrevElemSat = getElemSat dec
-
-switchElements :: forall a. Eq a => a -> a -> NonEmptyArray a -> NonEmptyArray a
-switchElements x y seq = fromMaybe seq $ do
-  idx1 <- findIndex (_ == x) seq
-  idx2 <- findIndex (_ == y) seq
-  pure $ updateAtIndices [ idx1 /\ y, idx2 /\ x ] seq
-
-getElemSat :: forall a. Eq a => (Int -> Int) -> NonEmptyArray a -> a -> Maybe a
-getElemSat f seq value = (seq !!! _) <<< f <$> idx
-  where
-  idx = findIndex (_ == value) seq
-
-infixl 8 satIndex as !!!
-
-satIndex :: forall a. NonEmptyArray a -> Int -> a
-satIndex seq idx = fromMaybe bound (seq !! idx)
-  where
-  bound
-    | idx < 0 = head seq
-    | otherwise = last seq
+getElemSat :: forall a. Bounded a => a -> Maybe a
+getElemSat = whenMaybe' (inRange bottom top)
 
 arr2 :: forall a. a -> a -> Array a
 arr2 a b = [ a, b ]
-
-maybeToArray :: forall a. Maybe a -> Array a
-maybeToArray (Just x) = [ x ]
-maybeToArray Nothing = []
 
 inRange :: forall a. Ord a => a -> a -> a -> Boolean
 inRange x y value = between x y value ||
@@ -123,6 +87,3 @@ zipWith' = Array.zipWith
 
 intersperse' :: forall a. a -> Array a -> Array a
 intersperse' = Array.intersperse
-
-catMaybes' :: forall a. Array (Maybe a) -> Array a
-catMaybes' = Array.catMaybes

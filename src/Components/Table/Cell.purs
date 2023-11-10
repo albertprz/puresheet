@@ -9,7 +9,6 @@ import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (anyChar, upper)
 import Bookhound.Parsers.Number (double, int, unsignedInt)
 import Data.HashMap (keys) as HashMap
-import Data.Set as Set
 import Data.String.CodeUnits as String
 
 parseCellValue :: String -> CellValue
@@ -20,7 +19,7 @@ rowParser :: Parser Row
 rowParser = Row <$> unsignedInt
 
 columnParser :: Parser Column
-columnParser = Column <$> upper
+columnParser = Column <<< fromUpper <$> upper
 
 cellParser :: Parser Cell
 cellParser = do
@@ -44,62 +43,37 @@ showCell { column, row } = show column <> show row
 
 getCell
   :: (Int -> Int)
-  -> NonEmptyArray Column
-  -> NonEmptyArray Row
   -> Cell
   -> Maybe Cell
-getCell f columns rows = getElemSat f cells
-  where
-  cells = do
-    row <- rows
-    column <- columns
-    pure { column, row }
+getCell f cell =
+  getColumnCell (over Column f) cell
+    <|> getRowCell (over Row f) cell
 
 getColumnCell
-  :: (Int -> Int)
-  -> NonEmptyArray Column
-  -> NonEmptyArray Row
+  :: (Column -> Column)
   -> Cell
   -> Maybe Cell
-getColumnCell f columns _ { column, row } =
-  (\column' -> { column: column', row }) <$> getElemSat f columns column
+getColumnCell f { column, row } =
+  ({ column: _, row }) <$> getElemSat (f column)
 
 getRowCell
-  :: (Int -> Int)
-  -> NonEmptyArray Column
-  -> NonEmptyArray Row
+  :: (Row -> Row)
   -> Cell
   -> Maybe Cell
-getRowCell f _ _ { column, row: Row rowNum } =
-  Just { column, row: Row $ max one $ f rowNum }
+getRowCell f { column, row } =
+  ({ column, row: _ }) <$> getElemSat (f row)
 
 nextColumnCell :: Cell -> Cell
-nextColumnCell { column, row } =
-  { column: nextColumn column, row }
+nextColumnCell { column, row } = { column: inc column, row }
 
 prevColumnCell :: Cell -> Cell
-prevColumnCell { column, row } =
-  { column: prevColumn column, row }
+prevColumnCell { column, row } = { column: dec column, row }
 
 nextRowCell :: Cell -> Cell
-nextRowCell { column, row } =
-  { column, row: nextRow row }
+nextRowCell { column, row } = { column, row: inc row }
 
 prevRowCell :: Cell -> Cell
-prevRowCell { column, row } =
-  { column, row: prevRow row }
-
-nextColumn :: Column -> Column
-nextColumn (Column column) = Column $ nextChar column
-
-prevColumn :: Column -> Column
-prevColumn (Column column) = Column $ prevChar column
-
-nextRow :: Row -> Row
-nextRow (Row row) = Row $ inc row
-
-prevRow :: Row -> Row
-prevRow (Row row) = Row $ dec row
+prevRowCell { column, row } = { column, row: dec row }
 
 getColumnHeader :: Header -> Maybe Column
 getColumnHeader (ColumnHeader header) = Just header
@@ -141,7 +115,7 @@ swapTableMapRow origin target tableDict =
           (\cell -> cell.row == origin || cell.row == target)
           (HashMap.keys tableDict)
 
-newtype Column = Column Char
+newtype Column = Column Int
 
 newtype Row = Row Int
 
@@ -172,21 +146,45 @@ data Header
 
 derive newtype instance Eq Column
 derive newtype instance Ord Column
-derive newtype instance Eq Row
-derive newtype instance Ord Row
-derive instance Eq CellValue
+derive newtype instance Semiring Column
+derive newtype instance Ring Column
+derive newtype instance Enum Column
+derive instance Newtype Column _
 
 instance Show Column where
-  show (Column x) = String.singleton x
+  show = String.singleton <<< toUpper <<< unwrap
 
 instance Hashable Column where
-  hash = hash <<< show
+  hash = unwrap
+
+instance Bounded Column where
+  bottom = wrap upperStartCode
+  top = wrap upperEndCode
+
+instance Range Column where
+  range (Column c1) (Column c2) = Column <$> c1 .. c2
+
+derive newtype instance Eq Row
+derive newtype instance Ord Row
+derive newtype instance Semiring Row
+derive newtype instance Ring Row
+derive newtype instance Enum Row
+derive instance Newtype Row _
 
 instance Show Row where
   show (Row x) = show x
 
 instance Hashable Row where
-  hash = hash <<< show
+  hash = unwrap
+
+instance Bounded Row where
+  bottom = one
+  top = wrap 1000000
+
+instance Range Row where
+  range (Row r1) (Row r2) = Row <$> r1 .. r2
+
+derive instance Eq CellValue
 
 instance Show CellValue where
   show (BoolVal x) = show x
@@ -194,9 +192,3 @@ instance Show CellValue where
   show (FloatVal x) = show x
   show (CharVal x) = String.singleton x
   show (StringVal x) = x
-
-instance Range Column where
-  range (Column c1) (Column c2) = Column <$> c1 .. c2
-
-instance Range Row where
-  range (Row r1) (Row r2) = Row <$> r1 .. r2

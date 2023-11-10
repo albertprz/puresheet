@@ -22,7 +22,7 @@ import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
 builtinFnsMap :: HashMap Var BuiltinFnInfo
-builtinFnsMap = unsafePartial $ HashMap.fromFoldable
+builtinFnsMap = unsafePartial $ HashMap.fromArray
   $
     bimap Var
       ( \(fn /\ (params /\ returnType) /\ nulls) ->

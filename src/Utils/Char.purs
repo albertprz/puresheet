@@ -2,23 +2,24 @@ module App.Utils.Char where
 
 import Prelude
 
+import App.Utils.Maybe (unsafeFromJust)
 import App.Utils.Number (dec, inc)
-import App.Utils.Unfoldable ((..))
-import Data.Array.NonEmpty (elem)
 import Data.Char (fromCharCode, toCharCode)
-import Data.Maybe (fromMaybe)
 
 nextChar :: Char -> Char
-nextChar = fromMaybe '?' <<< fromCharCode <<< inc <<< toCharCode
+nextChar = unsafeFromJust <<< fromCharCode <<< inc <<< toCharCode
 
 prevChar :: Char -> Char
-prevChar = fromMaybe '?' <<< fromCharCode <<< dec <<< toCharCode
+prevChar = unsafeFromJust <<< fromCharCode <<< dec <<< toCharCode
 
-isAplha :: Char -> Boolean
-isAplha ch = isLower ch || isUpper ch
+upperStartCode :: Int
+upperStartCode = toCharCode 'A'
 
-isLower :: Char -> Boolean
-isLower ch = elem ch $ 'a' .. 'z'
+upperEndCode :: Int
+upperEndCode = toCharCode 'Z'
 
-isUpper :: Char -> Boolean
-isUpper ch = elem ch $ 'A' .. 'Z'
+toUpper :: Int -> Char
+toUpper n = unsafeFromJust $ fromCharCode (upperStartCode + n)
+
+fromUpper :: Char -> Int
+fromUpper ch = toCharCode ch - upperStartCode

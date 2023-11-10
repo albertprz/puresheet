@@ -24,22 +24,22 @@ component =
 
 initialState :: forall a. a -> AppState
 initialState = const
-  { selectedCell: { column: Column 'A', row: Row 1 }
-  , formulaCell: { column: Column 'A', row: Row 1 }
+  { selectedCell: { column: Column $ fromUpper 'A', row: Row 1 }
+  , formulaCell: { column: Column $ fromUpper 'A', row: Row 1 }
   , activeFormula: false
   , activeInput: false
   , formulaState: UnknownFormula
-  , tableData: HashMap.fromFoldable
-      [ { column: Column 'A', row: Row 1 } /\ IntVal 1
-      , { column: Column 'B', row: Row 1 } /\ IntVal 2
-      , { column: Column 'C', row: Row 1 } /\ IntVal 3
-      , { column: Column 'D', row: Row 1 } /\ IntVal 4
+  , tableData: HashMap.fromArray
+      [ { column: Column $ fromUpper 'A', row: Row 1 } /\ IntVal 1
+      , { column: Column $ fromUpper 'B', row: Row 1 } /\ IntVal 2
+      , { column: Column $ fromUpper 'C', row: Row 1 } /\ IntVal 3
+      , { column: Column $ fromUpper 'D', row: Row 1 } /\ IntVal 4
       ]
   , tableDependencies: HashMap.empty
   , tableFormulas: HashMap.empty
   , formulaCache: HashMap.empty
-  , columns: Column <$> 'A' .. 'Z'
-  , rows: Row <$> 1 .. 100
+  , columns: bottom .. top
+  , rows: bottom .. Row 100
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing

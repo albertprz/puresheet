@@ -284,7 +284,7 @@ getAncestorNodes :: Node -> Effect (Array Node)
 getAncestorNodes node = do
   parentNode' <- parentNode node
   grandParentNode <- join <$> traverse parentNode parentNode'
-  pure $ filterMap identity [ parentNode', grandParentNode ]
+  pure $ compact [ parentNode', grandParentNode ]
 
 getNodeText :: Node -> Effect String
 getNodeText node = do
@@ -293,7 +293,7 @@ getNodeText node = do
   nodeText <- nodeValue node
   pure $ fold (brText <|> nodeText <|> childText)
   where
-  brText = toMaybe' (nodeName node == "br") "\n"
+  brText = whenMaybe (nodeName node == "br") "\n"
 
 elemsInViewport
   :: forall m. MonadEffect m => NonEmptyArray Element -> m (Array Element)

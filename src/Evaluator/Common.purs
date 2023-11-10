@@ -180,7 +180,7 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
         , scopeLoc = goToNode scope st.scopeLoc
         }
   where
-  argBindings = HashMap.fromFoldable
+  argBindings = HashMap.fromArray
     $ rmap
         ( FnInfo <<<
             { id: Nothing
