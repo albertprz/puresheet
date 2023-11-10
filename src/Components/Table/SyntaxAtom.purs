@@ -5,7 +5,7 @@ import Prim hiding (Type)
 
 import App.CSS.ClassNames (cellSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Table.Cell (cellParser, showCell)
-import App.Parser.Common (notReserved, opSymbol, reservedKeyWords, reservedSymbols)
+import App.Parser.Common (notReservedKeyword, notReservedSymbol, opSymbol, reservedKeywords, reservedSymbols)
 import App.SyntaxTree.Common (QVar(..), preludeModule)
 import App.SyntaxTree.FnDef (FnId, FnSig)
 import App.SyntaxTree.Type (Type(..))
@@ -47,7 +47,7 @@ syntaxAtomParser = (|+) atom
       <|> (Char' <$> char)
       <|> (String' <$> string)
       <|> (Cell' <<< showCell <$> cellParser)
-      <|> (Keyword <$> (anyOf $ map is reservedKeyWords))
+      <|> (Keyword <$> (anyOf $ map is reservedKeywords))
       <|> (Symbol <$> (anyOf $ map is reservedSymbols))
       <|> (Operator <$> varOp)
       <|> (OtherText <<< String.singleton <$> Parsers.anyChar)
@@ -63,10 +63,10 @@ syntaxAtomParser = (|+) atom
   operator start = start ->>- (|*) opSymbol
   idChar = alphaNum <|> underscore <|> quote
   ident start = start ->>- (|*) idChar
-  var = notReserved (ident lower)
+  var = notReservedKeyword (ident lower)
   varOp = (is "|" ->>- var ->>- is ">")
     <|> (is "<" ->>- var ->>- is "|")
-    <|> notReserved (operator opSymbol)
+    <|> notReservedSymbol (operator opSymbol)
 
 fnSigToSyntaxAtoms :: forall r. FnId -> FnSig r -> Array SyntaxAtom
 fnSigToSyntaxAtoms { fnModule, fnName } { params, returnType } =

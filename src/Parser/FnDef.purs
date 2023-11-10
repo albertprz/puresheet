@@ -8,13 +8,12 @@ import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (is, someSepBy, within, (|+), (|?))
+import Bookhound.ParserCombinators (is, sepByOps, someSepBy, within, (</\>), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (unsignedInt)
 import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
 import Control.Lazy (defer)
-import Data.Array as Array
 
 opDef :: Parser OpDef
 opDef = defer \_ -> withError "Operator definition"
@@ -32,7 +31,7 @@ fnDef = defer \_ -> withError "Function definition"
   <*> annotation
   <*> (isToken "=" *> fnBody)
   where
-  annotatedVar = (/\) <$> var <*> annotation
+  annotatedVar = var </\> annotation
   annotation = (|?) (isToken ":" *> type')
 
 fnBody :: Parser FnBody
@@ -51,9 +50,9 @@ fnBody = whereExpr <|> topLevelExpr
     uncurry InfixFnApply <$> sepByOps qVarOp infixArgForm
 
   leftOpSection = defer \_ -> uncurry LeftOpSection <$>
-    ((/\) <$> (isToken "_" *> qVarOp) <*> infixArgForm)
+    ((isToken "_" *> qVarOp) </\> infixArgForm)
   rightOpSection = defer \_ -> uncurry RightOpSection <$>
-    ((/\) <$> infixArgForm <*> (qVarOp <* isToken "_"))
+    (infixArgForm </\> (qVarOp <* isToken "_"))
   opSection = defer \_ -> leftOpSection <|> rightOpSection
 
   whereExpr = defer \_ -> WhereExpr
@@ -131,12 +130,6 @@ statements sep parser = (|+) (isToken sep *> parser)
 withinContext :: forall a. String -> Parser a -> Parser (Array a)
 withinContext sep = withinCurlyBrackets <<< statements sep
 
-sepByOps :: forall a b. Parser a -> Parser b -> Parser (Array a /\ Array b)
-sepByOps sep p = do
-  x <- p
-  y <- (|+) ((/\) <$> sep <*> p)
-  pure $ ((fst <$> y) /\ Array.cons x (snd <$> y))
-
 mandatory :: forall a. Parser (Maybe a) -> Parser a
 mandatory maybeP =
-  fromMaybe empty <<< (map pure) =<< maybeP
+  fromMaybe empty <<< map pure =<< maybeP

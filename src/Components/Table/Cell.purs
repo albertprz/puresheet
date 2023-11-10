@@ -3,12 +3,12 @@ module App.Components.Table.Cell where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Utils.Map (swapKey) as Map
+import App.Utils.HashMap (swapKey) as HashMap
 import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (anyChar, upper)
 import Bookhound.Parsers.Number (double, int, unsignedInt)
-import Data.Map (keys) as Map
+import Data.HashMap (keys) as HashMap
 import Data.Set as Set
 import Data.String.CodeUnits as String
 
@@ -118,27 +118,28 @@ maxRow = Row 1_000
 maxRowBounds :: NonEmptyArray Row
 maxRowBounds = firstRow .. maxRow
 
-swapTableMapColumn :: forall v. Column -> Column -> Map Cell v -> Map Cell v
+swapTableMapColumn
+  :: forall v. Column -> Column -> HashMap Cell v -> HashMap Cell v
 swapTableMapColumn origin target tableDict =
-  foldl (flip Map.swapKey) tableDict keysToSwap
+  foldl (flip HashMap.swapKey) tableDict keysToSwap
   where
   keysToSwap =
-    Set.map (\row -> { column: origin, row } /\ { column: target, row })
-      $ Set.map (\cell -> cell.row)
-      $ Set.filter
+    map (\row -> { column: origin, row } /\ { column: target, row })
+      $ map (\cell -> cell.row)
+      $ filter
           (\cell -> cell.column == origin || cell.column == target)
-          (Map.keys tableDict)
+          (HashMap.keys tableDict)
 
-swapTableMapRow :: forall v. Row -> Row -> Map Cell v -> Map Cell v
+swapTableMapRow :: forall v. Row -> Row -> HashMap Cell v -> HashMap Cell v
 swapTableMapRow origin target tableDict =
-  foldl (flip Map.swapKey) tableDict keysToSwap
+  foldl (flip HashMap.swapKey) tableDict keysToSwap
   where
   keysToSwap =
-    Set.map (\column -> { column, row: origin } /\ { column, row: target })
-      $ Set.map (\cell -> cell.column)
-      $ Set.filter
+    map (\column -> { column, row: origin } /\ { column, row: target })
+      $ map (\cell -> cell.column)
+      $ filter
           (\cell -> cell.row == origin || cell.row == target)
-          (Map.keys tableDict)
+          (HashMap.keys tableDict)
 
 newtype Column = Column Char
 
@@ -178,8 +179,14 @@ derive instance Eq CellValue
 instance Show Column where
   show (Column x) = String.singleton x
 
+instance Hashable Column where
+  hash = hash <<< show
+
 instance Show Row where
   show (Row x) = show x
+
+instance Hashable Row where
+  hash = hash <<< show
 
 instance Show CellValue where
   show (BoolVal x) = show x

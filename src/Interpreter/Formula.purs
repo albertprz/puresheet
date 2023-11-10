@@ -14,7 +14,7 @@ import Data.Set.NonEmpty (toSet)
 import Data.Tree (Forest)
 
 type FormulaResult =
-  { result :: Map Cell CellValue
+  { result :: HashMap Cell CellValue
   , affectedCells :: NonEmptySet Cell
   , formulaCells :: Set Cell
   , cellDeps :: Forest FormulaId
@@ -32,7 +32,7 @@ runFormula appState cell =
   evalFnHelper body { result, affectedCells } =
     { result
     , affectedCells
-    , formulaCells: Set.filter (_ `notElem` toSet affectedCells)
+    , formulaCells: Set.filter (flip notElem $ toSet affectedCells)
         (extractCells body)
     }
 

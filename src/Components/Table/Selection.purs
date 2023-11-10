@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellMove(..), CellValue, Column, Row, getCell, getColumnCell, getRowCell, maxRow, maxRowBounds, nextRowCell, parseCellValue, prevColumnCell)
 import Data.Array as Array
-import Data.Map as Map
+import Data.HashMap as HashMap
 import Data.String.Pattern (Pattern(..))
 
 isColumnSelected :: Cell -> MultiSelection -> Column -> Boolean
@@ -119,17 +119,17 @@ serializeSelectionValues
   :: MultiSelection
   -> Cell
   -> NonEmptyArray Column
-  -> Map Cell CellValue
+  -> HashMap Cell CellValue
   -> String
 serializeSelectionValues selection selectedCell columns tableData =
   intercalate newline
     $ intercalate tab
-    <$> (foldMap show <<< (_ `Map.lookup` tableData))
+    <$> (foldMap show <<< (_ `HashMap.lookup` tableData))
     <$$> (getTargetCells selection selectedCell columns)
 
 deserializeSelectionValues
-  :: Cell -> NonEmptyArray Column -> String -> Map Cell CellValue
-deserializeSelectionValues selectedCell columns str = Map.fromFoldable
+  :: Cell -> NonEmptyArray Column -> String -> HashMap Cell CellValue
+deserializeSelectionValues selectedCell columns str = HashMap.fromFoldable
   do
     rowValues /\ row <- zip' values (selectedCell.row .. maxRow)
     value /\ column <- zip' rowValues (selectedCell.column .. last columns)

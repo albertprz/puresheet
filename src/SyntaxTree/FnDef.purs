@@ -68,7 +68,7 @@ newtype FnInfo = FnInfo
       ( id :: Maybe FnId
       , body :: FnBody
       , scope :: Scope
-      , argsMap :: Map (Scope /\ Var) FnInfo
+      , argsMap :: HashMap (Scope /\ Var) FnInfo
       )
   )
 
@@ -156,6 +156,9 @@ derive newtype instance Semiring Scope
 derive instance Newtype Scope _
 instance Show Scope where
   show = show <<< unwrap
+
+instance Hashable Scope where
+  hash = unwrap
 
 instance Range Scope where
   range (Scope a) (Scope b) = Scope <$> (a .. b)

@@ -6,16 +6,16 @@ import App.Parser.ModuleDef (moduleDef)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..))
 import App.SyntaxTree.FnDef (FnDef(..), FnInfo(..), OpDef(..), OpInfo)
 import App.SyntaxTree.ModuleDef (ModuleDef(..), ModuleImport(..))
-import App.Utils.Map (deleteWhen) as Map
+import App.Utils.HashMap (deleteWhen) as HashMap
 import Bookhound.Parser (ParseError, runParser)
-import Data.Map (delete, empty, fromFoldable, insertWith, union) as Map
+import Data.HashMap (delete, empty, fromFoldable, insertWith, union) as HashMap
 import Data.Set as Set
 
 type RegisterModuleCtx r =
-  { fnsMap :: Map QVar FnInfo
-  , operatorsMap :: Map QVarOp OpInfo
-  , aliasedModulesMap :: Map (Module /\ Module) (Set Module)
-  , importedModulesMap :: Map Module (Set Module)
+  { fnsMap :: HashMap QVar FnInfo
+  , operatorsMap :: HashMap QVarOp OpInfo
+  , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
+  , importedModulesMap :: HashMap Module (Set Module)
   | r
   }
 
@@ -35,13 +35,13 @@ unRegisterModuleDef
   -> m Unit
 unRegisterModuleDef (ModuleDef module' _ _ _) =
   modify_ \st -> st
-    { fnsMap = Map.deleteWhen (\(QVar x _) -> x == Just module')
+    { fnsMap = HashMap.deleteWhen (\(QVar x _) -> x == Just module')
         st.fnsMap
-    , operatorsMap = Map.deleteWhen (\(QVarOp x _) -> x == Just module')
+    , operatorsMap = HashMap.deleteWhen (\(QVarOp x _) -> x == Just module')
         st.operatorsMap
-    , aliasedModulesMap = Map.deleteWhen (eq module' <<< fst)
+    , aliasedModulesMap = HashMap.deleteWhen (eq module' <<< fst)
         st.aliasedModulesMap
-    , importedModulesMap = Map.delete module' st.importedModulesMap
+    , importedModulesMap = HashMap.delete module' st.importedModulesMap
     }
 
 registerModuleDef
@@ -65,13 +65,13 @@ registerModuleImports module' imports =
   where
   registerImport (ModuleImport mod (Just alias)) =
     modify_ \st -> st
-      { aliasedModulesMap = Map.insertWith Set.union (module' /\ alias)
+      { aliasedModulesMap = HashMap.insertWith Set.union (module' /\ alias)
           (Set.singleton mod)
           st.aliasedModulesMap
       }
   registerImport (ModuleImport mod Nothing) =
     modify_ \st -> st
-      { importedModulesMap = Map.insertWith Set.union module'
+      { importedModulesMap = HashMap.insertWith Set.union module'
           (Set.singleton mod)
           st.importedModulesMap
       }
@@ -84,7 +84,7 @@ registerModuleOps
   -> m Unit
 registerModuleOps opModule opDefs =
   modify_ \st -> st
-    { operatorsMap = Map.union (Map.fromFoldable (toEntry <$> opDefs))
+    { operatorsMap = HashMap.union (HashMap.fromFoldable (toEntry <$> opDefs))
         st.operatorsMap
     }
   where
@@ -104,8 +104,8 @@ registerModuleFns
   -> m Unit
 registerModuleFns fnModule fnDefs =
   modify_ \st -> st
-    { fnsMap = Map.union
-        (Map.fromFoldable (toEntry <$> fnDefs))
+    { fnsMap = HashMap.union
+        (HashMap.fromFoldable (toEntry <$> fnDefs))
         st.fnsMap
     }
   where
@@ -116,6 +116,6 @@ registerModuleFns fnModule fnDefs =
         , params
         , body
         , scope: zero
-        , argsMap: Map.empty
+        , argsMap: HashMap.empty
         , returnType
         }

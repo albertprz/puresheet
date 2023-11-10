@@ -21,19 +21,19 @@ type AppState =
   , activeFormula :: Boolean
   , activeInput :: Boolean
   , formulaState :: FormulaState
-  , tableData :: Map Cell CellValue
-  , tableFormulas :: Map Cell FormulaId
-  , tableDependencies :: Map Cell (NonEmptySet FormulaId)
-  , formulaCache :: Map FormulaId Formula
+  , tableData :: HashMap Cell CellValue
+  , tableFormulas :: HashMap Cell FormulaId
+  , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
+  , formulaCache :: HashMap FormulaId Formula
   , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
-  , fnsMap :: Map QVar FnInfo
-  , operatorsMap :: Map QVarOp OpInfo
-  , aliasedModulesMap :: Map (Module /\ Module) (Set Module)
-  , importedModulesMap :: Map Module (Set Module)
+  , fnsMap :: HashMap QVar FnInfo
+  , operatorsMap :: HashMap QVarOp OpInfo
+  , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
+  , importedModulesMap :: HashMap Module (Set Module)
   }
 
 data Action

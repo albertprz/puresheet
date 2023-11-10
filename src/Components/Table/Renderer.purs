@@ -10,9 +10,9 @@ import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
 import App.Utils.Dom (formulaElements, mkKeyAction)
-import App.Utils.Map (lookup2) as Map
+import App.Utils.HashMap (lookup2) as HashMap
 import Bookhound.Parser (runParser)
-import Data.Map (lookup) as Map
+import Data.HashMap (lookup) as HashMap
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
@@ -82,7 +82,7 @@ renderFormulaDisplay :: forall i. AppState -> Array (HTML i Action)
 renderFormulaDisplay { selectedCell, formulaCache, tableFormulas } =
   formulaElements
     $ foldMap _.formulaText
-    $ Map.lookup2 selectedCell
+    $ HashMap.lookup2 selectedCell
         formulaCache
         tableFormulas
 
@@ -121,7 +121,7 @@ renderBody
     column <- columns
     let
       cell = { column, row }
-      cellValue = Map.lookup cell tableData
+      cellValue = HashMap.lookup cell tableData
     pure $ renderBodyCell st cell cellValue
 
 renderRowHeader :: forall i. AppState -> Row -> HTML i Action

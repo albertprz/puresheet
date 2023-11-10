@@ -5,8 +5,8 @@ import FatPrelude
 import App.CSS.ClassNames (invalidFormula, unknownFormula, validFormula)
 import App.Components.Table.Cell (Cell)
 import Data.Array as Array
+import Data.HashMap as HashMap
 import Data.List as List
-import Data.Map as Map
 import Data.Set as Set
 import Data.Set.NonEmpty (toSet)
 import Data.Set.NonEmpty as NonEmptySet
@@ -15,8 +15,8 @@ import Data.Tree.Zipper (Loc, children, fromTree, parents, toTree, value)
 import Tecton (ClassName)
 
 type DependenciesCtx r =
-  { tableDependencies :: Map Cell (NonEmptySet FormulaId)
-  , formulaCache :: Map FormulaId Formula
+  { tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
+  , formulaCache :: HashMap FormulaId Formula
   | r
   }
 
@@ -29,15 +29,15 @@ getDependencies
 getDependencies ctx affectedCells formulaCells =
   children <$> dependenciesTreeHelper newCtx (fromTree $ mkLeaf formulaId)
   where
-  formulaId = newFormulaId $ Map.keys ctx.formulaCache
+  formulaId = newFormulaId $ HashMap.keys ctx.formulaCache
   newCtx = ctx
-    { formulaCache = Map.insert formulaId
+    { formulaCache = HashMap.insert formulaId
         { formulaText: mempty
         , affectedCells
         , startingCell: minimum1 affectedCells
         }
         ctx.formulaCache
-    , tableDependencies = Map.unionWith (<>)
+    , tableDependencies = HashMap.unionWith (<>)
         (toDependenciesMap formulaId formulaCells)
         ctx.tableDependencies
     }
@@ -56,17 +56,18 @@ dependenciesTreeHelper ctx loc =
         (fromTree <<< mkLeaf <$> formulaDeps)
   where
   formulaId = value loc
-  { affectedCells } = unsafeFromJust $ Map.lookup formulaId ctx.formulaCache
+  { affectedCells } = unsafeFromJust $ HashMap.lookup formulaId ctx.formulaCache
   formulaDeps = List.fromFoldable
     $ foldMap toSet
-    $ filterMap (_ `Map.lookup` ctx.tableDependencies)
+    $ filterMap (_ `HashMap.lookup` ctx.tableDependencies)
         (Array.fromFoldable affectedCells)
   isRecursive = elem formulaId (value <$> parents loc)
   appendChildrenLocs = appendChildren <<< map toTree
 
-toDependenciesMap :: FormulaId -> Set Cell -> Map Cell (NonEmptySet FormulaId)
+toDependenciesMap
+  :: FormulaId -> Set Cell -> HashMap Cell (NonEmptySet FormulaId)
 toDependenciesMap formulaId cells =
-  Map.fromFoldable
+  HashMap.fromFoldable
     $ Set.map (_ /\ NonEmptySet.singleton formulaId) cells
 
 newFormulaId :: forall t. Foldable t => t FormulaId -> FormulaId
@@ -98,6 +99,9 @@ derive newtype instance Semiring FormulaId
 derive instance Newtype FormulaId _
 instance Show FormulaId where
   show = show <<< unwrap
+
+instance Hashable FormulaId where
+  hash = unwrap
 
 data DependencyError =
   CycleDependency

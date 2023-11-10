@@ -37,6 +37,7 @@
   , "tuples"
   , "typelevel-prelude"
   , "unfoldable"
+  , "unordered-collections"
   , "unsafe-coerce"
   , "web-clipboard"
   , "web-dom"

@@ -10,7 +10,7 @@ import App.Evaluator.Expression (evalExpr)
 import App.Evaluator.Object (objectToCellValues)
 import App.SyntaxTree.Common (preludeModule)
 import App.SyntaxTree.FnDef (FnBody, Object)
-import Data.Map as Map
+import Data.HashMap as HashMap
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree.Zipper (fromTree)
 import Matrix as Matrix
@@ -20,7 +20,7 @@ evalFormula
   -> Cell
   -> FnBody
   -> Either EvalError
-       { result :: Map Cell CellValue
+       { result :: HashMap Cell CellValue
        , affectedCells :: NonEmptySet Cell
        }
 evalFormula appState { column, row } body = do
@@ -28,15 +28,15 @@ evalFormula appState { column, row } body = do
   note (SerializationError' CellValueSerializationError)
     $
       ( \result -> { result, affectedCells: _ } <$>
-          (NonEmptySet.fromSet $ Map.keys result)
+          (NonEmptySet.fromFoldable $ HashMap.keys result)
       )
     =<< toCellMap
     <$> join (partialMaybe objectToCellValues objectResult)
   where
   { columns, rows } = appState
   toCellMap cellMatrix =
-    Map.filter nonEmptyCellValue
-      $ Map.fromFoldable
+    HashMap.filter nonEmptyCellValue
+      $ HashMap.fromFoldable
       $ filterMap toCellPair
       $ Matrix.toIndexedArray cellMatrix
   toCellPair { x, y, value } =
@@ -62,8 +62,8 @@ mkLocalContext appState =
   , operatorsMap: appState.operatorsMap
   , aliasedModulesMap: appState.aliasedModulesMap
   , importedModulesMap: appState.importedModulesMap
-  , localFnsMap: Map.empty
-  , argsMap: Map.empty
+  , localFnsMap: HashMap.empty
+  , argsMap: HashMap.empty
   , module': preludeModule
   , scope: zero
   , scopeLoc: fromTree $ mkLeaf zero

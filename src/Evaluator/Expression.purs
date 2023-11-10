@@ -8,7 +8,7 @@ import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
-import Data.Map as Map
+import Data.HashMap as HashMap
 import Data.Set as Set
 import Data.Tree.Zipper (insertChild, toTree)
 
@@ -121,7 +121,7 @@ evalExpr (FnOp fnOp) = do
 evalExpr (Cell' cell) =
   do
     { tableData } <- get
-    pure $ maybe NullObj cellValueToObj $ Map.lookup cell
+    pure $ maybe NullObj cellValueToObj $ HashMap.lookup cell
       tableData
 
 evalExpr (CellValue' cellValue) = pure $ cellValueToObj cellValue
@@ -204,8 +204,8 @@ nestInfixFns [ { fnName } ] args =
   pure $ FnApply (FnVar fnName) args
 
 nestInfixFns fnOps args = do
-  ({ associativity, precedence }) <- maximumBy (compare `on` _.precedence)
-    fnOps
+  ({ associativity, precedence }) <-
+    maximumBy (compare `on` _.precedence) fnOps
   let
     indexFn =
       case associativity of
@@ -213,8 +213,7 @@ nestInfixFns fnOps args = do
         R -> findLastIndex'
   idx <- indexFn
     ( \x -> x.associativity == associativity
-        && x.precedence
-        == precedence
+        && (x.precedence == precedence)
     )
     fnOps
   { fnName } <- index' fnOps idx

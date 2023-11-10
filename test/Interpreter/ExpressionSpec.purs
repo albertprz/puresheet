@@ -10,7 +10,7 @@ import App.Interpreter.Expression as Interpreter
 import App.Interpreter.Module (reloadModule)
 import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (Object(..))
-import Data.Map as Map
+import Data.HashMap as HashMap
 import Data.Tree.Zipper (fromTree)
 import Effect.Unsafe (unsafePerformEffect)
 import Node.Encoding (Encoding(..))
@@ -285,13 +285,13 @@ formulaCtx = unsafePerformEffect $
       either (throw <<< ("Parser Error: " <> _) <<< show) pure resultOrErr
 
   newFormulaCtx =
-    { tableData: Map.empty
-    , fnsMap: Map.empty
-    , operatorsMap: Map.empty
-    , aliasedModulesMap: Map.empty
-    , importedModulesMap: Map.empty
-    , localFnsMap: Map.empty
-    , argsMap: Map.empty
+    { tableData: HashMap.empty
+    , fnsMap: HashMap.empty
+    , operatorsMap: HashMap.empty
+    , aliasedModulesMap: HashMap.empty
+    , importedModulesMap: HashMap.empty
+    , localFnsMap: HashMap.empty
+    , argsMap: HashMap.empty
     , module': preludeModule
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero

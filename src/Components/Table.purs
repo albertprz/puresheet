@@ -9,7 +9,7 @@ import App.Components.Table.Handler (handleAction)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Renderer (render)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
-import Data.Map as Map
+import Data.HashMap as HashMap
 import Halogen as H
 
 component
@@ -29,22 +29,22 @@ initialState = const
   , activeFormula: false
   , activeInput: false
   , formulaState: UnknownFormula
-  , tableData: Map.fromFoldable
+  , tableData: HashMap.fromFoldable
       [ { column: Column 'A', row: Row 1 } /\ IntVal 1
       , { column: Column 'B', row: Row 1 } /\ IntVal 2
       , { column: Column 'C', row: Row 1 } /\ IntVal 3
       , { column: Column 'D', row: Row 1 } /\ IntVal 4
       ]
-  , tableDependencies: Map.empty
-  , tableFormulas: Map.empty
-  , formulaCache: Map.empty
+  , tableDependencies: HashMap.empty
+  , tableFormulas: HashMap.empty
+  , formulaCache: HashMap.empty
   , columns: Column <$> 'A' .. 'Z'
   , rows: Row <$> 1 .. 100
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing
-  , fnsMap: Map.empty
-  , operatorsMap: Map.empty
-  , aliasedModulesMap: Map.empty
-  , importedModulesMap: Map.empty
+  , fnsMap: HashMap.empty
+  , operatorsMap: HashMap.empty
+  , aliasedModulesMap: HashMap.empty
+  , importedModulesMap: HashMap.empty
   }

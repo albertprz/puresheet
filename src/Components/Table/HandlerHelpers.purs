@@ -10,10 +10,10 @@ import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), c
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
 import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollByX, shiftKey, withPrevent)
-import App.Utils.Map (updateJust) as Map
+import App.Utils.HashMap (updateJust) as HashMap
 import Bookhound.Parser (runParser)
+import Data.HashMap (delete, insert, keys, lookup, union, unionWith) as HashMap
 import Data.List.NonEmpty (NonEmptyList)
-import Data.Map (delete, insert, keys, lookup, union, unionWith) as Map
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree (Forest)
@@ -86,11 +86,11 @@ pasteCells ev = withPrevent ev do
     newValues =
       deserializeSelectionValues st.selectedCell st.columns clipContents
   modify_ _
-    { tableData = Map.union
+    { tableData = HashMap.union
         newValues
         st.tableData
     }
-  refreshCells (Map.keys newValues)
+  refreshCells (Set.fromFoldable $ HashMap.keys newValues)
 
 deleteCells :: forall m. MonadEffect m => MonadState AppState m => m Unit
 deleteCells = do
@@ -99,7 +99,7 @@ deleteCells = do
     cellsToDelete =
       join $ getTargetCells st.multiSelection st.selectedCell st.columns
   modify_ _
-    { tableData = foldl (flip Map.delete) st.tableData cellsToDelete }
+    { tableData = foldl (flip HashMap.delete) st.tableData cellsToDelete }
   refreshCells $ Set.fromFoldable cellsToDelete
 
 getPrelude
@@ -192,16 +192,16 @@ insertFormula = do
   st <- get
   case runFormula st st.formulaCell formulaText of
     Right { result, affectedCells, formulaCells, cellDeps } -> do
-      let formulaId = newFormulaId $ Map.keys st.formulaCache
+      let formulaId = newFormulaId $ HashMap.keys st.formulaCache
       emptyFormulaBox
       modify_ _
-        { tableData = Map.union result st.tableData
-        , tableFormulas = Map.union (formulaId <$ result)
+        { tableData = HashMap.union result st.tableData
+        , tableFormulas = HashMap.union (formulaId <$ result)
             st.tableFormulas
-        , tableDependencies = Map.unionWith (<>)
+        , tableDependencies = HashMap.unionWith (<>)
             (toDependenciesMap formulaId formulaCells)
             st.tableDependencies
-        , formulaCache = Map.insert formulaId
+        , formulaCache = HashMap.insert formulaId
             { formulaText
             , affectedCells
             , startingCell: minimum1 affectedCells
@@ -220,13 +220,14 @@ applyFormula formulaId = do
   st <- get
   let
     { formulaText, startingCell } =
-      unsafeFromJust $ Map.lookup formulaId st.formulaCache
+      unsafeFromJust $ HashMap.lookup formulaId st.formulaCache
     eitherResult = runFormula st startingCell formulaText
   case eitherResult of
     Right { result, affectedCells } ->
       modify_ _
-        { tableData = Map.union result st.tableData
-        , formulaCache = Map.updateJust (_ { affectedCells = affectedCells })
+        { tableData = HashMap.union result st.tableData
+        , formulaCache = HashMap.updateJust
+            (_ { affectedCells = affectedCells })
             formulaId
             st.formulaCache
         }

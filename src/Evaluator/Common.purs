@@ -12,21 +12,21 @@ import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is)
 import Data.Array as Array
+import Data.HashMap as HashMap
 import Data.List as List
-import Data.Map as Map
 import Data.Set as Set
 import Data.String (stripSuffix)
 import Data.String as String
 import Data.Tree.Zipper (Loc, fromTree, toTree)
 
 type LocalFormulaCtx =
-  { tableData :: Map Cell CellValue
-  , fnsMap :: Map QVar FnInfo
-  , operatorsMap :: Map QVarOp OpInfo
-  , aliasedModulesMap :: Map (Module /\ Module) (Set Module)
-  , importedModulesMap :: Map Module (Set Module)
-  , localFnsMap :: Map (Scope /\ Var) FnInfo
-  , argsMap :: Map (Scope /\ Var) FnInfo
+  { tableData :: HashMap Cell CellValue
+  , fnsMap :: HashMap QVar FnInfo
+  , operatorsMap :: HashMap QVarOp OpInfo
+  , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
+  , importedModulesMap :: HashMap Module (Set Module)
+  , localFnsMap :: HashMap (Scope /\ Var) FnInfo
+  , argsMap :: HashMap (Scope /\ Var) FnInfo
   , module' :: Module
   , scope :: Scope
   , scopeLoc :: Loc Scope
@@ -77,9 +77,10 @@ lookupLocalFn :: Var -> EvalM FnInfo
 lookupLocalFn fnName = do
   { localFnsMap, argsMap, scope, scopeLoc } <- get
   let
-    lookupVar n = Map.lookup (n /\ fnName) localFnsMap
-    lookupArg n = Map.lookup (n /\ fnName) argsMap
-    lookupVarOrArg n = Map.lookup (n /\ fnName) (Map.union localFnsMap argsMap)
+    lookupVar n = HashMap.lookup (n /\ fnName) localFnsMap
+    lookupArg n = HashMap.lookup (n /\ fnName) argsMap
+    lookupVarOrArg n = HashMap.lookup (n /\ fnName)
+      (HashMap.union localFnsMap argsMap)
     childrenLookup = lookupVar <$> childrenValues scope scopeLoc
     siblingsLookup = lookupVar <$> siblingsValues scope scopeLoc
     argsLookup = lookupArg <$> nodeValues scope scopeLoc
@@ -96,7 +97,7 @@ lookupModuleFn qVar@(QVar fnModule fnName) = do
   except
     $ note (LexicalError' $ UnknownValue qVar)
     $ findMap identity
-    $ flip Map.lookup st.fnsMap
+    $ flip HashMap.lookup st.fnsMap
     <$> fns
 
 lookupOperator :: QVarOp -> EvalM OpInfo
@@ -120,14 +121,14 @@ lookupOperator qVarOp@(QVarOp opModule opName) = do
   except
     $ note (LexicalError' $ UnknownOperator qVarOp)
     $ findMap identity
-    $ flip Map.lookup st.operatorsMap
+    $ flip HashMap.lookup st.operatorsMap
     <$> ops
 
 lookupBuiltinFn :: Var -> EvalM BuiltinFnInfo
 lookupBuiltinFn fnName =
   except
     $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
-    $ Map.lookup fnName Builtins.builtinFnsMap
+    $ HashMap.lookup fnName Builtins.builtinFnsMap
 
 getAvailableFns
   :: forall a b
@@ -142,30 +143,33 @@ getAvailableFns
   flip ctor fnName <<< pure <$> cons' module' (Array.fromFoldable modules)
   where
   modules = case fnModule of
-    Just alias -> fromMaybe Set.empty $ Map.lookup (module' /\ alias)
-      aliasedModulesMap
-    Nothing -> fromMaybe Set.empty $ Map.lookup
-      module'
-      importedModulesMap
+    Just alias -> fromMaybe Set.empty
+      $ HashMap.lookup (module' /\ alias) aliasedModulesMap
+    Nothing -> fromMaybe Set.empty
+      $ HashMap.lookup module' importedModulesMap
 
 insertFnDef
-  :: Scope -> FnDef -> Map (Scope /\ Var) FnInfo -> Map (Scope /\ Var) FnInfo
+  :: Scope
+  -> FnDef
+  -> HashMap (Scope /\ Var) FnInfo
+  -> HashMap (Scope /\ Var) FnInfo
 insertFnDef scope (FnDef fnName params returnType body) =
-  Map.insert (scope /\ fnName) fnInfo
+  HashMap.insert (scope /\ fnName) fnInfo
   where
   fnInfo = FnInfo
-    { id: Nothing, params, body, scope, argsMap: Map.empty, returnType }
+    { id: Nothing, params, body, scope, argsMap: HashMap.empty, returnType }
 
 getNewFnState :: FnInfo -> Array FnBody -> EvalM LocalFormulaCtx
 getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
   do
     st <- get
-    let newArgsMap = Map.union argsMap $ Map.union argBindings st.argsMap
+    let
+      newArgsMap = HashMap.union argsMap $ HashMap.union argBindings st.argsMap
     pure $ case maybeFnId of
       Just { fnModule } ->
         st
           { argsMap = newArgsMap
-          , localFnsMap = Map.empty
+          , localFnsMap = HashMap.empty
           , module' = fnModule
           , scope = zero
           , scopeLoc = fromTree $ mkLeaf zero
@@ -176,14 +180,14 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
         , scopeLoc = goToNode scope st.scopeLoc
         }
   where
-  argBindings = Map.fromFoldable
+  argBindings = HashMap.fromFoldable
     $ rmap
         ( FnInfo <<<
             { id: Nothing
             , body: _
             , scope
             , params: []
-            , argsMap: Map.empty
+            , argsMap: HashMap.empty
             , returnType: Nothing
             }
         )

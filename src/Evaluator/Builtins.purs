@@ -12,17 +12,17 @@ import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Bifunctor (rmap)
 import Data.EuclideanRing as Ring
+import Data.HashMap as HashMap
 import Data.Int (toNumber)
-import Data.Map as Map
 import Data.Set as Set
 import Data.String.CodeUnits as String
 import Data.Tuple.Nested (type (/\))
-import FatPrelude (Map, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (HashMap, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
-builtinFnsMap :: Map Var BuiltinFnInfo
-builtinFnsMap = unsafePartial $ Map.fromFoldable
+builtinFnsMap :: HashMap Var BuiltinFnInfo
+builtinFnsMap = unsafePartial $ HashMap.fromFoldable
   $
     bimap Var
       ( \(fn /\ (params /\ returnType) /\ nulls) ->

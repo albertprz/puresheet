@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (CellValue(..))
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, satisfy, withTransform)
-import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (|*), (|?), (||*))
+import Bookhound.ParserCombinators (class IsMatch, is, maybeWithin, noneOf, oneOf, someSepBy, within, (->>-), (</\>), (|*), (|?), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, anyChar, comma, dot, lower, upper)
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (spacing, withinDoubleQuotes, withinParens, withinQuotes)
@@ -28,10 +28,10 @@ cellValue = token
     <|> (is '\\' *> anyChar)
 
 var :: Parser Var
-var = Var <$> notReserved (ident lower)
+var = Var <$> notReservedKeyword (ident lower)
 
 varOp :: Parser VarOp
-varOp = VarOp <$> notReserved operator
+varOp = VarOp <$> notReservedSymbol operator
 
 module' :: Parser Module
 module' = Module <$> someSepBy dot (ident upper)
@@ -41,8 +41,8 @@ qVar = uncurry QVar <$> qTerm var
 
 qVarOp :: Parser QVarOp
 qVarOp = uncurry QVarOp <$> qTerm
-  ( VarOp <$> (isToken "|" ->>- map extractVar var ->>- isToken ">")
-      <|> (VarOp <$> (isToken "<" ->>- map extractVar var ->>- isToken "|"))
+  ( VarOp <$> (is "|" ->>- map extractVar var ->>- is ">")
+      <|> (VarOp <$> (is "<" ->>- map extractVar var ->>- is "|"))
       <|> varOp
   )
   where
@@ -73,13 +73,15 @@ isToken :: forall a. IsMatch a => a -> Parser a
 isToken = token <<< is
 
 qTerm :: forall a. Parser a -> Parser (Maybe Module /\ a)
-qTerm x = (/\) <$> (|?) (moduleParser <* dot) <*> x
+qTerm x = (|?) (moduleParser <* dot) </\> x
   where
   moduleParser = Module <$> someSepBy dot (nonTokenIdent upper)
 
-notReserved :: Parser String -> Parser String
-notReserved = satisfy
-  $ flip notElem (reservedSymbols <> reservedKeyWords)
+notReservedSymbol :: Parser String -> Parser String
+notReservedSymbol = satisfy $ flip notElem reservedSymbols
+
+notReservedKeyword :: Parser String -> Parser String
+notReservedKeyword = satisfy $ flip notElem reservedKeywords
 
 withinBackQuotes :: forall b. Parser b -> Parser b
 withinBackQuotes = within $ isToken '`'
@@ -108,8 +110,8 @@ opSymbolChars =
   , ':'
   ]
 
-reservedKeyWords :: Array String
-reservedKeyWords =
+reservedKeywords :: Array String
+reservedKeywords =
   [ "module"
   , "import"
   , "as"

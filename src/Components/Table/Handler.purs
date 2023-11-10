@@ -10,8 +10,8 @@ import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
 import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
-import App.Utils.Map (lookup2) as Map
-import Data.Map (insert, member) as Map
+import App.Utils.HashMap (lookup2) as HashMap
+import Data.HashMap (insert, member) as HashMap
 import Data.Set as Set
 import Halogen as H
 import Halogen.Query.Event (eventListener)
@@ -58,7 +58,7 @@ handleAction (FormulaCellInputKeyDown _ _) =
 
 handleAction (WriteCell cell value) = do
   modify_ \st -> st
-    { tableData = Map.insert cell value st.tableData
+    { tableData = HashMap.insert cell value st.tableData
     , activeInput = false
     }
   refreshCells $ Set.singleton cell
@@ -88,7 +88,7 @@ handleAction (FocusInFormula _) =
     ( modify_ \st -> st
         { activeFormula = true
         , formulaCell = maybe st.selectedCell _.startingCell $
-            Map.lookup2 st.selectedCell st.formulaCache st.tableFormulas
+            HashMap.lookup2 st.selectedCell st.formulaCache st.tableFormulas
         }
     )
 
@@ -107,7 +107,7 @@ handleAction (FocusInCell cell _) = do
   { tableFormulas } <- get
   let
     formulaState =
-      if Map.member cell tableFormulas then
+      if HashMap.member cell tableFormulas then
         ValidFormula
       else UnknownFormula
   modify_ _
