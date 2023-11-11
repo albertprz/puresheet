@@ -241,8 +241,8 @@ spec = describe "Interpreter.Expression" do
           [| A1 .. B2 |]
           """ `shouldEqual` evalError
           ( TypeError' $ InvalidCellArrayRange
-              { column: Column 'A', row: Row 1 }
-              { column: Column 'B', row: Row 2 }
+              { column: Column $ fromUpper 'A', row: Row 1 }
+              { column: Column $ fromUpper 'B', row: Row 2 }
           )
 
     describe "evaluates top level functions & operators" do

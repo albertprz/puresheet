@@ -2,22 +2,14 @@ module App.Utils.Array where
 
 import Prelude
 
-import App.Utils.Maybe (whenMaybe')
 import Data.Array as Array
 import Data.Array.NonEmpty (toArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray)
 import Data.Maybe (Maybe, maybe)
 import Data.Tuple (Tuple)
 
-getElemSat :: forall a. Bounded a => a -> Maybe a
-getElemSat = whenMaybe' (inRange bottom top)
-
 arr2 :: forall a. a -> a -> Array a
 arr2 a b = [ a, b ]
-
-inRange :: forall a. Ord a => a -> a -> a -> Boolean
-inRange x y value = between x y value ||
-  between y x value
 
 head' :: forall a. Array a -> Maybe a
 head' = Array.head

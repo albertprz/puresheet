@@ -70,7 +70,6 @@ copyCells
 copyCells ev = withPrevent ev do
   cellContents <- gets \st -> serializeSelectionValues st.multiSelection
     st.selectedCell
-    st.columns
     st.tableData
   modify_ _ { selectionState = CopySelection }
   liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
@@ -82,7 +81,7 @@ pasteCells ev = withPrevent ev do
   clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
   let
     newValues =
-      deserializeSelectionValues st.selectedCell st.columns clipContents
+      deserializeSelectionValues st.selectedCell clipContents
   modify_ _
     { tableData = HashMap.union
         newValues
@@ -95,7 +94,7 @@ deleteCells = do
   st <- get
   let
     cellsToDelete =
-      join $ getTargetCells st.multiSelection st.selectedCell st.columns
+      join $ getTargetCells st.multiSelection st.selectedCell
   modify_ _
     { tableData = foldl (flip HashMap.delete) st.tableData cellsToDelete }
   refreshCells $ Set.fromFoldable cellsToDelete
@@ -112,14 +111,14 @@ selectCell
   :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
 selectCell move = do
   originCell <- gets _.selectedCell
-  { selectedCell, columns, rows } <- modify \st -> st
+  { selectedCell, rows } <- modify \st -> st
     { activeInput = false
     , multiSelection = NoSelection
     , selectedCell = getCellFromMove move st.selectedCell
     }
   visibleCols <- getVisibleCols
   visibleRows <- getVisibleRows
-  goToCell visibleCols visibleRows columns rows originCell selectedCell
+  goToCell visibleCols visibleRows rows originCell selectedCell
 
 goToCell
   :: forall m
@@ -127,33 +126,32 @@ goToCell
   => MonadState AppState m
   => Array Element
   -> Array Element
-  -> NonEmptyArray Column
   -> NonEmptyArray Row
   -> Cell
   -> Cell
   -> m Unit
-goToCell visibleCols visibleRows allColumns allRows origin target = do
-  cols <- parseElements parseColumn visibleCols
-  sequence_ $ adjustRows (length visibleRows - 1) target.row <$> maximum allRows
-    <*> minimum allRows
-  liftEffect $ goToCellHelper cols allColumns origin target visibleCols
+goToCell visibleCols visibleRows rows origin target = do
+  cols <- parseElements parseColumns visibleCols
+  adjustRows (length visibleRows - 1) target.row
+    (maximum1 rows)
+    (minimum1 rows)
+  liftEffect $ goToCellHelper cols origin target visibleCols
   where
-  parseColumn = hush <<< runParser columnParser
+  parseColumns = hush <<< runParser columnParser
 
 goToCellHelper
   :: Array Column
-  -> NonEmptyArray Column
   -> Cell
   -> Cell
   -> Array Element
   -> Effect Unit
-goToCellHelper cols allColumns origin { column, row } visibleCols
+goToCellHelper cols origin { column, row } visibleCols
 
-  | last' cols == Just column && last allColumns /= origin.column = do
+  | last' cols == Just column && top /= origin.column = do
       width <- traverse scrollWidth $ head' visibleCols
       scrollByX (coalesce width + 1.0) =<< window
 
-  | head' cols == Just column && head allColumns /= origin.column = do
+  | head' cols == Just column && bottom /= origin.column = do
       width <- traverse scrollWidth $ last' visibleCols
       scrollByX (-(coalesce width + 1.0)) =<< window
 
@@ -161,13 +159,17 @@ goToCellHelper cols allColumns origin { column, row } visibleCols
 
 adjustRows
   :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
-adjustRows rowRange (Row currentRow) (Row maxRow) (Row minRow)
+adjustRows rowRange currentRow maxRow minRow
 
   | inc currentRow > maxRow = modify_ _
-      { rows = Row <$> (currentRow - inc rowRange) .. (inc currentRow) }
+      { rows = clampBounded (currentRow - wrap (inc rowRange))
+          .. clampBounded (inc currentRow)
+      }
 
   | currentRow < minRow = modify_ _
-      { rows = Row <$> currentRow .. (currentRow + rowRange) }
+      { rows = clampBounded currentRow
+          .. clampBounded (currentRow + wrap rowRange)
+      }
 
   | otherwise = pure unit
 

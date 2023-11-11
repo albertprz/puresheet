@@ -3,7 +3,7 @@ module App.Components.Table.Models where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellValue, Column, Header, Row)
+import App.Components.Table.Cell (Cell, CellValue, Header, Row)
 import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
 import App.Components.Table.Selection (MultiSelection, SelectionState)
 import App.SyntaxTree.Common (Module, QVar, QVarOp)
@@ -25,7 +25,6 @@ type AppState =
   , tableFormulas :: HashMap Cell FormulaId
   , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
   , formulaCache :: HashMap FormulaId Formula
-  , columns :: NonEmptyArray Column
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState

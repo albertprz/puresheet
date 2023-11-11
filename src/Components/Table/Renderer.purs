@@ -5,7 +5,7 @@ import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaContainer, formulaSignature, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
 import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, formulaSignatureId, selectedCellInputId)
-import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, cellParser, parseCellValue, showCell)
+import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
@@ -87,13 +87,13 @@ renderFormulaDisplay { selectedCell, formulaCache, tableFormulas } =
         tableFormulas
 
 renderHeader :: forall i. AppState -> HTML i Action
-renderHeader st@{ columns } =
+renderHeader st =
   thead_
     [ tr_
         $ toArray
         $ cons
             renderHeaderCorner
-            (renderColumnHeader st <$> columns)
+            (renderColumnHeader st <$> allColumns)
     ]
   where
   renderHeaderCorner =
@@ -108,7 +108,6 @@ renderBody :: forall i. AppState -> HTML i Action
 renderBody
   st@
     { rows
-    , columns
     , tableData
     } =
   tbody_ $ toArray do
@@ -118,7 +117,7 @@ renderBody
       (renderRow row)
   where
   renderRow row = do
-    column <- columns
+    column <- allColumns
     let
       cell = { column, row }
       cellValue = HashMap.lookup cell tableData

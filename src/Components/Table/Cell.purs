@@ -3,6 +3,7 @@ module App.Components.Table.Cell where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.Utils.Bounded (newtypeCardinality, newtypeFromEnum, newtypeToEnum)
 import App.Utils.HashMap (swapKey) as HashMap
 import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
@@ -54,26 +55,26 @@ getColumnCell
   -> Cell
   -> Maybe Cell
 getColumnCell f { column, row } =
-  ({ column: _, row }) <$> getElemSat (f column)
+  ({ column: _, row }) <$> getInBoundedRange (f column)
 
 getRowCell
   :: (Row -> Row)
   -> Cell
   -> Maybe Cell
 getRowCell f { column, row } =
-  ({ column, row: _ }) <$> getElemSat (f row)
-
-nextColumnCell :: Cell -> Cell
-nextColumnCell { column, row } = { column: inc column, row }
+  ({ column, row: _ }) <$> getInBoundedRange (f row)
 
 prevColumnCell :: Cell -> Cell
 prevColumnCell { column, row } = { column: dec column, row }
 
-nextRowCell :: Cell -> Cell
-nextRowCell { column, row } = { column, row: inc row }
+nextColumnCell :: Cell -> Cell
+nextColumnCell { column, row } = { column: inc column, row }
 
 prevRowCell :: Cell -> Cell
 prevRowCell { column, row } = { column, row: dec row }
+
+nextRowCell :: Cell -> Cell
+nextRowCell { column, row } = { column, row: inc row }
 
 getColumnHeader :: Header -> Maybe Column
 getColumnHeader (ColumnHeader header) = Just header
@@ -82,15 +83,6 @@ getColumnHeader _ = Nothing
 getRowHeader :: Header -> Maybe Row
 getRowHeader (RowHeader header) = Just header
 getRowHeader _ = Nothing
-
-firstRow :: Row
-firstRow = Row 1
-
-maxRow :: Row
-maxRow = Row 1_000
-
-maxRowBounds :: NonEmptyArray Row
-maxRowBounds = firstRow .. maxRow
 
 swapTableMapColumn
   :: forall v. Column -> Column -> HashMap Cell v -> HashMap Cell v
@@ -114,6 +106,12 @@ swapTableMapRow origin target tableDict =
       $ filter
           (\cell -> cell.row == origin || cell.row == target)
           (HashMap.keys tableDict)
+
+allColumns :: NonEmptyArray Column
+allColumns = allValues
+
+allRows :: NonEmptyArray Row
+allRows = allValues
 
 newtype Column = Column Int
 
@@ -158,11 +156,13 @@ instance Hashable Column where
   hash = unwrap
 
 instance Bounded Column where
-  bottom = wrap upperStartCode
-  top = wrap upperEndCode
+  bottom = zero
+  top = wrap (upperEndCode - upperStartCode)
 
-instance Range Column where
-  range (Column c1) (Column c2) = Column <$> c1 .. c2
+instance BoundedEnum Column where
+  cardinality = newtypeCardinality
+  fromEnum = newtypeFromEnum
+  toEnum = newtypeToEnum
 
 derive newtype instance Eq Row
 derive newtype instance Ord Row
@@ -179,10 +179,12 @@ instance Hashable Row where
 
 instance Bounded Row where
   bottom = one
-  top = wrap 1000000
+  top = wrap 10_000
 
-instance Range Row where
-  range (Row r1) (Row r2) = Row <$> r1 .. r2
+instance BoundedEnum Row where
+  cardinality = newtypeCardinality
+  fromEnum = newtypeFromEnum
+  toEnum = newtypeToEnum
 
 derive instance Eq CellValue
 

@@ -160,9 +160,6 @@ instance Show Scope where
 instance Hashable Scope where
   hash = unwrap
 
-instance Range Scope where
-  range (Scope a) (Scope b) = Scope <$> (a .. b)
-
 derive instance Eq Associativity
 derive instance Eq Precedence
 derive instance Ord Precedence

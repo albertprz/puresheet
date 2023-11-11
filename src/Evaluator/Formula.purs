@@ -41,8 +41,8 @@ evalFormula appState { column, row } body = do
   toCellPair { x, y, value } =
     (_ /\ value) <<< uncurry { column: _, row: _ } <$>
       bisequence
-        ( getElemSat (column + wrap x) /\
-            getElemSat (row + wrap y)
+        ( getInBoundedRange (column + wrap x) /\
+            getInBoundedRange (row + wrap y)
         )
 
 evalExprInApp

@@ -2,7 +2,8 @@ module FatPrelude
   ( module X
   ) where
 
-import App.Utils.Array (arr2, deleteAt', drop', dropEnd', findIndex', findLastIndex', getElemSat, head', inRange, index', init', insertAt', intersperse', last', slice', sliceNext', splitAt', tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith') as X
+import App.Utils.Array (arr2, deleteAt', drop', dropEnd', findIndex', findLastIndex', head', index', init', insertAt', intersperse', last', slice', sliceNext', splitAt', tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith') as X
+import App.Utils.Bounded (allValues, clampBounded, getInBoundedRange, inBoundedRange, inRange, (..)) as X
 import App.Utils.Char (fromUpper, nextChar, prevChar, toUpper, upperEndCode, upperStartCode) as X
 import App.Utils.Common (partialMaybe) as X
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as X
@@ -12,7 +13,6 @@ import App.Utils.Monoid (unlessMonoid, whenMonoid, (<>?)) as X
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as X
 import App.Utils.String (newline, showParensCsv, str, tab, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as X
 import App.Utils.Tree (ancestorsValues, appendChildren, childrenValues, findValues, goToNode, mkLeaf, nodeValues, siblingsValues) as X
-import App.Utils.Unfoldable (class Range, range, (..)) as X
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, catchJust, liftEither, liftMaybe, withResource) as X
 import Control.Monad.Except.Trans (ExceptT(..), except, mapExceptT, runExceptT, withExceptT) as X
 import Control.Monad.Maybe.Trans (MaybeT(..), mapMaybeT, runMaybeT) as X

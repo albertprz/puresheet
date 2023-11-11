@@ -38,7 +38,6 @@ initialState = const
   , tableDependencies: HashMap.empty
   , tableFormulas: HashMap.empty
   , formulaCache: HashMap.empty
-  , columns: bottom .. top
   , rows: bottom .. Row 100
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection

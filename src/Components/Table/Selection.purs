@@ -3,8 +3,7 @@ module App.Components.Table.Selection where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove(..), CellValue, Column, Row, getCell, getColumnCell, getRowCell, maxRow, maxRowBounds, nextRowCell, parseCellValue, prevColumnCell)
-import Data.Array as Array
+import App.Components.Table.Cell (Cell, CellMove(..), CellValue, Column, Row, allColumns, allRows, getCell, getColumnCell, getRowCell, nextRowCell, parseCellValue, prevColumnCell)
 import Data.HashMap as HashMap
 import Data.String.Pattern (Pattern(..))
 
@@ -39,7 +38,7 @@ isColumnInSelection NoSelection _ = false
 isColumnInSelection AllSelection _ = true
 isColumnInSelection (RowsSelection _ _) _ = true
 isColumnInSelection (ColumnsSelection origin target) col =
-  Array.elem col (origin .. target)
+  inRange origin target col
 isColumnInSelection (CellsSelection origin target) col =
   inRange origin.column target.column col
 
@@ -48,7 +47,7 @@ isRowInSelection NoSelection _ = false
 isRowInSelection AllSelection _ = true
 isRowInSelection (ColumnsSelection _ _) _ = true
 isRowInSelection (RowsSelection origin target) row =
-  Array.elem row (origin .. target)
+  inRange origin target row
 isRowInSelection (CellsSelection origin target) row =
   inRange origin.row target.row row
 
@@ -56,9 +55,9 @@ isCellInSelection :: MultiSelection -> Cell -> Boolean
 isCellInSelection NoSelection _ = false
 isCellInSelection AllSelection _ = true
 isCellInSelection (ColumnsSelection origin target) cell =
-  Array.elem cell.column (origin .. target)
+  inRange origin target cell.column
 isCellInSelection (RowsSelection origin target) cell =
-  Array.elem cell.row (origin .. target)
+  inRange origin target cell.row
 isCellInSelection (CellsSelection origin target) { column, row } =
   inRange origin.row target.row row &&
     inRange origin.column target.column column
@@ -100,34 +99,33 @@ interpretCellMove = case _ of
 interpretColumnMove
   :: CellMove -> Column -> Maybe Column
 interpretColumnMove = case _ of
-  NextColumn -> getElemSat <<< inc
-  PrevColumn -> getElemSat <<< dec
+  NextColumn -> getInBoundedRange <<< inc
+  PrevColumn -> getInBoundedRange <<< dec
   _ -> const Nothing
 
 interpretRowMove :: CellMove -> Row -> Maybe Row
 interpretRowMove = case _ of
-  NextRow -> getElemSat <<< inc
-  PrevRow -> getElemSat <<< dec
+  NextRow -> getInBoundedRange <<< inc
+  PrevRow -> getInBoundedRange <<< dec
   _ -> const Nothing
 
 serializeSelectionValues
   :: MultiSelection
   -> Cell
-  -> NonEmptyArray Column
   -> HashMap Cell CellValue
   -> String
-serializeSelectionValues selection selectedCell columns tableData =
+serializeSelectionValues selection selectedCell tableData =
   intercalate newline
     $ intercalate tab
-    <$> (foldMap show <<< (_ `HashMap.lookup` tableData))
-    <$$> (getTargetCells selection selectedCell columns)
+    <$> (foldMap show <<< flip HashMap.lookup tableData)
+    <$$> getTargetCells selection selectedCell
 
 deserializeSelectionValues
-  :: Cell -> NonEmptyArray Column -> String -> HashMap Cell CellValue
-deserializeSelectionValues selectedCell columns str = HashMap.fromArray
+  :: Cell -> String -> HashMap Cell CellValue
+deserializeSelectionValues selectedCell str = HashMap.fromArray
   do
-    rowValues /\ row <- zip' values (selectedCell.row .. maxRow)
-    value /\ column <- zip' rowValues (selectedCell.column .. last columns)
+    rowValues /\ row <- zip' values (selectedCell.row .. top)
+    value /\ column <- zip' rowValues (selectedCell.column .. top)
     pure $ { row, column } /\ parseCellValue value
   where
   values = split (Pattern tab) <$> split (Pattern newline) str
@@ -135,18 +133,16 @@ deserializeSelectionValues selectedCell columns str = HashMap.fromArray
 getTargetCells
   :: MultiSelection
   -> Cell
-  -> NonEmptyArray Column
   -> (NonEmptyArray (NonEmptyArray Cell))
-getTargetCells selection selectedCell columns =
-  fromMaybe (singleton $ singleton selectedCell) $ getSelectionCells selection
-    columns
+getTargetCells selection selectedCell =
+  fromMaybe (singleton $ singleton selectedCell)
+    (getSelectionCells selection)
 
 getSelectionCells
   :: MultiSelection
-  -> NonEmptyArray Column
   -> Maybe (NonEmptyArray (NonEmptyArray Cell))
-getSelectionCells selection columns = do
-  columnBounds /\ rowBounds <- getSelectionBounds selection columns maxRowBounds
+getSelectionCells selection = do
+  columnBounds /\ rowBounds <- getSelectionBounds selection
   pure do
     row <- rowBounds
     pure do
@@ -170,23 +166,18 @@ isRowsSelection _ = false
 
 getSelectionBounds
   :: MultiSelection
-  -> NonEmptyArray Column
-  -> NonEmptyArray Row
-  -> Maybe (Tuple (NonEmptyArray Column) (NonEmptyArray Row))
-getSelectionBounds NoSelection _ _ = Nothing
-getSelectionBounds AllSelection columns rows =
-  Just $ columns /\ rows
-getSelectionBounds (ColumnsSelection origin target) _ rows =
-  Just $ sort (origin .. target) /\ rows
-getSelectionBounds (RowsSelection origin target) columns _ =
-  Just $ columns /\ sort (origin .. target)
+  -> Maybe (NonEmptyArray Column /\ NonEmptyArray Row)
+getSelectionBounds NoSelection = Nothing
+getSelectionBounds AllSelection =
+  Just $ allColumns /\ allRows
+getSelectionBounds (ColumnsSelection origin target) =
+  Just $ sort (origin .. target) /\ allRows
+getSelectionBounds (RowsSelection origin target) =
+  Just $ allColumns /\ sort (origin .. target)
 getSelectionBounds
   ( CellsSelection { column: column, row: row }
       { column: column', row: row' }
-  )
-  _
-  _ =
-  Just $ sort (column .. column') /\ sort (row .. row')
+  ) = Just $ sort (column .. column') /\ sort (row .. row')
 
 data MultiSelection
   = RowsSelection Row Row
