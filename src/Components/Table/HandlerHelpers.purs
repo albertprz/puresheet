@@ -5,11 +5,11 @@ import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
 import App.Components.Table.Formula (FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
-import App.Components.Table.Models (AppState)
+import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollByX, shiftKey, withPrevent)
+import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
 import App.Utils.HashMap (updateJust) as HashMap
 import Bookhound.Parser (runParser)
 import Data.HashMap (delete, insert, keys, lookup, union, unionWith) as HashMap
@@ -20,11 +20,15 @@ import Data.Tree (Forest)
 import Effect.Class.Console as Logger
 import Foreign (ForeignError, readString, unsafeToForeign)
 import Foreign.Index ((!))
+import Halogen (HalogenM, subscribe')
+import Halogen.Query.Event (eventListener)
 import Promise.Aff as Promise
 import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
-import Web.DOM.Element (scrollWidth)
+import Web.Event.Event (EventType(..))
 import Web.HTML (window)
+import Web.HTML.HTMLDocument as HTMLDocument
+import Web.HTML.Window as Window
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
 cellArrowMove
@@ -110,32 +114,30 @@ getPrelude = runExceptT
 selectCell
   :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
 selectCell move = do
-  originCell <- gets _.selectedCell
-  { selectedCell, rows } <- modify \st -> st
+  target <- goToCell move
+  modify_ _
     { activeInput = false
     , multiSelection = NoSelection
-    , selectedCell = getCellFromMove move st.selectedCell
+    , selectedCell = target
     }
-  visibleCols <- getVisibleCols
-  visibleRows <- getVisibleRows
-  goToCell visibleCols visibleRows rows originCell selectedCell
 
 goToCell
   :: forall m
    . MonadEffect m
   => MonadState AppState m
-  => Array Element
-  -> Array Element
-  -> NonEmptyArray Row
-  -> Cell
-  -> Cell
-  -> m Unit
-goToCell visibleCols visibleRows rows origin target = do
+  => CellMove
+  -> m Cell
+goToCell move = do
+  { rows, selectedCell: origin } <- get
+  let target = getCellFromMove move origin
+  visibleCols <- getVisibleCols
+  visibleRows <- getVisibleRows
   cols <- parseElements parseColumns visibleCols
   adjustRows (length visibleRows - 1) target.row
     (maximum1 rows)
     (minimum1 rows)
   liftEffect $ goToCellHelper cols origin target visibleCols
+  pure target
   where
   parseColumns = hush <<< runParser columnParser
 
@@ -147,13 +149,13 @@ goToCellHelper
   -> Effect Unit
 goToCellHelper cols origin { column, row } visibleCols
 
-  | last' cols == Just column && top /= origin.column = do
-      width <- traverse scrollWidth $ head' visibleCols
-      scrollByX (coalesce width + 1.0) =<< window
+  | last' cols == Just column && origin.column /= top
+  , Just element <- head' visibleCols = do
+      scrollCellRight element
 
-  | head' cols == Just column && bottom /= origin.column = do
-      width <- traverse scrollWidth $ last' visibleCols
-      scrollByX (-(coalesce width + 1.0)) =<< window
+  | head' cols == Just column && origin.column /= bottom
+  , Just element <- head' visibleCols = do
+      scrollCellLeft element
 
   | otherwise = focusCell { column, row }
 
@@ -161,14 +163,15 @@ adjustRows
   :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange currentRow maxRow minRow
 
-  | inc currentRow > maxRow = modify_ _
-      { rows = clampBounded (currentRow - wrap (inc rowRange))
-          .. clampBounded (inc currentRow)
-      }
+  | inc currentRow > maxRow =
+      modify_ _
+        { rows = clampBounded (currentRow - wrap (rowRange))
+            .. clampBounded (inc currentRow)
+        }
 
   | currentRow < minRow = modify_ _
-      { rows = clampBounded currentRow
-          .. clampBounded (currentRow + wrap rowRange)
+      { rows = clampBounded (currentRow)
+          .. clampBounded (currentRow + wrap (rowRange))
       }
 
   | otherwise = pure unit
@@ -251,7 +254,29 @@ setRows = do
   let Row (firstRow) = head rows
   visibleRows <- parseElements parseRow =<< getVisibleRows
   modify_ _
-    { rows = Row <$> firstRow .. (firstRow + length visibleRows - 2) }
+    { rows = Row <$> firstRow .. (firstRow + length visibleRows + 2) }
   focusCell selectedCell
   where
   parseRow = hush <<< runParser rowParser
+
+subscribeSelectionChange
+  :: forall slots o m
+   . MonadEffect m
+  => HalogenM AppState Action slots o m Unit
+subscribeSelectionChange = do
+  doc <- liftEffect $ Window.document =<< window
+  subscribe' \_ -> eventListener
+    (EventType "selectionchange")
+    (HTMLDocument.toEventTarget doc)
+    (const $ Just SelectionChange)
+
+subscribeWindowResize
+  :: forall slots o m
+   . MonadEffect m
+  => HalogenM AppState Action slots o m Unit
+subscribeWindowResize = do
+  window' <- liftEffect window
+  subscribe' \_ -> eventListener
+    (EventType "resize")
+    (Window.toEventTarget window')
+    (const $ Just ResizeWindow)

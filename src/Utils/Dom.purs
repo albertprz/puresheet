@@ -25,7 +25,8 @@ import Record.Extra (pick)
 import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
-import Web.DOM.Element (getBoundingClientRect, id)
+import Web.DOM.Document (documentElement)
+import Web.DOM.Element (getBoundingClientRect, id, scrollLeft, setScrollLeft)
 import Web.DOM.Node (firstChild, nextSibling, nodeName, nodeValue, parentNode, setTextContent, textContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
@@ -169,6 +170,21 @@ focusCellElem cell subElem = actOnCellElem cell focus subElem
 focusCell :: forall m. MonadEffect m => Cell -> m Unit
 focusCell = flip focusCellElem Nothing
 
+scrollCellRight :: Element -> Effect Unit
+scrollCellRight = scrollCell (+)
+
+scrollCellLeft :: Element -> Effect Unit
+scrollCellLeft = scrollCell (-)
+
+scrollCell :: (Number -> Number -> Number) -> Element -> Effect Unit
+scrollCell f element = do
+  traverse_ go =<< getDocumentElement
+  where
+  go doc = do
+    scroll <- scrollLeft doc
+    width <- getElemWidth element
+    setScrollLeft (f scroll width) doc
+
 focusById :: forall m. MonadEffect m => ElementId -> m Unit
 focusById = flip actOnElementById focus
 
@@ -239,6 +255,10 @@ querySelectorHelper function query =
 getDocument :: Effect HTMLDocument
 getDocument = Window.document =<< window
 
+getDocumentElement :: Effect (Maybe Element)
+getDocumentElement =
+  documentElement =<< HTMLDocument.toDocument <$> getDocument
+
 getClipboard :: forall m. MonadEffect m => m Clipboard
 getClipboard = liftEffect
   (clipboard =<< Window.navigator =<< window)
@@ -305,25 +325,19 @@ elemsInViewport elems = liftEffect $ do
 
 isInViewport
   :: forall m. MonadEffect m => Height -> Width -> Element -> m Boolean
-isInViewport (Height wHeight) (Width wWidth) element =
-  liftEffect $ do
-    rect <- getBoundingClientRect element
-    let
-      visibleY = rect.top < wHeight && pos rect.bottom
-      visibleX = rect.left < wWidth && pos rect.right
-    pure $ visibleX && visibleY
+isInViewport (Height wHeight) (Width wWidth) element = liftEffect do
+  rect <- getBoundingClientRect element
+  let
+    visibleY = rect.top < wHeight && pos rect.bottom
+    visibleX = rect.left < wWidth && pos rect.right
+  pure $ visibleX && visibleY
+
+getElemWidth :: forall m. MonadEffect m => Element -> m Number
+getElemWidth element = liftEffect
+  (_.width <$> getBoundingClientRect element)
 
 withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
-
-scrollByX :: Number -> Window -> Effect Unit
-scrollByX = flip scrollBy 0.0
-
-scrollByY :: Number -> Window -> Effect Unit
-scrollByY = scrollBy 0.0
-
-scrollBy :: Number -> Number -> Window -> Effect Unit
-scrollBy x y = Window.scrollBy (unsafeCoerce x) (unsafeCoerce y)
 
 prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
 prevent ev = liftEffect (preventDefault $ toEvent ev)

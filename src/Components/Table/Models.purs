@@ -56,6 +56,7 @@ data Action
   | HoverHeader EventTransition Header MouseEvent
   | DragHeader EventTransition Header DragEvent
   | SelectionChange
+  | ResizeWindow
 
 data EventTransition
   = Start

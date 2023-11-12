@@ -49,6 +49,7 @@ formulaCss = do
     marginTop := px 40
     marginBottom := px 10
     padding := px 20
+    borderStyle := solid
     borderColor := grey2
     borderWidth := px 3
     fontSize := px 20

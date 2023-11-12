@@ -3,7 +3,7 @@ module FatPrelude
   ) where
 
 import App.Utils.Array (arr2, deleteAt', drop', dropEnd', findIndex', findLastIndex', head', index', init', insertAt', intersperse', last', slice', sliceNext', splitAt', tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith') as X
-import App.Utils.Bounded (allValues, clampBounded, getInBoundedRange, inBoundedRange, inRange, (..)) as X
+import App.Utils.Bounded (clampBounded, enumValues, getInBoundedRange, inBoundedRange, inRange, (..)) as X
 import App.Utils.Char (fromUpper, nextChar, prevChar, toUpper, upperEndCode, upperStartCode) as X
 import App.Utils.Common (partialMaybe) as X
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as X

@@ -17,10 +17,10 @@ parseCellValue input =
   fromRight (StringVal input) (runParser cellValueParser input)
 
 rowParser :: Parser Row
-rowParser = Row <$> unsignedInt
+rowParser = mkRow <$> unsignedInt
 
 columnParser :: Parser Column
-columnParser = Column <<< fromUpper <$> upper
+columnParser = mkColumn <$> upper
 
 cellParser :: Parser Cell
 cellParser = do
@@ -46,9 +46,10 @@ getCell
   :: (Int -> Int)
   -> Cell
   -> Maybe Cell
-getCell f cell =
-  getColumnCell (over Column f) cell
-    <|> getRowCell (over Row f) cell
+getCell f cell = getColumnCell (over Column f) cell
+  <|> (_ { column = column } <$> getRowCell (over Row f) cell)
+  where
+  column = if cell.column == top then bottom else top
 
 getColumnCell
   :: (Column -> Column)
@@ -66,12 +67,6 @@ getRowCell f { column, row } =
 
 prevColumnCell :: Cell -> Cell
 prevColumnCell { column, row } = { column: dec column, row }
-
-nextColumnCell :: Cell -> Cell
-nextColumnCell { column, row } = { column: inc column, row }
-
-prevRowCell :: Cell -> Cell
-prevRowCell { column, row } = { column, row: dec row }
 
 nextRowCell :: Cell -> Cell
 nextRowCell { column, row } = { column, row: inc row }
@@ -108,10 +103,16 @@ swapTableMapRow origin target tableDict =
           (HashMap.keys tableDict)
 
 allColumns :: NonEmptyArray Column
-allColumns = allValues
+allColumns = enumValues
 
 allRows :: NonEmptyArray Row
-allRows = allValues
+allRows = enumValues
+
+mkColumn :: Char -> Column
+mkColumn = Column <<< fromUpper
+
+mkRow :: Int -> Row
+mkRow = Row
 
 newtype Column = Column Int
 

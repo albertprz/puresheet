@@ -3,9 +3,9 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, formulaCellInputId, inputElement, selectedCellInputId)
-import App.Components.Table.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, swapTableMapColumn, swapTableMapRow)
+import App.Components.Table.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.Formula (FormulaState(..))
-import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, pasteCells, refreshCells, selectAllCells, selectCell, setRows)
+import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, pasteCells, refreshCells, selectAllCells, selectCell, subscribeSelectionChange, subscribeWindowResize)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
@@ -13,30 +13,31 @@ import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionTyp
 import App.Utils.HashMap (lookup2) as HashMap
 import Data.HashMap (insert, member) as HashMap
 import Data.Set as Set
-import Halogen as H
-import Halogen.Query.Event (eventListener)
-import Web.Event.Event (EventType(..))
+import Halogen (HalogenM)
 import Web.HTML (window)
-import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.HTMLElement (setContentEditable)
-import Web.HTML.Window (document)
+import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
   :: forall slots o m
    . MonadAff m
   => Action
-  -> H.HalogenM AppState Action slots o m Unit
+  -> HalogenM AppState Action slots o m Unit
 
 handleAction Initialize = do
   loadPrelude
-  setRows
   actOnElementById formulaBoxId $ setContentEditable "true"
-  document' <- liftEffect $ document =<< window
-  H.subscribe' \_ -> eventListener
-    (EventType "selectionchange")
-    (HTMLDocument.toEventTarget document')
-    (const $ Just SelectionChange)
+  handleAction ResizeWindow
+  subscribeSelectionChange
+  subscribeWindowResize
+
+handleAction ResizeWindow = do
+  { selectedCell } <- get
+  void $ selectCell $ OtherCell { column: mkColumn 'A', row: mkRow 1000 }
+  void $ selectCell $ OtherCell { column: mkColumn 'A', row: mkRow 1 }
+  void $ selectCell $ OtherCell selectedCell
+  liftEffect $ scroll 0 0 =<< window
 
 handleAction (WriteSelectedCellInput cell) =
   traverse_ (selectCell <<< OtherCell) cell
@@ -75,13 +76,8 @@ handleAction (FormulaKeyDown (CharKeyCode 'G') ev)
 handleAction (FormulaKeyDown _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
-handleAction (FormulaKeyUp x ev)
-  | elem x [ Space, Tab, Delete, Comma ]
-      || elem x (OtherKeyCode <$> [ "BracketLeft", "BracketRight" ])
-      || shiftKey ev
-      && elem x (DigitKeyCode <$> [ 9, 0 ]) =
-      performSyntaxHighlight
-  | otherwise = pure unit
+handleAction (FormulaKeyUp _ _) =
+  performSyntaxHighlight
 
 handleAction (FocusInFormula _) =
   whenM (not <$> gets _.activeFormula)
@@ -142,7 +138,7 @@ handleAction (KeyDown Enter ev)
         { activeInput = not st.activeInput }
       focusCellElem selectedCell $ whenMaybe activeInput inputElement
 
-handleAction (KeyDown Tab ev) = selectCell move
+handleAction (KeyDown Tab ev) = withPrevent ev $ selectCell move
   where
   move
     | shiftKey ev = PrevCell

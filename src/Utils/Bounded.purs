@@ -5,15 +5,15 @@ import Prelude
 import App.Utils.Maybe (whenMaybe')
 import App.Utils.Number (inc)
 import Bookhound.FatPrelude (class Newtype)
-import Data.Enum (class Enum, Cardinality, enumFromTo)
+import Data.Enum (class BoundedEnum, Cardinality, enumFromTo)
 import Data.Maybe (Maybe)
 import Data.Newtype (unwrap, wrap)
 import Data.Unfoldable1 (class Unfoldable1)
 
 infixr 8 enumFromTo as ..
 
-allValues :: forall a f. Enum a => Unfoldable1 f => Bounded a => f a
-allValues = enumFromTo bottom top
+enumValues :: forall a f. BoundedEnum a => Unfoldable1 f => f a
+enumValues = enumFromTo bottom top
 
 getInBoundedRange :: forall a. Bounded a => a -> Maybe a
 getInBoundedRange = whenMaybe' inBoundedRange
