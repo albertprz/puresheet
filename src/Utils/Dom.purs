@@ -53,11 +53,7 @@ performSyntaxHighlight = liftEffect do
   selection <- getSelection =<< window
   caretPosition <- getCaretPosition selection (toNode formulaBox)
   formulaText <- getFormulaBoxContents
-  let
-    html = unwrap <$> formulaElements formulaText
-    htmlString = fold $ StringRenderer.render (const mempty) <$> html
-  emptyFormulaBox
-  setInnerHTML (toElement formulaBox) htmlString
+  updateFormulaBox formulaText
   traverse_ (setCaretPosition selection $ toNode formulaBox) caretPosition
 
 displayFunctionType :: forall m. MonadEffect m => LocalFormulaCtx -> m Unit
@@ -138,6 +134,18 @@ getCurrentFnId ctx formulaText index =
 getFormulaBoxContents :: forall m. MonadEffect m => m String
 getFormulaBoxContents = liftEffect
   (innerText =<< justSelectElementById formulaBoxId)
+
+updateFormulaBox :: forall m. MonadEffect m => String -> m Unit
+updateFormulaBox formulaText =
+ emptyFormulaBox *> setFormulaBox formulaText
+
+setFormulaBox :: forall m. Monad m => MonadEffect m => String -> m Unit
+setFormulaBox formulaText = do
+  formulaBox <- justSelectElementById formulaBoxId
+  liftEffect $ setInnerHTML (toElement formulaBox) htmlString
+  where
+    html = unwrap <$> formulaElements formulaText
+    htmlString = fold $ StringRenderer.render (const mempty) <$> html
 
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
 emptyFormulaBox = liftEffect

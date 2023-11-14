@@ -9,10 +9,9 @@ import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allC
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
-import App.Utils.Dom (formulaElements, mkKeyAction)
-import App.Utils.HashMap (lookup2) as HashMap
+import App.Utils.Dom (mkKeyAction)
 import Bookhound.Parser (runParser)
-import Data.HashMap (lookup) as HashMap
+import Data.HashMap  as HashMap
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
@@ -46,7 +45,7 @@ render
                 , onKeyUp $ mkKeyAction FormulaKeyUp
                 , onFocusIn FocusInFormula
                 ]
-                (renderFormulaDisplay st)
+                []
             , div
                 [ id $ show formulaSignatureId
                 , classes [ formulaSignature ]
@@ -77,14 +76,6 @@ render
     ]
   where
   parseCell = hush <<< runParser cellParser
-
-renderFormulaDisplay :: forall i. AppState -> Array (HTML i Action)
-renderFormulaDisplay { selectedCell, formulaCache, tableFormulas } =
-  formulaElements
-    $ foldMap _.formulaText
-    $ HashMap.lookup2 selectedCell
-        formulaCache
-        tableFormulas
 
 renderHeader :: forall i. AppState -> HTML i Action
 renderHeader st =

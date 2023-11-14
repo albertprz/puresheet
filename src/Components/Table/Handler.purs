@@ -5,13 +5,13 @@ import FatPrelude
 import App.CSS.Ids (formulaBoxId, formulaCellInputId, inputElement, selectedCellInputId)
 import App.Components.Table.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.Formula (FormulaState(..))
-import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, pasteCells, refreshCells, selectAllCells, selectCell, subscribeSelectionChange, subscribeWindowResize)
+import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeSelectionChange, subscribeWindowResize)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, updateFormulaBox, withPrevent)
 import App.Utils.HashMap (lookup2) as HashMap
-import Data.HashMap (insert, member) as HashMap
+import Data.HashMap (insert) as HashMap
 import Data.Set as Set
 import Halogen (HalogenM)
 import Web.HTML (window)
@@ -100,19 +100,16 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   focusCellElem selectedCell $ whenMaybe activeInput inputElement
 
 handleAction (FocusInCell cell _) = do
-  { tableFormulas } <- get
-  let
-    formulaState =
-      if HashMap.member cell tableFormulas then
-        ValidFormula
-      else UnknownFormula
-  modify_ _
-    { formulaState = formulaState
-    , activeFormula = false
-    }
+  formulaText <- _.formulaText <$$> lookupFormula cell
   emptyFormulaSignature
-  unless (formulaState == ValidFormula)
-    emptyFormulaBox
+  case formulaText of
+    Just x -> updateFormulaBox x
+    Nothing -> emptyFormulaBox
+  modify_ _
+    { activeFormula = false
+     , formulaState = if isJust formulaText then ValidFormula
+      else UnknownFormula
+     }
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn

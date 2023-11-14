@@ -4,13 +4,13 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
-import App.Components.Table.Formula (FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
+import App.Components.Table.Formula (FormulaId, FormulaState(..), Formula, getDependencies, newFormulaId, toDependenciesMap)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
-import App.Utils.HashMap (updateJust) as HashMap
+import App.Utils.Dom (class IsEvent, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
+import App.Utils.HashMap (lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
 import Data.HashMap (delete, insert, keys, lookup, union, unionWith) as HashMap
 import Data.List.NonEmpty (NonEmptyList)
@@ -103,13 +103,6 @@ deleteCells = do
     { tableData = foldl (flip HashMap.delete) st.tableData cellsToDelete }
   refreshCells $ Set.fromFoldable cellsToDelete
 
-getPrelude
-  :: forall m. MonadEffect m => m (Either (NonEmptyList ForeignError) String)
-getPrelude = runExceptT
-  $ readString
-  =<< (_ ! "prelude")
-  =<< unsafeToForeign
-  <$> liftEffect window
 
 selectCell
   :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
@@ -196,7 +189,6 @@ insertFormula = do
   case runFormula st st.formulaCell formulaText of
     Right { result, affectedCells, formulaCells, cellDeps } -> do
       let formulaId = newFormulaId $ HashMap.keys st.formulaCache
-      emptyFormulaBox
       modify_ _
         { tableData = HashMap.union result st.tableData
         , tableFormulas = HashMap.union (formulaId <$ result)
@@ -237,16 +229,10 @@ applyFormula formulaId = do
     Left _ ->
       pure unit
 
-loadPrelude :: forall m. MonadEffect m => MonadState AppState m => m Unit
-loadPrelude = do
-  tryLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
-  case tryLoad of
-    Left err ->
-      Logger.error
-        ( "Prelude load error \n" <> "Parse Error: " <>
-            show err
-        )
-    Right _ -> pure unit
+lookupFormula :: forall m. MonadState AppState m => Cell -> m (Maybe Formula)
+lookupFormula cell = do
+  { formulaCache, tableFormulas } <- get
+  pure $  HashMap.lookup2 cell formulaCache tableFormulas
 
 setRows :: forall m. MonadEffect m => MonadState AppState m => m Unit
 setRows = do
@@ -258,6 +244,26 @@ setRows = do
   focusCell selectedCell
   where
   parseRow = hush <<< runParser rowParser
+
+
+getPrelude
+  :: forall m. MonadEffect m => m (Either (NonEmptyList ForeignError) String)
+getPrelude = runExceptT
+  $ readString
+  =<< (_ ! "prelude")
+  =<< unsafeToForeign
+  <$> liftEffect window
+
+loadPrelude :: forall m. MonadEffect m => MonadState AppState m => m Unit
+loadPrelude = do
+  tryLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
+  case tryLoad of
+    Left err ->
+      Logger.error
+        ( "Prelude load error \n" <> "Parse Error: " <>
+            show err
+        )
+    Right _ -> pure unit
 
 subscribeSelectionChange
   :: forall slots o m
