@@ -75,7 +75,7 @@ def flip (f: A -> B -> C): B -> A -> C =
 def map (f: A -> B, xs: [A]): [B] =
     switch (xs) {
         | []             => []
-        | [ xs @ ... , x ] => map (f, xs) :+ f (x)
+        | [ xs @ ... , x ] =>  f (x) +: map (f, xs)
     }
 
 def mapMatrix (f: A -> B, xss: [[A]]): [[B]] =
@@ -83,20 +83,18 @@ def mapMatrix (f: A -> B, xss: [[A]]): [[B]] =
 
 def filter (f: A -> Boolean, xs: [A]): [A] =
     switch (xs) {
-        | []                         => []
-        | [ xs @ ... , x ] ? f(x)      => filter (f, xs) :+ x
-                        ? otherwise => filter (f, xs)
+        | []                        => []
+        | [ x, xs @ ... ] ? f(x)    => x +: filter (f, xs)
+                          ? otherwise => filter (f, xs)
     }
 
 def filterMatrix (f: A -> Boolean, xss: [[A]]): [[A]] =
     map (filter (f), xss)
 
 def reduce (f: B -> A -> B, start: B, xs: [A]): B =
-    reduceRight (flip (f), start, reverse (xs)) where {
-        | reduceRight (f, start, xs) = switch (xs) {
-            | []             => start
-            | [ xs @ ... , x ] => f (x, reduceRight (f, start, xs))
-        }
+        switch (xs) {
+        | []             => start
+        | [ x, xs @ ... ] => f (x, reduce (f, start, xs))
     }
 
 def reduceMatrix (f: B -> A -> B, start: B, xss: [A]): B =
@@ -129,18 +127,16 @@ def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
     cond {
         ? empty (xs) || empty (ys) => []
         ? otherwise =>
-            zipWith(f, init (xs), init (ys)) :+ f (tail (xs), tail (ys))
+            f (head (xs), head (ys)) +: zipWith(f, tail (xs), tail (ys))
     }
 
 def zipMatrixWith (f: A -> B -> C, xss: [[A]], yss: [[B]]): [[C]] =
     zipWith (zipWith (f), xss, yss)
 
 def iterate (f: A -> A, start: A, n: Int): [A] =
-    reverse (go (f, start, n)) where {
-        | go (f, start, n) = cond {
-            ? n == 0     => start
-            ? otherwise => go (f, f(start), n - 1) :+ start
-        }
+    cond {
+        ? n == 0     => start
+        ? otherwise => start +: go (f, f(start), n - 1)
     }
 
 def empty (xs: [A]): Boolean =
