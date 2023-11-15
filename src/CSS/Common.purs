@@ -24,7 +24,7 @@ grey :: Color
 grey = hex "#cbcbcb"
 
 lightGrey :: Color
-lightGrey = hex "#e0e0e0"
+lightGrey = hex "#d9d9d9"
 
 lighterGrey :: Color
 lighterGrey = hex "#f2f2f2"

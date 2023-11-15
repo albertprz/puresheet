@@ -52,15 +52,15 @@ formulaCss = do
     borderStyle := solid
     borderColor := grey2
     borderWidth := px 3
-    fontSize := px 20
-    whiteSpace := nowrap
+    fontSize := px 21
+    whiteSpace := preWrap
 
   universal &. formulaSignature ? Rule.do
     height := px 20
     margin := px 20
     marginTop := px 10
     padding := px 0 ~ px 50
-    fontSize := px 22
+    fontSize := px 24
     textAlign := center
 
   universal &. unknownFormula ? Rule.do
@@ -123,7 +123,7 @@ cellInputCommonCss = do
   padding := px 15
   borderColor := green
   borderWidth := px 3
-  fontSize := px 18
+  fontSize := px 21
   textAlign := center
   outlineStyle := solid
   outlineColor := green
@@ -155,6 +155,8 @@ cellCss = do
     borderColor := inherit
     borderWidth := px 0 ~ px 0 ~ px 1 ~ px 1
     padding := em 0.5 ~ em 1
+    fontSize := px 16
+    fontWeight := normal
     textAlign := center
 
   td &: lastChild /\ th &: lastChild ? Rule.do
@@ -168,6 +170,8 @@ cellCss = do
     borderWidth := px 0
     textAlign := center
     cursor := cell
+    fontFamily := "Arial" /\ sansSerif
+    fontSize := px 15
 
   td &. inSelection ? Rule.do
     backgroundColor := lighterGreen
@@ -196,17 +200,18 @@ cellCss = do
 
   th ? Rule.do
     backgroundColor := lighterGrey
-    color := black
     cursor := grab
 
   th &. selectedHeader ? Rule.do
     backgroundColor := lightGreen
+    fontWeight := bold
 
   th &. cornerHeader ? Rule.do
     position := sticky
     top := px 0
     left := px 0
     zIndex := 10
+    backgroundColor := lightGrey
 
   th &. columnHeader ? Rule.do
     position := sticky

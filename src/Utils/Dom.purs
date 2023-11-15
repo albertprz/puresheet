@@ -275,17 +275,18 @@ setCaretPosition :: Selection -> Node -> Int -> Effect Unit
 setCaretPosition selection parentNode offset = do
   childNode <- unsafeFromJust <$> firstChild parentNode
   anchor <- Selection.anchorNode selection
-  (rangeNode /\ rangeOffset) <- go childNode anchor offset
-  range <- Range.createCollapsedRange rangeNode rangeOffset
-  Selection.resetRange selection range
+  traverse_ adjustSelection =<< go childNode anchor offset
   where
+  adjustSelection (rangeNode /\ rangeOffset) = do
+    range <- Range.createCollapsedRange rangeNode rangeOffset
+    Selection.resetRange selection range
   go node anchor position = do
     len <- String.length <$> textContent node
     if len >= position then
-      (_ /\ position) <$> getChildOrNode node
-    else do
-      sibling <- unsafeFromJust <$> nextSibling node
-      go sibling anchor (position - len)
+      pure <<< (_ /\ position) <$> getChildOrNode node
+    else runMaybeT do
+      sibling <- MaybeT $ nextSibling node
+      MaybeT $ go sibling anchor (position - len)
 
 getCaretPosition :: Selection -> Node -> Effect (Maybe Int)
 getCaretPosition selection parentNode = runMaybeT do

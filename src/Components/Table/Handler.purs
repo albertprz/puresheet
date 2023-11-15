@@ -84,7 +84,7 @@ handleAction (FocusInFormula _) =
     ( modify_ \st -> st
         { activeFormula = true
         , formulaCell = maybe st.selectedCell _.startingCell $
-            HashMap.lookup2 st.selectedCell st.formulaCache st.tableFormulas
+            HashMap.lookup2 st.selectedCell st.tableFormulas st.formulaCache
         }
     )
 

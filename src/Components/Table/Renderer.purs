@@ -29,7 +29,6 @@ render
     [ div [ class_ formulaContainer ]
         [ input
             [ id $ show selectedCellInputId
-            , tabIndex zero
             , classes [ selectedCellInput ]
             , value $ showCell selectedCell
             , onValueChange $ WriteSelectedCellInput <<< parseCell
@@ -39,7 +38,6 @@ render
             [ class_ formulaBoxContainer ]
             [ div
                 [ id $ show formulaBoxId
-                , tabIndex zero
                 , classes [ formulaBox, formulaStateToClass formulaState ]
                 , onKeyDown $ mkKeyAction FormulaKeyDown
                 , onKeyUp $ mkKeyAction FormulaKeyUp
@@ -54,7 +52,6 @@ render
             ]
         , input
             [ id $ show formulaCellInputId
-            , tabIndex zero
             , class_ formulaCellInput
             , type_ $ if activeFormula then InputText else InputHidden
             , value $ showCell formulaCell
@@ -90,7 +87,6 @@ renderHeader st =
   renderHeaderCorner =
     th
       [ class_ cornerHeader
-      , tabIndex zero
       , onClick $ ClickHeader CornerHeader
       ]
       [ text mempty ]
@@ -118,7 +114,6 @@ renderRowHeader :: forall i. AppState -> Row -> HTML i Action
 renderRowHeader { selectedCell, multiSelection } row =
   th
     [ id $ show row
-    , tabIndex zero
     , classes $ [ rowHeader ]
         <>? isRowSelected selectedCell multiSelection row
         /\ selectedHeader
@@ -138,7 +133,6 @@ renderColumnHeader
 renderColumnHeader { selectedCell, multiSelection } column =
   th
     [ id $ show column
-    , tabIndex zero
     , classes $ [ columnHeader ]
         <>? isColumnSelected selectedCell multiSelection column
         /\ selectedHeader
@@ -173,7 +167,6 @@ renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
     ]
     [ input
         [ type_ InputText
-        , tabIndex zero
         , autocomplete AutocompleteOff
         , readOnly $ not $ cell == selectedCell && activeInput
         , value $ foldMap show cellValue

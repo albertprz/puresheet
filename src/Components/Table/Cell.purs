@@ -4,7 +4,7 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Utils.Bounded (newtypeCardinality, newtypeFromEnum, newtypeToEnum)
-import App.Utils.HashMap (swapKey) as HashMap
+import App.Utils.HashMap (swapKeys) as HashMap
 import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (anyChar, upper)
@@ -82,7 +82,7 @@ getRowHeader _ = Nothing
 swapTableMapColumn
   :: forall v. Column -> Column -> HashMap Cell v -> HashMap Cell v
 swapTableMapColumn origin target tableDict =
-  foldl (flip HashMap.swapKey) tableDict keysToSwap
+  HashMap.swapKeys keysToSwap tableDict
   where
   keysToSwap =
     map (\row -> { column: origin, row } /\ { column: target, row })
@@ -93,7 +93,7 @@ swapTableMapColumn origin target tableDict =
 
 swapTableMapRow :: forall v. Row -> Row -> HashMap Cell v -> HashMap Cell v
 swapTableMapRow origin target tableDict =
-  foldl (flip HashMap.swapKey) tableDict keysToSwap
+  HashMap.swapKeys keysToSwap tableDict
   where
   keysToSwap =
     map (\column -> { column, row: origin } /\ { column, row: target })

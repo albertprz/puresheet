@@ -135,8 +135,8 @@ def zipMatrixWith (f: A -> B -> C, xss: [[A]], yss: [[B]]): [[C]] =
 
 def iterate (f: A -> A, start: A, n: Int): [A] =
     cond {
-        ? n == 0     => start
-        ? otherwise => start +: go (f, f(start), n - 1)
+        ? n == 0     => [start]
+        ? otherwise => start +: iterate (f, f(start), n - 1)
     }
 
 def empty (xs: [A]): Boolean =

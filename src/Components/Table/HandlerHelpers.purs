@@ -4,15 +4,15 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
-import App.Components.Table.Formula (FormulaId, FormulaState(..), Formula, getDependencies, newFormulaId, toDependenciesMap)
+import App.Components.Table.Formula (Formula, FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
 import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (class IsEvent, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
-import App.Utils.HashMap (lookup2, updateJust) as HashMap
+import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
+import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
-import Data.HashMap (delete, insert, keys, lookup, union, unionWith) as HashMap
+import Data.HashMap (insert, keys, lookup, union, unionWith) as HashMap
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
@@ -102,8 +102,12 @@ deleteCells = do
     cellsToDelete =
       join $ getTargetCells st.multiSelection st.selectedCell
   modify_ _
-    { tableData = foldl (flip HashMap.delete) st.tableData cellsToDelete }
+    { tableData = HashMap.bulkDelete cellsToDelete st.tableData
+    , tableFormulas = HashMap.bulkDelete  cellsToDelete st.tableFormulas
+    , formulaState = UnknownFormula
+    }
   refreshCells $ Set.fromFoldable cellsToDelete
+  emptyFormulaBox
 
 
 selectCell
@@ -234,7 +238,7 @@ applyFormula formulaId = do
 lookupFormula :: forall m. MonadState AppState m => Cell -> m (Maybe Formula)
 lookupFormula cell = do
   { formulaCache, tableFormulas } <- get
-  pure $  HashMap.lookup2 cell formulaCache tableFormulas
+  pure $ HashMap.lookup2 cell tableFormulas formulaCache
 
 setRows :: forall m. MonadEffect m => MonadState AppState m => m Unit
 setRows = do
