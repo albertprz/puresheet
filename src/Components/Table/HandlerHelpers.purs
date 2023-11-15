@@ -16,6 +16,8 @@ import Data.HashMap (delete, insert, keys, lookup, union, unionWith) as HashMap
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
+import Data.String.Utils (NormalizationForm(..))
+import Data.String.Utils as String
 import Data.Tree (Forest)
 import Effect.Class.Console as Logger
 import Foreign (ForeignError, readString, unsafeToForeign)
@@ -184,7 +186,7 @@ refreshCellsFromDeps cellDeps =
 
 insertFormula :: forall m. MonadEffect m => MonadState AppState m => m Unit
 insertFormula = do
-  formulaText <- getFormulaBoxContents
+  formulaText <- String.normalize' NFKD <$> getFormulaBoxContents
   st <- get
   case runFormula st st.formulaCell formulaText of
     Right { result, affectedCells, formulaCells, cellDeps } -> do

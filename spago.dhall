@@ -30,6 +30,7 @@
   , "psci-support"
   , "record-extra"
   , "strings"
+  , "stringutils"
   , "tecton"
   , "tecton-halogen"
   , "transformers"

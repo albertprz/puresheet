@@ -72,11 +72,7 @@ fnSigToSyntaxAtoms :: forall r. FnId -> FnSig r -> Array SyntaxAtom
 fnSigToSyntaxAtoms { fnModule, fnName } { params, returnType } =
   fnName' <> params' <> returnType'
   where
-  prettyModule =
-    if fnModule == preludeModule then
-      Nothing
-    else
-      Just fnModule
+  prettyModule = unlessMaybe (fnModule == preludeModule) fnModule
   fnName' = [ Keyword (show (QVar prettyModule fnName) <> " ") ]
   params' = wrapArgList (param <$> params)
   returnType' = foldMap annotation returnType

@@ -118,12 +118,12 @@ getCurrentFnId ctx formulaText index =
   startIndex = fromMaybe 0 $ map inc
     $ maximum
     $ filterMap (myLastIndexOf' (dec index) formulaText)
-    $ (Pattern <$> (separators <> [ "(", "[" ]))
+    $ map Pattern (separators <> [ "(", "[" ])
 
   endIndex = fromMaybe (String.length formulaText)
     $ minimum
     $ filterMap (myIndexOf' index formulaText)
-    $ (Pattern <$> (separators <> [ ")", "]" ]))
+    $ map Pattern (separators <> [ ")", "]" ])
 
   currentWord = String.slice startIndex endIndex formulaText
   separators = [ " ", " ", "\n", "\t", "," ]
@@ -288,9 +288,9 @@ setCaretPosition selection parentNode offset = do
       go sibling anchor (position - len)
 
 getCaretPosition :: Selection -> Node -> Effect (Maybe Int)
-getCaretPosition selection parentNode = do
-  childNode <- unsafeFromJust <$> firstChild parentNode
-  join $ go childNode
+getCaretPosition selection parentNode = runMaybeT do
+  childNode <- MaybeT $ firstChild parentNode
+  MaybeT $ join $ go childNode
     <$> Selection.anchorNode selection
     <*> Selection.anchorOffset selection
   where
