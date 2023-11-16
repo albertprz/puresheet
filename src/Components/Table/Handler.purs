@@ -9,15 +9,18 @@ import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, 
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, performSyntaxHighlight, prevent, shiftKey, toMouseEvent, updateFormulaBox, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, getSelection, isModifierKeyCode, performSyntaxHighlight, prevent, shiftKey, toEvent, toMouseEvent, updateFormulaBox, withPrevent)
 import App.Utils.HashMap (lookup2) as HashMap
+import App.Utils.Selection as Selection
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
 import Halogen (HalogenM)
+import Web.Event.Event (target)
 import Web.HTML (window)
-import Web.HTML.HTMLElement (setContentEditable)
+import Web.HTML.HTMLElement (setContentEditable, toNode)
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
+import Web.HTML.HTMLElement as HTMLElement
 
 handleAction
   :: forall slots o m
@@ -76,10 +79,13 @@ handleAction (FormulaKeyDown (CharKeyCode 'G') ev)
 handleAction (FormulaKeyDown _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
-handleAction (FormulaKeyUp _ _) =
-  performSyntaxHighlight
+handleAction (FormulaKeyUp keyCode _) =
+  unless (isModifierKeyCode keyCode)
+    performSyntaxHighlight
 
-handleAction (FocusInFormula _) =
+handleAction (FocusInFormula ev) = do
+  selection <- liftEffect $ getSelection =<< window
+  liftEffect $ traverse_ (Selection.moveToEnd selection) formulaBox
   whenM (not <$> gets _.activeFormula)
     ( modify_ \st -> st
         { activeFormula = true
@@ -87,6 +93,9 @@ handleAction (FocusInFormula _) =
             HashMap.lookup2 st.selectedCell st.tableFormulas st.formulaCache
         }
     )
+  where
+  formulaBox =
+    toNode <$> (HTMLElement.fromEventTarget =<< (target $ toEvent ev))
 
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get

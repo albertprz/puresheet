@@ -385,6 +385,9 @@ parseKeyCode str
   , Just n <- Int.fromString $ String.takeRight 1 str = DigitKeyCode n
 parseKeyCode str = OtherKeyCode str
 
+isModifierKeyCode :: KeyCode -> Boolean
+isModifierKeyCode  = flip elem [Control, Shift]
+
 toEvent :: forall a. IsEvent a => a -> Event
 toEvent = unsafeCoerce
 
