@@ -26,8 +26,9 @@ import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
 import Web.DOM.Document (documentElement)
-import Web.DOM.Element (getBoundingClientRect, id, scrollLeft, setScrollLeft)
-import Web.DOM.Node (firstChild, nextSibling, nodeName, nodeValue, parentNode, setTextContent, textContent)
+import Web.DOM.Element (getBoundingClientRect, id, localName, scrollLeft, setScrollLeft)
+import Web.DOM.Element as Element
+import Web.DOM.Node (childNodes, firstChild, nextSibling, nodeName, nodeValue, parentNode, setTextContent, textContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
 import Web.Event.Event (Event, preventDefault, target)
@@ -298,8 +299,11 @@ getCaretPosition selection parentNode = runMaybeT do
   go node anchor position = do
     len <- String.length <$> textContent node
     textNode <- getChildOrNode node
-    if any (refEquals anchor) [ node, textNode ] then
-      pure $ pure position
+    if any (refEquals anchor) [ node, textNode ] then do
+      children <- filterMap Element.fromNode
+                     <$> (NodeList.toArray =<< childNodes textNode)
+      let lineBreaks = length $ filter (eq "br" <<< localName) children
+      pure $ pure (position + lineBreaks)
     else runMaybeT do
       sibling <- MaybeT $ nextSibling node
       MaybeT $ go sibling anchor (position + len)
