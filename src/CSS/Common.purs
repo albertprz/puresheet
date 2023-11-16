@@ -35,6 +35,9 @@ red = hex "#FF0000"
 lighterRed :: Color
 lighterRed = hex "#ffcccc"
 
+darkGreen :: Color
+darkGreen = hex "#006600"
+
 green :: Color
 green = hex "#009933"
 
@@ -59,11 +62,15 @@ orange = hex "#ff6600"
 brown :: Color
 brown = hex "#993333"
 
+
 mustard :: Color
 mustard = hex "#cc9900"
 
 pink :: Color
 pink = hex "#ff3399"
+
+darkPink :: Color
+darkPink = hex "#99004d"
 
 purple :: Color
 purple = hex "#993399"

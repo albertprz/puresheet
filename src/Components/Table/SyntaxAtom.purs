@@ -3,15 +3,15 @@ module App.Components.Table.SyntaxAtom where
 import FatPrelude
 import Prim hiding (Type)
 
-import App.CSS.ClassNames (cellSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
+import App.CSS.ClassNames (cellSyntax, functionSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Table.Cell (cellParser, showCell)
 import App.Parser.Common (notReservedKeyword, notReservedSymbol, opSymbol, reservedKeywords, reservedSymbols)
 import App.SyntaxTree.Common (QVar(..), preludeModule)
 import App.SyntaxTree.FnDef (FnId, FnSig)
 import App.SyntaxTree.Type (Type(..))
 import App.Utils.String (wrapDoubleQuotes)
-import Bookhound.Parser (Parser, anyOf)
-import Bookhound.ParserCombinators (is, noneOf, (->>-), (|*), (|+), (||*))
+import Bookhound.Parser (Parser)
+import Bookhound.ParserCombinators (is, noneOf, oneOf, (->>-), (|*), (|+), (||*))
 import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore)
 import Bookhound.Parsers.Char as Parsers
 import Bookhound.Parsers.Number (double, int)
@@ -29,6 +29,7 @@ syntaxAtomToClassName = case _ of
   Keyword _ -> keywordSyntax
   Symbol _ -> symbolSyntax
   Operator _ -> operatorSyntax
+  Function _ -> functionSyntax
   OtherText _ -> regularSyntax
 
 condenseSyntaxAtoms :: Array SyntaxAtom -> Array SyntaxAtom
@@ -47,9 +48,10 @@ syntaxAtomParser = (|+) atom
       <|> (Char' <$> char)
       <|> (String' <$> string)
       <|> (Cell' <<< showCell <$> cellParser)
-      <|> (Keyword <$> (anyOf $ map is reservedKeywords))
-      <|> (Symbol <$> (anyOf $ map is reservedSymbols))
       <|> (Operator <$> varOp)
+      <|> (Function <$> var)
+      <|> (Keyword <$> oneOf reservedKeywords)
+      <|> (Symbol <$> oneOf reservedSymbols)
       <|> (OtherText <<< String.singleton <$> Parsers.anyChar)
 
   char = wrapQuotes <<< String.singleton
@@ -73,12 +75,11 @@ fnSigToSyntaxAtoms { fnModule, fnName } { params, returnType } =
   fnName' <> params' <> returnType'
   where
   prettyModule = unlessMaybe (fnModule == preludeModule) fnModule
-  fnName' = [ Keyword (show (QVar prettyModule fnName) <> " ") ]
+  fnName' = [ Function (show (QVar prettyModule fnName) <> " ") ]
   params' = wrapArgList (param <$> params)
   returnType' = foldMap annotation returnType
   annotation = ([ Symbol ": " ] <> _) <$> typeToSyntaxAtoms
-  param (var /\ type') = [ Keyword $ show var ]
-    <> foldMap annotation type'
+  param (var /\ type') = [ Function $ show var ] <> foldMap annotation type'
 
 typeToSyntaxAtoms :: Type -> Array SyntaxAtom
 typeToSyntaxAtoms = case _ of
@@ -98,10 +99,11 @@ typeToSyntaxAtoms = case _ of
 
   typeApply :: forall a. Show a => a -> Array Type -> Array SyntaxAtom
   typeApply x ys = [ var x, OtherText " " ]
-    <> wrapArgList (typeToSyntaxAtoms <$> ys)
+    <> wrapArgList (map typeToSyntaxAtoms ys)
 
-  infixTypeApply op = intersperse' (Operator (" " <> op <> " "))
-    <<< foldMap typeToSyntaxAtoms
+  infixTypeApply op =
+    intercalate [Operator (" " <> op <> " ")]
+    <<< map typeToSyntaxAtoms
 
 wrapArgList :: Array (Array SyntaxAtom) -> Array SyntaxAtom
 wrapArgList = wrapParens <<< intercalate [ OtherText ", " ]
@@ -116,6 +118,7 @@ data SyntaxAtom
   | Keyword String
   | Symbol String
   | Operator String
+  | Function String
   | OtherText String
 
 instance Show SyntaxAtom where
@@ -126,4 +129,5 @@ instance Show SyntaxAtom where
   show (Keyword x) = x
   show (Symbol x) = x
   show (Operator x) = x
+  show (Function x) = x
   show (OtherText x) = x

@@ -92,5 +92,8 @@ symbolSyntax = ClassName "symbol-syntax"
 operatorSyntax :: ClassName
 operatorSyntax = ClassName "operator-syntax"
 
+functionSyntax :: ClassName
+functionSyntax = ClassName "function-syntax"
+
 regularSyntax :: ClassName
 regularSyntax = ClassName "regular-syntax"

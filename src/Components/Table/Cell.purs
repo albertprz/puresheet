@@ -10,6 +10,8 @@ import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (anyChar, upper)
 import Bookhound.Parsers.Number (double, int, unsignedInt)
 import Data.HashMap (keys) as HashMap
+import Data.Number.Format (fixed)
+import Data.Number.Format (toStringWith) as Number
 import Data.String.CodeUnits as String
 
 parseCellValue :: String -> CellValue
@@ -192,6 +194,6 @@ derive instance Eq CellValue
 instance Show CellValue where
   show (BoolVal x) = show x
   show (IntVal x) = show x
-  show (FloatVal x) = show x
+  show (FloatVal x) = Number.toStringWith (fixed 2) x
   show (CharVal x) = String.singleton x
   show (StringVal x) = x

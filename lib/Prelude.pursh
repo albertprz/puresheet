@@ -98,13 +98,12 @@ def reduce (f: B -> A -> B, start: B, xs: [A]): B =
     }
 
 def reduceMatrix (f: B -> A -> B, start: B, xss: [A]): B =
-    reduce (reduce (f), start, xss)
+    xss |map> reduce(f, start) |> reduce (f, start)
 
 def reduceRecur (f: B -> A -> B, start: B, xs: [A] | [[A]]): B =
-    switch (head (xss)) {
-        | []     => reduceMatrix (f, start, xss)
-        | [ ... ]  => reduceMatrix (f, start, xss)
-        | _      => reduce (f, start, xss)
+    cond {
+        ? all (isArray, xs)  => reduceMatrix (f, start, xs)
+        ? otherwise          => reduce (f, start, xs)
     }
 
 def fold (f: A -> A -> A, xs: [A]): A =
@@ -114,13 +113,12 @@ def fold (f: A -> A -> A, xs: [A]): A =
     }
 
 def foldMatrix (f: A -> A -> A, xss: [[A]]): A =
-    fold (fold (f))
+    xss |map> fold(f) |> fold (f)
 
 def foldRecur (f: A -> A -> A, xs: [A] | [[A]]): A =
-    switch (head (xss)) {
-        | []     => foldMatrix (f, xss)
-        | [ ... ]  => foldMatrix (f, xss)
-        | _      => fold (f, xss)
+    cond {
+        ? all (isArray, xs)  => foldMatrix (f, xs)
+        ? otherwise          => fold (f, xs)
     }
 
 def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
@@ -145,13 +143,18 @@ def empty (xs: [A]): Boolean =
 def nonEmpty (xs: [A]): Boolean =
     not (empty (xs))
 
+def all (f: A -> Boolean, xs: [A]): Boolean =
+    reduce (and, true, map (f, xs))
+
+def any (f: A -> Boolean, xs: [A]): Boolean =
+    reduce (or, false, map (f, xs))
 
 
 def sum (xs: [Number] | [[Number]]): Number  =
-    foldRecur (add, xs)
+    reduceRecur (add, 0, xs)
 
 def product (xs: [Number] | [[Number]]): Number =
-    foldRecur (mult, xs)
+    reduceRecur (mult, 0, xs)
 
 def average (xs: [Number] | [[Number]]): Number =
     sum (xs) / 2
