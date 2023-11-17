@@ -2,15 +2,65 @@
 
 ## Description
 
-Spreadsheet management application implemented on [Halogen](https://github.com/purescript-halogen/purescript-halogen).
+Spreadsheet management application implemented on [Halogen](https://github.com/purescript-halogen/purescript-halogen) 
+aiming to provide an extensible, expressive and simple to use platform
+for data representation, visualization, analysis and exploration available
+for use for enterprise, personal & educational purposes.
 
-This is currently still a Work In Progress, with the goal of streamlining the core functionality of a spreadsheet application,  by offering only a opinionated subset of the features offered by mainstream solutions and more focused around data manipulation rather than text / cell formatting, for example.
+## Project Goals
 
-## Goals
+- [:heavy_check_mark:] Provide a no frills, minimalistic GUI supporting all basic spreadsheet functionality regarding navigation, cell management, formula evaluation & automatic cell updates.
 
-Ideally, it should provide an ergonomic and simple to use formulas, sorting & filtering API in a specialized language for just pure spreadsheet data transformations, along with some of the power of a general functional programming language and some notion of type safety as for validation of the formulas and error reporting.
+- [:heavy_check_mark:] Expose a high level pure functional dynamic formula language interpreted at the browser, with expresiveness similar to the term level language in Haskell or Purescript, albeit with familiar syntax and idioms to popular spreadhsheet applications and mainstream languages.
 
-## Live Demo
+- [:heavy_check_mark:] Expose a prelude library with commonly used functions and combinators, loaded at startup.
 
-![](assets/demo.gif)
+- [:heavy_check_mark:] Support formula edition with syntax highlighting and function signatures for the current function at the cursor.
+
+- Include Opt-in automatic formatting for formulas when evaluated.
+
+- Support auto completion for imported and module aliased global functions.
+
+- Expose a view to query (possibly in a Hoogle / Pursuit fashion), view, update and upload new global functions & operators on a per module basis. This view would surface the same editing capatibilities as the formula box in the main spreadsheet view.
+
+- Expose customization options for navigation, keybindings, spreadsheet behaviour as well as display and themes configuration.
+
+- Enable the use of formulas for filtering & sorting rows.
+
+- Support authenticated persistence & retrieval from a catalog of private spreadsheets via a future backend.
+
+- Support Import & Export of spreadsheets from and to Excel and Google Sheets with the proper mapping of cell values & formulas.
+
+
+## Screenshots
+
+![](assets/screenshot.png)
     
+## Keybindings
+
+<center>
+
+| Key Combination | Action |
+| --------------- | ------ |
+| &uarr; &darr; &larr; &rarr; | Cell navigation |
+| `h` `j` `k` `l` | Cell navigation (Vim like) |
+| `Tab` | Go to next cell |
+| `Shift` + `Tab` | Go to previous cell |
+| `Enter` | Edit cell value |
+| `Control` + `Enter` | Edit formula |
+| `Shift` + `Navigation` | Cell selection |
+| `Backspace` | Delete cell/s |
+| `Control` + `G` | Go to cell |
+| `Control` + `A` | Select all cells |
+| `Control` + `C` | Copy cells/s |
+| `Control` + `V` | Paste cells/s |
+| `Control` + `X` | Cut cells/s |
+
+</center>
+
+Note: `Control` bindings also match the `Command` key on Mac OS.
+
+
+## Available functions
+
+Please see the [Prelude module](lib/Prelude.pursh) loaded at startup.

@@ -66,9 +66,7 @@ syntaxAtomParser = (|+) atom
   idChar = alphaNum <|> underscore <|> quote
   ident start = start ->>- (|*) idChar
   var = notReservedKeyword (ident lower)
-  varOp = (is "|" ->>- var ->>- is ">")
-    <|> (is "<" ->>- var ->>- is "|")
-    <|> notReservedSymbol (operator opSymbol)
+  varOp = notReservedSymbol (operator opSymbol)
 
 fnSigToSyntaxAtoms :: forall r. FnId -> FnSig r -> Array SyntaxAtom
 fnSigToSyntaxAtoms { fnModule, fnName } { params, returnType } =
