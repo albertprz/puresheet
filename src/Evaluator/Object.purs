@@ -5,6 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (CellValue(..))
 import App.Evaluator.Errors (EvalError(..), MatchError(..))
 import App.SyntaxTree.FnDef (Object(..))
+import Data.Array as Array
 import Matrix (Matrix)
 import Matrix as Matrix
 
@@ -20,6 +21,7 @@ objectToCellValues :: Partial => Object -> Maybe (Matrix CellValue)
 objectToCellValues = Matrix.fromArray <<< cellValues
   where
   cellValues = case _ of
+    ListObj xs -> cellValues $ ArrayObj $ Array.fromFoldable xs
     ArrayObj xs
       | Just xss <- traverse extractShallowList xs ->
           objectToCellValue <$$> xss

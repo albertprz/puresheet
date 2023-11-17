@@ -23,6 +23,7 @@
   , "matrices"
   , "maybe"
   , "newtype"
+  , "numbers"
   , "ordered-collections"
   , "partial"
   , "point-free"

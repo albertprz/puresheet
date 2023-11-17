@@ -8,16 +8,19 @@ import App.Evaluator.Object (extractList, isElement)
 import App.SyntaxTree.Common (Var(..))
 import App.SyntaxTree.FnDef (BuiltinFnInfo, Object(..))
 import App.SyntaxTree.Type (Type(..), TypeParam(..), TypeVar(..))
+import App.Utils.String (head, init, last, tail) as String
 import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Bifunctor (rmap)
 import Data.EuclideanRing as Ring
 import Data.HashMap as HashMap
 import Data.Int (toNumber)
+import Data.List (List(..))
+import Data.List as List
 import Data.Set as Set
-import Data.String.CodeUnits as String
+import Data.String.CodeUnits (drop, dropRight, length, singleton, slice, take, takeRight, toCharArray) as String
 import Data.Tuple.Nested (type (/\))
-import FatPrelude (HashMap, Maybe(..), all, arr2, bimap, elem, foldl1, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (HashMap, Maybe(..), all, arr2, bimap, elem, fold, foldl1, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -83,6 +86,7 @@ nullSig = [] /\ a
 -- Type check Fns
 isArray :: Function
 isArray [ArrayObj _] = BoolObj true
+isArray [ListObj _] = BoolObj true
 isArray _ = BoolObj false
 
 isArraySig :: Sig
@@ -216,6 +220,7 @@ lcmSig = [ Var "x" /\ int, Var "y" /\ int ] /\ int
 
 -- List / String Fns
 append :: Function
+append [ ListObj x, ListObj y ] = ListObj $ x <> y
 append [ ArrayObj x, ArrayObj y ] = ArrayObj $ x <> y
 append [ StringObj x, StringObj y ] = StringObj $ x <> y
 
@@ -223,8 +228,10 @@ appendSig :: Sig
 appendSig = [ Var "xs" /\ arrayOf a, Var "ys" /\ arrayOf a ] /\ arrayOf a
 
 cons :: Function
-cons [ x, ArrayObj y ] = ArrayObj $ Array.cons x y
-cons [ NullObj, ArrayObj x ] = ArrayObj $ Array.cons NullObj x
+cons [ x, ListObj y ] = ListObj $ Cons x y
+cons [ NullObj, ListObj x ] = ListObj $ Cons NullObj x
+cons [ x, ArrayObj y ] = cons [x, ListObj $ List.fromFoldable y]
+cons [ NullObj, ArrayObj x ] = cons [NullObj, ListObj $ List.fromFoldable x]
 cons [ CharObj x, StringObj y ] = StringObj $ String.singleton x <> y
 cons [ NullObj, StringObj x ] = StringObj x
 
@@ -232,6 +239,8 @@ consSig :: Sig
 consSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ arrayOf a
 
 snoc :: Function
+snoc [ ListObj x, y ] = ListObj $ List.snoc x y
+snoc [ ListObj x, NullObj ] = ListObj $ List.snoc x NullObj
 snoc [ ArrayObj x, y ] = ArrayObj $ Array.snoc x y
 snoc [ ArrayObj x, NullObj ] = ArrayObj $ Array.snoc x NullObj
 snoc [ StringObj x, CharObj y ] = StringObj $ x <> String.singleton y
@@ -241,23 +250,27 @@ snocSig :: Sig
 snocSig = [ Var "xs" /\ arrayOf a, Var "y" /\ a ] /\ arrayOf a
 
 concat :: Function
+concat [ ListObj xs ] = concat [ ArrayObj $ Array.fromFoldable xs ]
 concat [ ArrayObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
 
 concatSig :: Sig
 concatSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ arrayOf a
 
 transpose :: Function
-transpose [ ArrayObj xs ] | Just xss <- traverse extractList xs =
-  ArrayObj $ (ArrayObj <$> Array.transpose xss)
-transpose [ ArrayObj xs ] | all isElement xs =
-  ArrayObj $ (ArrayObj <$> Array.transpose [ xs ])
+transpose [ ListObj xs ] = transpose [ ArrayObj $ Array.fromFoldable xs ]
+transpose [ ArrayObj xs ]
+  | Just xss <- traverse extractList xs =
+    ArrayObj $ (ArrayObj <$> Array.transpose xss)
+ | all isElement xs =
+    ArrayObj $ (ArrayObj <$> Array.transpose [ xs ])
 
 transposeSig :: Sig
 transposeSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ]
   /\ (arrayOf $ arrayOf a)
 
 contains :: Function
-contains [ x, ArrayObj y ] = BoolObj $ elem x y
+contains [ x, ListObj y ] = BoolObj $ List.elem x y
+contains [ x, ArrayObj y ] = BoolObj $ Array.elem x y
 contains [ CharObj x, StringObj y ] = BoolObj $ elem x (String.toCharArray y)
 
 containsSig :: Sig
@@ -271,46 +284,47 @@ rangeSig :: Sig
 rangeSig = [ Var "start" /\ a, Var "end" /\ a ] /\ arrayOf a
 
 head :: Function
+head [ ListObj x ] = fromMaybe NullObj $ List.head x
 head [ ArrayObj x ] = fromMaybe NullObj $ Array.head x
-head [ StringObj x ] = fromMaybe NullObj $ CharObj <$>
-  (Array.head $ toCharArray x)
+head [ StringObj x ] = fromMaybe NullObj $ CharObj <$> String.head x
 
 headSig :: Sig
 headSig = [ Var "xs" /\ arrayOf a ] /\ a
 
 tail :: Function
-tail [ ArrayObj x ] = fromMaybe NullObj $ ArrayObj <$> Array.tail x
-tail [ StringObj x ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
-  (Array.tail $ toCharArray x)
-
+tail [ ListObj x ] = ListObj $ fold $ List.tail x
+tail [ ArrayObj x ] = tail [ListObj $ List.fromFoldable x ]
+tail [ StringObj x ] = StringObj $ String.tail x
 tailSig :: Sig
 tailSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 last :: Function
+last [ ListObj x ] = fromMaybe NullObj $ List.last x
 last [ ArrayObj x ] = fromMaybe NullObj $ Array.last x
-last [ StringObj x ] = fromMaybe NullObj $ CharObj <$>
-  (Array.last $ toCharArray x)
+last [ StringObj x ] = fromMaybe NullObj $ CharObj <$> String.last x
 
 lastSig :: Sig
 lastSig = [ Var "xs" /\ arrayOf a ] /\ a
 
 init :: Function
-init [ ArrayObj x ] = fromMaybe NullObj $ ArrayObj <$> Array.init x
-init [ StringObj x ] = fromMaybe NullObj $ StringObj <$> fromCharArray <$>
-  (Array.init $ toCharArray x)
+init [ ListObj x ] = ListObj $ fold $ List.init x
+init [ ArrayObj x ] = ArrayObj $ fold $ Array.init x
+init [ StringObj x ] = StringObj $ String.init x
 
 initSig :: Sig
 initSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 reverse :: Function
-reverse [ ArrayObj xs ] = ArrayObj $ Array.reverse xs
-reverse [ StringObj xs ] = StringObj $ fromCharArray $ Array.reverse $
-  toCharArray xs
+reverse [ ListObj x ] = reverse [ArrayObj $ Array.fromFoldable x ]
+reverse [ ArrayObj x ] = ArrayObj $ Array.reverse x
+reverse [ StringObj x ] = StringObj $ fromCharArray $ Array.reverse $
+  toCharArray x
 
 reverseSig :: Sig
 reverseSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 length :: Function
+length [ ListObj x ] = IntObj $ List.length x
 length [ ArrayObj x ] = IntObj $ Array.length x
 length [ StringObj x ] = IntObj $ String.length x
 
@@ -318,6 +332,7 @@ lengthSig :: Sig
 lengthSig = [ Var "xs" /\ arrayOf a ] /\ int
 
 take :: Function
+take [ IntObj n, ListObj xs ] = ListObj $ List.take n xs
 take [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.take n xs
 take [ IntObj n, StringObj xs ] = StringObj $ String.take n xs
 
@@ -325,6 +340,7 @@ takeSig :: Sig
 takeSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 takeLast :: Function
+takeLast [ IntObj n, ListObj xs ] = ListObj $ List.takeEnd n xs
 takeLast [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.takeEnd n xs
 takeLast [ IntObj n, StringObj xs ] = StringObj $ String.takeRight n xs
 
@@ -332,6 +348,7 @@ takeLastSig :: Sig
 takeLastSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 drop :: Function
+drop [ IntObj n, ListObj xs ] = ListObj $ List.drop n xs
 drop [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.drop n xs
 drop [ IntObj n, StringObj xs ] = StringObj $ String.drop n xs
 
@@ -339,6 +356,7 @@ dropSig :: Sig
 dropSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 dropLast :: Function
+dropLast [ IntObj n, ListObj xs ] = ListObj $ List.dropEnd n xs
 dropLast [ IntObj n, ArrayObj xs ] = ArrayObj $ Array.dropEnd n xs
 dropLast [ IntObj n, StringObj xs ] = StringObj $ String.dropRight n xs
 
@@ -346,6 +364,8 @@ dropLastSig :: Sig
 dropLastSig = [ Var "n" /\ int, Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 slice :: Function
+slice [ IntObj n1, IntObj n2, ListObj xs ] =
+  ListObj $ List.slice n1 n2 xs
 slice [ IntObj n1, IntObj n2, ArrayObj xs ] =
   ArrayObj $ Array.slice n1 n2 xs
 slice [ IntObj n1, IntObj n2, StringObj xs ] =

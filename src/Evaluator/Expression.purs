@@ -8,6 +8,7 @@ import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
+import Data.Array as Array
 import Data.HashMap as HashMap
 import Data.Set as Set
 import Data.Tree.Zipper (insertChild, toTree)
@@ -283,6 +284,19 @@ evalPatternBinding (AliasedPattern param pattern) result = do
   { scope } <- get
   registerArg scope (FnDef param [] Nothing $ Object' result) *>
     evalPatternBinding pattern result
+
+evalPatternBinding (ArrayPattern patterns) result
+  | [headPat, Spread ] <- patterns
+  , ListObj (resultsHead : _) <- result =
+      evalPatternBinding headPat resultsHead
+
+  | [headPat, AliasedPattern tailPat Spread ] <- patterns
+  , ListObj (resultsHead : resultsTail) <- result =
+      evalPatternBinding headPat resultsHead *>
+      evalPatternBinding (VarPattern tailPat) (ListObj resultsTail)
+
+evalPatternBinding pattern@(ArrayPattern _) (ListObj xs) =
+  evalPatternBinding pattern (ArrayObj $ Array.fromFoldable xs)
 
 evalPatternBinding (ArrayPattern patterns) result
   | Just idx <- findIndex' isSpread patterns

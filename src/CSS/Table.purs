@@ -55,7 +55,8 @@ formulaCss = do
     borderWidth := px 3
     fontSize := px 21
     fontWeight := bold
-    whiteSpace := preWrap
+    whiteSpace := breakSpaces
+    overflow := auto
 
   universal &. formulaSignature ? Rule.do
     height := px 20

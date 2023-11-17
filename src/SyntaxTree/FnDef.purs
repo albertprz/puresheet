@@ -7,6 +7,7 @@ import App.Components.Table.Cell (Cell, CellValue)
 import App.SyntaxTree.Common (Module, QVar, QVarOp, Var, VarOp)
 import App.SyntaxTree.Pattern (Pattern)
 import App.SyntaxTree.Type (Type)
+import Data.Array as Array
 import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
 import Data.Generic.Rep (class Generic)
@@ -58,6 +59,7 @@ data Object
   | FloatObj Number
   | CharObj Char
   | StringObj String
+  | ListObj (List Object)
   | ArrayObj (Array Object)
   | FnObj FnInfo
   | BuiltinFnObj BuiltinFnInfo
@@ -122,6 +124,7 @@ instance Show Object where
     (FloatObj x) -> show x
     (CharObj x) -> show x
     (StringObj x) -> show x
+    (ListObj x) -> show x
     (ArrayObj x) -> show x
     (FnObj _) -> "function"
     (BuiltinFnObj _) -> "builtin-function"
@@ -134,9 +137,10 @@ instance Eq Object where
   eq (CharObj x) (CharObj y) = x == y
   eq (StringObj x) (StringObj y) = x == y
   eq (ArrayObj x) (ArrayObj y) = x == y
+  eq (ListObj x) (ListObj y) = x == y
+  eq (ArrayObj x) (ListObj y) = x == Array.fromFoldable y
+  eq (ListObj x) (ArrayObj y) = Array.fromFoldable x == y
   eq NullObj NullObj = true
-  eq NullObj _ = false
-  eq _ NullObj = false
   eq _ _ = false
 
 instance Ord Object where

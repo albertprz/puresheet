@@ -3,10 +3,11 @@ module App.Utils.String where
 import Prelude
 
 import App.Utils.Monoid (unlessMonoid)
-import Data.Foldable (intercalate)
+import Data.Foldable (foldMap, intercalate)
 import Data.Maybe (Maybe)
+import Data.String (length)
 import Data.String (null) as String
-import Data.String.CodeUnits (take, takeRight, toChar)
+import Data.String.CodeUnits (charAt, drop, uncons)
 
 newline :: String
 newline = "\n"
@@ -42,10 +43,16 @@ showParensCsv :: forall a. Show a => Array a -> String
 showParensCsv = wrapParens <<< str ", "
 
 head :: String -> Maybe Char
-head = toChar <<< take 1
+head = map _.head <<< uncons
+
+tail :: String -> String
+tail = foldMap _.tail <<< uncons
 
 last :: String -> Maybe Char
-last = toChar <<< takeRight 1
+last s = charAt (length s - 1) s
+
+init :: String -> String
+init = drop 1
 
 foreign import startsWith :: String -> String -> Boolean
 
