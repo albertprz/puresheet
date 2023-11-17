@@ -15,3 +15,5 @@ partialMaybe f a = unsafePerformEffect
 
 spyShow :: DebugWarning => forall a. Show a => String -> a -> a
 spyShow msg = spyWith msg show
+
+foreign import refEquals :: forall a. a -> a -> Boolean

@@ -1,6 +1,6 @@
 module App.Utils.Dom where
 
-import FatPrelude hiding (span)
+import FatPrelude (class Eq, class Monad, class MonadEffect, Effect, Maybe(..), NonEmptyArray, Unit, any, bind, compact, const, dec, discard, elem, evalState, filterA, filterMap, flip, fold, foldMap, fromArray, fromMaybe, hush, inc, join, liftEffect, map, maximum, mempty, minimum, pos, pure, runExceptT, sequence, show, traverse, traverse_, unsafeFromJust, unwrap, when, whenMaybe, ($), (&&), (*>), (+), (-), (<), (<$$>), (<$>), (<<<), (<>), (<|>), (=<<), (==), (||))
 
 import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, formulaSignatureId)
 import App.Components.Table.Cell (Cell, showCell)
@@ -9,8 +9,8 @@ import App.Evaluator.Common (LocalFormulaCtx, lookupBuiltinFn, lookupModuleFn, l
 import App.Parser.Common (qVar, qVarOp)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (FnId, FnSig)
-import App.Utils.Range as Range
-import App.Utils.Selection (Selection)
+import App.Utils.Common (refEquals)
+import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
 import App.Utils.Selection as Selection
 import App.Utils.String (last, startsWith) as String
 import Bookhound.Parser (runParser)
@@ -26,14 +26,13 @@ import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
 import Web.DOM.Document (documentElement)
-import Web.DOM.Element (getBoundingClientRect, id, localName, scrollLeft, setScrollLeft)
-import Web.DOM.Element as Element
-import Web.DOM.Node (childNodes, firstChild, nextSibling, nodeName, nodeValue, parentNode, setTextContent, textContent)
+import Web.DOM.Element (getBoundingClientRect, id, scrollLeft, setScrollLeft)
+import Web.DOM.Node (firstChild, nodeName, nodeValue, parentNode, setTextContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
 import Web.Event.Event (Event, preventDefault, target)
 import Web.Event.EventTarget (EventTarget)
-import Web.HTML (HTMLElement, Window, window)
+import Web.HTML (HTMLElement, window)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.HTML.HTMLDocument (HTMLDocument)
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -138,15 +137,15 @@ getFormulaBoxContents = liftEffect
 
 updateFormulaBox :: forall m. MonadEffect m => String -> m Unit
 updateFormulaBox formulaText =
- emptyFormulaBox *> setFormulaBox formulaText
+  emptyFormulaBox *> setFormulaBox formulaText
 
 setFormulaBox :: forall m. Monad m => MonadEffect m => String -> m Unit
 setFormulaBox formulaText = do
   formulaBox <- justSelectElementById formulaBoxId
   liftEffect $ setInnerHTML (toElement formulaBox) htmlString
   where
-    html = unwrap <$> formulaElements formulaText
-    htmlString = fold $ StringRenderer.render (const mempty) <$> html
+  html = unwrap <$> formulaElements formulaText
+  htmlString = fold $ StringRenderer.render (const mempty) <$> html
 
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
 emptyFormulaBox = liftEffect
@@ -272,47 +271,6 @@ getClipboard :: forall m. MonadEffect m => m Clipboard
 getClipboard = liftEffect
   (clipboard =<< Window.navigator =<< window)
 
-setCaretPosition :: Selection -> Node -> Int -> Effect Unit
-setCaretPosition selection parentNode offset = do
-  childNode <- unsafeFromJust <$> firstChild parentNode
-  anchor <- Selection.anchorNode selection
-  traverse_ adjustSelection =<< go childNode anchor offset
-  where
-  adjustSelection (rangeNode /\ rangeOffset) = do
-    range <- Range.createCollapsedRange rangeNode rangeOffset
-    Selection.resetRange selection range
-  go node anchor position = do
-    len <- String.length <$> textContent node
-    if len >= position then
-      pure <<< (_ /\ position) <$> getChildOrNode node
-    else runMaybeT do
-      sibling <- MaybeT $ nextSibling node
-      MaybeT $ go sibling anchor (position - len)
-
-getCaretPosition :: Selection -> Node -> Effect (Maybe Int)
-getCaretPosition selection parentNode = runMaybeT do
-  childNode <- MaybeT $ firstChild parentNode
-  MaybeT $ join $ go childNode
-    <$> Selection.anchorNode selection
-    <*> Selection.anchorOffset selection
-  where
-  go node anchor position = do
-    len <- String.length <$> textContent node
-    textNode <- getChildOrNode node
-    if any (refEquals anchor) [ node, textNode ] then do
-      children <- filterMap Element.fromNode
-                     <$> (NodeList.toArray =<< childNodes textNode)
-      let lineBreaks = length $ filter (eq "br" <<< localName) children
-      pure $ pure (position + lineBreaks)
-    else runMaybeT do
-      sibling <- MaybeT $ nextSibling node
-      MaybeT $ go sibling anchor (position + len)
-
-getChildOrNode :: Node -> Effect Node
-getChildOrNode node = do
-  child <- firstChild node
-  pure $ unsafeFromJust (child <|> pure node)
-
 getAncestorNodes :: Node -> Effect (Array Node)
 getAncestorNodes node = do
   parentNode' <- parentNode node
@@ -386,7 +344,7 @@ parseKeyCode str
 parseKeyCode str = OtherKeyCode str
 
 isModifierKeyCode :: KeyCode -> Boolean
-isModifierKeyCode  = flip elem [Control, Shift]
+isModifierKeyCode = flip elem [ Control, Shift ]
 
 toEvent :: forall a. IsEvent a => a -> Event
 toEvent = unsafeCoerce
@@ -397,13 +355,7 @@ getTarget = target <<< toEvent
 toMouseEvent :: forall a. IsEvent a => a -> MouseEvent
 toMouseEvent = unsafeCoerce
 
-foreign import innerText :: HTMLElement -> Effect String
-
 foreign import setInnerHTML :: Element -> String -> Effect Unit
-
-foreign import getSelection :: Window -> Effect Selection
-
-foreign import refEquals :: forall a. a -> a -> Boolean
 
 newtype Height = Height Number
 newtype Width = Width Number

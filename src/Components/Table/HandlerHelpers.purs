@@ -103,12 +103,11 @@ deleteCells = do
       join $ getTargetCells st.multiSelection st.selectedCell
   modify_ _
     { tableData = HashMap.bulkDelete cellsToDelete st.tableData
-    , tableFormulas = HashMap.bulkDelete  cellsToDelete st.tableFormulas
+    , tableFormulas = HashMap.bulkDelete cellsToDelete st.tableFormulas
     , formulaState = UnknownFormula
     }
   refreshCells $ Set.fromFoldable cellsToDelete
   emptyFormulaBox
-
 
 selectCell
   :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
@@ -250,7 +249,6 @@ setRows = do
   focusCell selectedCell
   where
   parseRow = hush <<< runParser rowParser
-
 
 getPrelude
   :: forall m. MonadEffect m => m (Either (NonEmptyList ForeignError) String)

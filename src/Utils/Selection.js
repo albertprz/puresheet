@@ -11,3 +11,7 @@ export const removeAllRanges = selection => () => selection.removeAllRanges()
 export const selectAllChildren = selection => node => () => selection.selectAllChildren(node)
 
 export const collapseToEnd = selection => () => selection.collapseToEnd()
+
+export const getSelection = window => () => window.getSelection()
+
+export const innerText = el => () => el.innerText

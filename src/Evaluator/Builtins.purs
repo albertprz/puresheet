@@ -2,7 +2,7 @@ module App.Evaluator.Builtins
   ( builtinFnsMap
   ) where
 
-import Prim hiding (Type, Function)
+import Prim hiding (Function, Type)
 
 import App.Evaluator.Object (extractList, isElement)
 import App.SyntaxTree.Common (Var(..))
@@ -85,20 +85,19 @@ nullSig = [] /\ a
 
 -- Type check Fns
 isArray :: Function
-isArray [ArrayObj _] = BoolObj true
-isArray [ListObj _] = BoolObj true
+isArray [ ArrayObj _ ] = BoolObj true
+isArray [ ListObj _ ] = BoolObj true
 isArray _ = BoolObj false
 
 isArraySig :: Sig
 isArraySig = [ Var "x" /\ object ] /\ bool
 
 isNull :: Function
-isNull [NullObj] = BoolObj true
+isNull [ NullObj ] = BoolObj true
 isNull _ = BoolObj false
 
 isNullSig :: Sig
 isNullSig = [ Var "x" /\ object ] /\ bool
-
 
 -- Boolean Fns
 not :: Function
@@ -230,8 +229,8 @@ appendSig = [ Var "xs" /\ arrayOf a, Var "ys" /\ arrayOf a ] /\ arrayOf a
 cons :: Function
 cons [ x, ListObj y ] = ListObj $ Cons x y
 cons [ NullObj, ListObj x ] = ListObj $ Cons NullObj x
-cons [ x, ArrayObj y ] = cons [x, ListObj $ List.fromFoldable y]
-cons [ NullObj, ArrayObj x ] = cons [NullObj, ListObj $ List.fromFoldable x]
+cons [ x, ArrayObj y ] = cons [ x, ListObj $ List.fromFoldable y ]
+cons [ NullObj, ArrayObj x ] = cons [ NullObj, ListObj $ List.fromFoldable x ]
 cons [ CharObj x, StringObj y ] = StringObj $ String.singleton x <> y
 cons [ NullObj, StringObj x ] = StringObj x
 
@@ -260,9 +259,9 @@ transpose :: Function
 transpose [ ListObj xs ] = transpose [ ArrayObj $ Array.fromFoldable xs ]
 transpose [ ArrayObj xs ]
   | Just xss <- traverse extractList xs =
-    ArrayObj $ (ArrayObj <$> Array.transpose xss)
- | all isElement xs =
-    ArrayObj $ (ArrayObj <$> Array.transpose [ xs ])
+      ArrayObj $ (ArrayObj <$> Array.transpose xss)
+  | all isElement xs =
+      ArrayObj $ (ArrayObj <$> Array.transpose [ xs ])
 
 transposeSig :: Sig
 transposeSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ]
@@ -293,8 +292,9 @@ headSig = [ Var "xs" /\ arrayOf a ] /\ a
 
 tail :: Function
 tail [ ListObj x ] = ListObj $ fold $ List.tail x
-tail [ ArrayObj x ] = tail [ListObj $ List.fromFoldable x ]
+tail [ ArrayObj x ] = tail [ ListObj $ List.fromFoldable x ]
 tail [ StringObj x ] = StringObj $ String.tail x
+
 tailSig :: Sig
 tailSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
@@ -315,7 +315,7 @@ initSig :: Sig
 initSig = [ Var "xs" /\ arrayOf a ] /\ arrayOf a
 
 reverse :: Function
-reverse [ ListObj x ] = reverse [ArrayObj $ Array.fromFoldable x ]
+reverse [ ListObj x ] = reverse [ ArrayObj $ Array.fromFoldable x ]
 reverse [ ArrayObj x ] = ArrayObj $ Array.reverse x
 reverse [ StringObj x ] = StringObj $ fromCharArray $ Array.reverse $
   toCharArray x

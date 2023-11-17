@@ -62,7 +62,6 @@ orange = hex "#ff6600"
 brown :: Color
 brown = hex "#993333"
 
-
 mustard :: Color
 mustard = hex "#cc9900"
 

@@ -28,7 +28,13 @@ swapKey (k1 /\ k2) dict =
   v1 = HashMap.lookup k1 dict
   v2 = HashMap.lookup k2 dict
 
-swapKeys :: forall f k v. Foldable f => Hashable k => f (k /\ k) -> HashMap k v -> HashMap k v
+swapKeys
+  :: forall f k v
+   . Foldable f
+  => Hashable k
+  => f (k /\ k)
+  -> HashMap k v
+  -> HashMap k v
 swapKeys = flip $ foldl $ flip swapKey
 
 deleteWhen

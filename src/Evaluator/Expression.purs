@@ -286,14 +286,14 @@ evalPatternBinding (AliasedPattern param pattern) result = do
     evalPatternBinding pattern result
 
 evalPatternBinding (ArrayPattern patterns) result
-  | [headPat, Spread ] <- patterns
+  | [ headPat, Spread ] <- patterns
   , ListObj (resultsHead : _) <- result =
       evalPatternBinding headPat resultsHead
 
-  | [headPat, AliasedPattern tailPat Spread ] <- patterns
+  | [ headPat, AliasedPattern tailPat Spread ] <- patterns
   , ListObj (resultsHead : resultsTail) <- result =
       evalPatternBinding headPat resultsHead *>
-      evalPatternBinding (VarPattern tailPat) (ListObj resultsTail)
+        evalPatternBinding (VarPattern tailPat) (ListObj resultsTail)
 
 evalPatternBinding pattern@(ArrayPattern _) (ListObj xs) =
   evalPatternBinding pattern (ArrayObj $ Array.fromFoldable xs)

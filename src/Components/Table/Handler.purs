@@ -9,8 +9,9 @@ import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, 
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, getSelection, isModifierKeyCode, performSyntaxHighlight, prevent, shiftKey, toEvent, toMouseEvent, updateFormulaBox, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, isModifierKeyCode, performSyntaxHighlight, prevent, shiftKey, toEvent, toMouseEvent, updateFormulaBox, withPrevent)
 import App.Utils.HashMap (lookup2) as HashMap
+import App.Utils.Selection (getSelection)
 import App.Utils.Selection as Selection
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
@@ -18,9 +19,9 @@ import Halogen (HalogenM)
 import Web.Event.Event (target)
 import Web.HTML (window)
 import Web.HTML.HTMLElement (setContentEditable, toNode)
+import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
-import Web.HTML.HTMLElement as HTMLElement
 
 handleAction
   :: forall slots o m
@@ -116,9 +117,10 @@ handleAction (FocusInCell cell _) = do
     Nothing -> emptyFormulaBox
   modify_ _
     { activeFormula = false
-     , formulaState = if isJust formulaText then ValidFormula
-      else UnknownFormula
-     }
+    , formulaState =
+        if isJust formulaText then ValidFormula
+        else UnknownFormula
+    }
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
   cellArrowMove ev PrevColumn

@@ -102,8 +102,8 @@ typeToSyntaxAtoms = case _ of
     <> wrapArgList (map typeToSyntaxAtoms ys)
 
   infixTypeApply op =
-    intercalate [Operator (" " <> op <> " ")]
-    <<< map typeToSyntaxAtoms
+    intercalate [ Operator (" " <> op <> " ") ]
+      <<< map typeToSyntaxAtoms
 
 wrapArgList :: Array (Array SyntaxAtom) -> Array SyntaxAtom
 wrapArgList = wrapParens <<< intercalate [ OtherText ", " ]
