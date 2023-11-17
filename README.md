@@ -35,6 +35,29 @@ for use for enterprise, personal & educational purposes.
 ## Screenshots
 
 ![](assets/screenshot.png)
+
+## Local Deployment
+
+First, clone the repository:
+
+```console
+$ git clone https://github.com/albertprz/puresheet
+$ cd puresheet
+```
+
+Then, install the following dependencies via `npm`:
+
+```console
+$ npm install -g purescript spago parcel
+```
+
+Finally build the project and launch it in localhost:
+
+
+```console
+$ npm run build
+$ npm run serve
+```
     
 ## Keybindings
 
