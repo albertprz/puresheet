@@ -4,10 +4,9 @@ import Prelude
 
 import App.Utils.Maybe (whenMaybe')
 import App.Utils.Number (inc)
-import Bookhound.FatPrelude (class Newtype)
 import Data.Enum (class BoundedEnum, Cardinality, enumFromTo)
 import Data.Maybe (Maybe)
-import Data.Newtype (unwrap, wrap)
+import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Unfoldable1 (class Unfoldable1)
 
 infixr 8 enumFromTo as ..

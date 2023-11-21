@@ -8,7 +8,7 @@ import App.SyntaxTree.Type (Type(..), TypeParam(..), TypeVar(..))
 import Bookhound.Parser (Parser, satisfy)
 import Bookhound.ParserCombinators (multipleSepBy)
 import Bookhound.Parsers.Char (upper)
-import Bookhound.Parsers.String (withinParens, withinSquareBrackets)
+import Bookhound.Parsers.String (betweenParens, betweenSquare)
 import Control.Lazy (defer)
 import Data.String as String
 
@@ -27,12 +27,12 @@ type' = defer \_ -> arrow <|> union <|> atom
       <|> (ParamTypeApply <$> typeParam <*> argListOf type')
 
   arrow = defer \_ -> ArrowTypeApply <$> multipleSepBy (isToken "->")
-    (atom <|> union <|> withinParens arrow)
+    (atom <|> union <|> betweenParens arrow)
 
   union = defer \_ -> UnionTypeApply <$> multipleSepBy (isToken "|")
-    (atom <|> arrow <|> withinParens union)
+    (atom <|> arrow <|> betweenParens union)
 
-  array = defer \_ -> ArrayTypeApply <$> withinSquareBrackets type'
+  array = defer \_ -> ArrayTypeApply <$> betweenSquare type'
 
   typeVar' = TypeVar' <$> typeVar
   typeParam' = TypeParam' <$> typeParam

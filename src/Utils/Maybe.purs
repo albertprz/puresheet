@@ -2,8 +2,7 @@ module App.Utils.Maybe where
 
 import Prelude
 
-import Bookhound.FatPrelude (fromJust)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
 import Partial.Unsafe (unsafePartial)
 
 whenMaybe :: forall a. Boolean -> a -> Maybe a

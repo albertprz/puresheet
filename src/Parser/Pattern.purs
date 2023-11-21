@@ -7,7 +7,7 @@ import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.Parser (Parser)
 import Bookhound.Parsers.Char (underscore)
 import Bookhound.Parsers.Collections (listOf)
-import Bookhound.Parsers.String (withinParens)
+import Bookhound.Parsers.String (betweenParens)
 import Control.Lazy (defer)
 
 pattern' :: Parser Pattern
@@ -27,10 +27,10 @@ pattern' = openForm
       <|> var'
   complexForm = defer \_ -> alias <|> complexInfixForm
   complexInfixForm = defer \_ ->
-    withinParens alias
+    betweenParens alias
   infixArgForm = defer \_ ->
     complexInfixForm
-      <|> withinParens complexInfixForm
+      <|> betweenParens complexInfixForm
       <|> singleForm
   openForm = defer \_ -> complexForm <|> singleForm
-    <|> withinParens (complexForm <|> singleForm)
+    <|> betweenParens (complexForm <|> singleForm)

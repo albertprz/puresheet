@@ -15,7 +15,7 @@ import Bookhound.ParserCombinators (is, noneOf, oneOf, (->>-), (|*), (|+), (||*)
 import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore)
 import Bookhound.Parsers.Char as Parsers
 import Bookhound.Parsers.Number (double, int)
-import Bookhound.Parsers.String (withinDoubleQuotes, withinQuotes)
+import Bookhound.Parsers.String (betweenDoubleQuotes, betweenQuotes)
 import Data.String.CodeUnits (singleton) as String
 import Data.String.Unsafe (char) as String
 import Web.HTML.Common (ClassName)
@@ -55,9 +55,9 @@ syntaxAtomParser = (|+) atom
       <|> (OtherText <<< String.singleton <$> Parsers.anyChar)
 
   char = wrapQuotes <<< String.singleton
-    <$> withinQuotes (charLit <|> charLitEscaped)
+    <$> betweenQuotes (charLit <|> charLitEscaped)
   string = wrapDoubleQuotes
-    <$> withinDoubleQuotes ((||*) (stringLit <|> charLitEscaped))
+    <$> betweenDoubleQuotes ((||*) (stringLit <|> charLitEscaped))
   charLit = noneOf [ '\'', '\\' ]
   charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
     <|> (is '\\' *> Parsers.anyChar)

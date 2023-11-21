@@ -8,11 +8,11 @@ import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (is, sepByOps, someSepBy, within, (</\>), (|+), (|?))
+import Bookhound.ParserCombinators (is, sepByOps, someSepBy, surroundedBy, (</\>), (|+), (|?))
 import Bookhound.Parsers.Char (comma, quote)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (unsignedInt)
-import Bookhound.Parsers.String (withinCurlyBrackets, withinParens, withinSquareBrackets)
+import Bookhound.Parsers.String (betweenCurly, betweenParens, betweenSquare)
 import Control.Lazy (defer)
 
 opDef :: Parser OpDef
@@ -57,23 +57,23 @@ fnBody = whereExpr <|> topLevelExpr
 
   whereExpr = defer \_ -> WhereExpr
     <$> topLevelExpr
-    <*> (isToken "where" *> withinContext "|" fnDef)
+    <*> (isToken "where" *> betweenContext "|" fnDef)
 
   condExpr = defer \_ -> CondExpr <$>
-    ( isToken "cond" *> withinCurlyBrackets
+    ( isToken "cond" *> betweenCurly
         ((|+) (guardedFnBody (isToken "=>")))
     )
   switchExpr = defer \_ -> SwitchExpr
-    <$> (isToken "switch" *> withinParens openForm)
-    <*> withinContext "|" caseBinding
+    <$> (isToken "switch" *> betweenParens openForm)
+    <*> betweenContext "|" caseBinding
 
-  cellMatrixRange = defer \_ -> withinSquareBrackets
-    $ within (isToken "||")
+  cellMatrixRange = defer \_ -> betweenSquare
+    $ surroundedBy (isToken "||")
         (CellMatrixRange <$> (cell <* isToken "..") <*> cell)
-  cellArrayRange = defer \_ -> withinSquareBrackets
-    $ within (isToken "|")
+  cellArrayRange = defer \_ -> betweenSquare
+    $ surroundedBy (isToken "|")
         (CellArrayRange <$> (cell <* isToken "..") <*> cell)
-  arrayRange = defer \_ -> withinSquareBrackets
+  arrayRange = defer \_ -> betweenSquare
     (ArrayRange <$> (openForm <* isToken "..") <*> openForm)
 
   array = defer \_ -> Array' <$> (token (listOf openForm))
@@ -98,7 +98,7 @@ fnBody = whereExpr <|> topLevelExpr
       <|> fnVar
 
   complexForm = defer \_ -> lambdaFn <|> opSection <|> infixFnApply
-  complexInfixForm = defer \_ -> withinParens complexForm
+  complexInfixForm = defer \_ -> betweenParens complexForm
 
 caseBinding :: Parser CaseBinding
 caseBinding = defer \_ -> CaseBinding
@@ -127,8 +127,8 @@ patternGuard = defer \_ ->
 statements :: forall a. String -> Parser a -> Parser (Array a)
 statements sep parser = (|+) (isToken sep *> parser)
 
-withinContext :: forall a. String -> Parser a -> Parser (Array a)
-withinContext sep = withinCurlyBrackets <<< statements sep
+betweenContext :: forall a. String -> Parser a -> Parser (Array a)
+betweenContext sep = betweenCurly <<< statements sep
 
 mandatory :: forall a. Parser (Maybe a) -> Parser a
 mandatory maybeP =
