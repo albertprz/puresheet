@@ -1,9 +1,11 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.12-20231120/packages.dhall
-        sha256:4c066f08ee174c39f5a65f7899f8e3dafdf75c416747eda8a6c6f47e4ac4faaa
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.12-20231123/packages.dhall
+        sha256:95ecd1a23305f270971f4d4f2040541559116de6e21aba773d368787f7f1ed35
 
 let overrides =
       { spec-discovery.version = "v8.2.0"
+      , spec-discovery.repo
+        = "https://github.com/purescript-spec/purescript-spec-discovery"
       , spec-discovery.dependencies
         =
         [ "aff"
@@ -13,8 +15,6 @@ let overrides =
         , "prelude"
         , "spec"
         ]
-      , spec-discovery.repo
-        = "https://github.com/purescript-spec/purescript-spec-discovery"
       }
 
 in  upstream // overrides

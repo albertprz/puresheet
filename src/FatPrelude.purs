@@ -2,7 +2,9 @@ module FatPrelude
   ( module X
   ) where
 
-import App.Utils.Array (arr2, deleteAt', drop', dropEnd', findIndex', findLastIndex', head', index', init', insertAt', intersperse', last', slice', sliceNext', splitAt', tail', take', takeEnd', toArray', uncons', unsnoc', updateAt', zip', zipWith') as X
+import Data.FastVect.MinLenVect (MinLenVect, cons, drop, fromVect, fromArray, fromUnsizedArray, generate, head, index, indexModulo, last, mapWithTerm, reifyMinLenVect, replicate, set, singleton, snoc, splitAt, take, toArray, toNonEmptyArray, toVect) as X
+import App.Utils.MinLenVect (fromFoldable, sort, zip, zipGT, zipLT) as X
+
 import App.Utils.Bounded (clampBounded, enumValues, getInBoundedRange, inBoundedRange, inRange, (..)) as X
 import App.Utils.Char (fromUpper, nextChar, prevChar, toUpper, upperEndCode, upperStartCode) as X
 import App.Utils.Common (partialMaybe) as X
@@ -20,7 +22,6 @@ import Control.Monad.State (class MonadState, StateT(..), evalState, evalStateT,
 import Control.Monad.Trans.Class (class MonadTrans, lift) as X
 import Control.MonadPlus (class Alt, class Alternative, class MonadPlus, class Plus, alt, empty, guard, (<|>)) as X
 import Data.Array (length) as X
-import Data.Array.NonEmpty (NonEmptyArray, alterAt, appendArray, concat, concatMap, cons, cons', delete, deleteAt, deleteBy, difference, difference', drop, dropEnd, dropWhile, elemIndex, elemLastIndex, filterA, findIndex, findLastIndex, foldRecM, fromArray, group, groupAll, groupAllBy, groupBy, head, index, init, insert, insertAt, insertBy, intersect, intersect', intersectBy, intersectBy', intersperse, last, modifyAt, modifyAtIndices, nub, nubBy, nubByEq, nubEq, prependArray, replicate, reverse, singleton, slice, snoc, snoc', sort, sortBy, sortWith, span, splitAt, tail, take, takeEnd, takeWhile, toArray, transpose, transpose', uncons, union, union', unionBy, unionBy', unsafeIndex, unsnoc, unzip, updateAt, updateAtIndices, zip, zipWith, zipWithA, (!!), (\\)) as X
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as X
 import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldl, bifoldr, bifor, bifor_, bisequence, bisequence_, bitraverse, bitraverse_, lfor, ltraverse, rfor, rtraverse) as X
 import Data.Char (fromCharCode, toCharCode) as X

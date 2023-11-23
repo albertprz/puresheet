@@ -13,6 +13,7 @@ import Data.Array as Array
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Bifunctor (rmap)
 import Data.EuclideanRing as Ring
+import Data.Foldable (foldl)
 import Data.HashMap as HashMap
 import Data.Int (toNumber)
 import Data.List (List(..))
@@ -20,7 +21,7 @@ import Data.List as List
 import Data.Set as Set
 import Data.String.CodeUnits (drop, dropRight, length, singleton, slice, take, takeRight, toCharArray) as String
 import Data.Tuple.Nested (type (/\))
-import FatPrelude (HashMap, Maybe(..), all, arr2, bimap, elem, fold, foldl1, fromCharArray, fromMaybe, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
+import FatPrelude (HashMap, Maybe(..), all, bimap, elem, fold, fromCharArray, fromMaybe, toArray, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -250,7 +251,8 @@ snocSig = [ Var "xs" /\ arrayOf a, Var "y" /\ a ] /\ arrayOf a
 
 concat :: Function
 concat [ ListObj xs ] = concat [ ArrayObj $ Array.fromFoldable xs ]
-concat [ ArrayObj xs ] = foldl1 (append <.. arr2) $ NonEmptyArray xs
+concat [ ArrayObj xs ] = foldl (append <.. \x y -> [x, y]) NullObj
+    $ NonEmptyArray xs
 
 concatSig :: Sig
 concatSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ arrayOf a
@@ -276,8 +278,8 @@ containsSig :: Sig
 containsSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ bool
 
 range :: Function
-range [ IntObj x, IntObj y ] = ArrayObj $ IntObj <$> (x .. y)
-range [ CharObj x, CharObj y ] = ArrayObj $ CharObj <$> (x .. y)
+range [ IntObj x, IntObj y ] = ArrayObj $ IntObj <$> toArray (x .. y)
+range [ CharObj x, CharObj y ] = ArrayObj $ CharObj <$> toArray (x .. y)
 
 rangeSig :: Sig
 rangeSig = [ Var "start" /\ a, Var "end" /\ a ] /\ arrayOf a

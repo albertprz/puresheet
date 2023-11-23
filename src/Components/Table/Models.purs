@@ -25,7 +25,7 @@ type AppState =
   , tableFormulas :: HashMap Cell FormulaId
   , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
   , formulaCache :: HashMap FormulaId Formula
-  , rows :: NonEmptyArray Row
+  , rows :: MinLenVect 1 Row
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header

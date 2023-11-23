@@ -12,6 +12,7 @@ import App.Interpreter.Module (reloadModule)
 import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
 import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
+import Data.Array as Array
 import Data.HashMap (insert, keys, lookup, union, unionWith) as HashMap
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Set as Set
@@ -147,12 +148,12 @@ goToCellHelper
   -> Effect Unit
 goToCellHelper cols origin { column, row } visibleCols
 
-  | last' cols == Just column && origin.column /= top
-  , Just element <- head' visibleCols = do
+  | Array.last cols == Just column && origin.column /= top
+  , Just element <- Array.head visibleCols = do
       scrollCellRight element
 
-  | head' cols == Just column && origin.column /= bottom
-  , Just element <- head' visibleCols = do
+  | Array.head cols == Just column && origin.column /= bottom
+  , Just element <- Array.head visibleCols = do
       scrollCellLeft element
 
   | otherwise = focusCell { column, row }

@@ -1,6 +1,6 @@
 module App.Components.Table.Renderer where
 
-import FatPrelude hiding (div, span)
+import FatPrelude hiding (div)
 import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaContainer, formulaSignature, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)

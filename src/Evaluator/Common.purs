@@ -40,7 +40,7 @@ registerBindings bindings = do
   { scope, scopeLoc } <- get
   let (Scope maxScope) = fromMaybe scope $ maximum $ toTree scopeLoc
   let scopes = Scope <<< (_ + maxScope) <$> (1 .. length bindings)
-  traverse_ (\(n /\ x) -> registerLocalFn n x) (scopes `zip'` bindings)
+  traverse_ (\(n /\ x) -> registerLocalFn n x) ((toArray scopes) `Array.zip` bindings)
   modify_ \st -> st
     { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
         st.scopeLoc
@@ -135,12 +135,12 @@ getAvailableFns
    . (Maybe Module -> a -> b)
   -> (Maybe Module /\ a)
   -> LocalFormulaCtx
-  -> NonEmptyArray b
+  -> MinLenVect 1 b
 getAvailableFns
   ctor
   (fnModule /\ fnName)
   { module', importedModulesMap, aliasedModulesMap } =
-  flip ctor fnName <<< pure <$> cons' module' (Array.fromFoldable modules)
+  flip ctor fnName <<< pure <$> cons module' (fromFoldable modules)
   where
   modules = case fnModule of
     Just alias -> fromMaybe Set.empty
@@ -191,7 +191,7 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
             , returnType: Nothing
             }
         )
-    <$> zip' ((scope /\ _) <<< fst <$> params) args
+    <$> Array.zip ((scope /\ _) <<< fst <$> params) args
   args =
     if isJust maybeFnId then resetScope <$> fnArgs
     else fnArgs

@@ -104,10 +104,10 @@ swapTableMapRow origin target tableDict =
           (\cell -> cell.row == origin || cell.row == target)
           (HashMap.keys tableDict)
 
-allColumns :: NonEmptyArray Column
+allColumns :: MinLenVect 1 Column
 allColumns = enumValues
 
-allRows :: NonEmptyArray Row
+allRows :: MinLenVect 1 Row
 allRows = enumValues
 
 mkColumn :: Char -> Column

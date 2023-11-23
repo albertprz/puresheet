@@ -4,6 +4,7 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.Components.Table.Cell (Cell, CellMove(..), CellValue, Column, Row, allColumns, allRows, getCell, getColumnCell, getRowCell, nextRowCell, parseCellValue, prevColumnCell)
+import Data.Array as Array
 import Data.HashMap as HashMap
 import Data.String.Pattern (Pattern(..))
 
@@ -124,8 +125,8 @@ deserializeSelectionValues
   :: Cell -> String -> HashMap Cell CellValue
 deserializeSelectionValues selectedCell str = HashMap.fromArray
   do
-    rowValues /\ row <- zip' values (selectedCell.row .. top)
-    value /\ column <- zip' rowValues (selectedCell.column .. top)
+    rowValues /\ row <- Array.zip values (toArray (selectedCell.row .. top))
+    value /\ column <- Array.zip rowValues (toArray (selectedCell.column .. top))
     pure $ { row, column } /\ parseCellValue value
   where
   values = split (Pattern tab) <$> split (Pattern newline) str
@@ -133,14 +134,14 @@ deserializeSelectionValues selectedCell str = HashMap.fromArray
 getTargetCells
   :: MultiSelection
   -> Cell
-  -> (NonEmptyArray (NonEmptyArray Cell))
+  -> (MinLenVect 1 (MinLenVect 1 Cell))
 getTargetCells selection selectedCell =
   fromMaybe (singleton $ singleton selectedCell)
     (getSelectionCells selection)
 
 getSelectionCells
   :: MultiSelection
-  -> Maybe (NonEmptyArray (NonEmptyArray Cell))
+  -> Maybe (MinLenVect 1 (MinLenVect 1 Cell))
 getSelectionCells selection = do
   columnBounds /\ rowBounds <- getSelectionBounds selection
   pure do
@@ -166,7 +167,7 @@ isRowsSelection _ = false
 
 getSelectionBounds
   :: MultiSelection
-  -> Maybe (NonEmptyArray Column /\ NonEmptyArray Row)
+  -> Maybe (MinLenVect 1 Column /\ MinLenVect 1 Row)
 getSelectionBounds NoSelection = Nothing
 getSelectionBounds AllSelection =
   Just $ allColumns /\ allRows

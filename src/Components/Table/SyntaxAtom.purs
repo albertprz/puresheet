@@ -16,6 +16,7 @@ import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore)
 import Bookhound.Parsers.Char as Parsers
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (betweenDoubleQuotes, betweenQuotes)
+import Data.Array as Array
 import Data.String.CodeUnits (singleton) as String
 import Data.String.Unsafe (char) as String
 import Web.HTML.Common (ClassName)
@@ -36,9 +37,9 @@ condenseSyntaxAtoms :: Array SyntaxAtom -> Array SyntaxAtom
 condenseSyntaxAtoms = foldl go []
   where
   go xs (OtherText y)
-    | Just { init, last: (OtherText x) } <- unsnoc' xs =
-        toArray $ snoc' init $ OtherText (x <> y)
-  go xs y = toArray $ snoc' xs y
+    | Just { init, last: (OtherText x) } <- Array.unsnoc xs =
+        Array.snoc init $ OtherText (x <> y)
+  go xs y = Array.snoc xs y
 
 syntaxAtomParser :: Parser (Array SyntaxAtom)
 syntaxAtomParser = (|+) atom

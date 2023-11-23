@@ -66,8 +66,8 @@ extractCells
   ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
   ) = Set.fromUnfoldable do
-  row <- rowX .. rowY
-  column <- colX .. colY
+  row <- toArray (rowX .. rowY)
+  column <- toArray (colX .. colY)
   pure { column, row }
 
 extractCells
@@ -75,9 +75,9 @@ extractCells
       { column: colY, row: rowY }
   )
   | rowX == rowY =
-      Set.fromUnfoldable $ { column: _, row: rowX } <$> (colX .. colY)
+      Set.fromUnfoldable $ { column: _, row: rowX } <$> toArray (colX .. colY)
   | colX == colY =
-      Set.fromUnfoldable $ { column: colX, row: _ } <$> (rowX .. rowY)
+      Set.fromUnfoldable $ { column: colX, row: _ } <$> toArray (rowX .. rowY)
   | otherwise = mempty
 
 extractCells (ArrayRange x y) =

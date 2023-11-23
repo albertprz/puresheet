@@ -1,6 +1,6 @@
 module App.Utils.Dom where
 
-import FatPrelude (class Eq, class Monad, class MonadEffect, Effect, Maybe(..), NonEmptyArray, Unit, any, bind, compact, const, dec, discard, elem, evalState, filterA, filterMap, flip, fold, foldMap, fromArray, fromMaybe, hush, inc, join, liftEffect, map, maximum, mempty, minimum, pos, pure, runExceptT, sequence, show, traverse, traverse_, unsafeFromJust, unwrap, when, whenMaybe, ($), (&&), (*>), (+), (-), (<), (<$$>), (<$>), (<<<), (<>), (<|>), (=<<), (==), (||))
+import FatPrelude
 
 import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, formulaSignatureId)
 import App.Components.Table.Cell (Cell, showCell)
@@ -14,6 +14,7 @@ import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretP
 import App.Utils.Selection as Selection
 import App.Utils.String (last, startsWith) as String
 import Bookhound.Parser (runParser)
+import Data.Array (filterA)
 import Data.Int as Int
 import Data.String (Pattern(..))
 import Data.String.CodeUnits (indexOf', lastIndexOf')
@@ -223,18 +224,18 @@ selectAllVisibleElements
   :: forall m. MonadEffect m => QuerySelector -> m (Array Element)
 selectAllVisibleElements query = liftEffect $ do
   elems <- selectAllElements query
-  visibleElems <- sequence $ elemsInViewport <$> (toElement <$$> elems)
-  pure $ fold visibleElems
+  visibleElems <- elemsInViewport $ map toElement elems
+  pure visibleElems
 
 selectAllElements
   :: forall m
    . MonadEffect m
   => QuerySelector
-  -> m (Maybe (NonEmptyArray HTMLElement))
+  -> m (Array HTMLElement)
 selectAllElements query = liftEffect $ do
   nodes <- querySelectorHelper querySelectorAll query
   elems <- NodeList.toArray nodes
-  pure $ (traverse HTMLElement.fromNode) =<< fromArray elems
+  pure $ filterMap HTMLElement.fromNode elems
 
 selectElement
   :: forall m. MonadEffect m => QuerySelector -> m (Maybe HTMLElement)
@@ -287,7 +288,7 @@ getNodeText node = do
   brText = whenMaybe (nodeName node == "br") "\n"
 
 elemsInViewport
-  :: forall m. MonadEffect m => NonEmptyArray Element -> m (Array Element)
+  :: forall m. MonadEffect m => Array Element -> m (Array Element)
 elemsInViewport elems = liftEffect $ do
   w <- window
   wHeight <- Height <<< Int.toNumber <$> Window.innerHeight w

@@ -82,9 +82,9 @@ evalExpr
   evalExpr $ Array' (Array' <$> matrix)
   where
   matrix = do
-    row <- rowX .. rowY
+    row <- toArray (rowX .. rowY)
     pure $ do
-      column <- colX .. colY
+      column <- toArray (colX .. colY)
       pure $ Cell' { column, row }
 
 evalExpr
@@ -93,10 +93,10 @@ evalExpr
   )
   | rowX == rowY =
       evalExpr $ Array' $ Cell' <<< { column: _, row: rowX }
-        <$> (colX .. colY)
+        <$> toArray (colX .. colY)
   | colX == colY =
       evalExpr $ Array' $ Cell' <<< { column: colX, row: _ }
-        <$> (rowX .. rowY)
+        <$> toArray (rowX .. rowY)
   | otherwise =
       raiseError $ TypeError' $ InvalidCellArrayRange x y
 
@@ -104,7 +104,7 @@ evalExpr (ArrayRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr (Array' array) =
   evalExpr
-    $ foldl (FnApply (varFn "snoc") <.. arr2)
+    $ foldl (FnApply (varFn "snoc") <.. \x y -> [x, y])
         (Object' $ ArrayObj [])
         array
 
@@ -148,20 +148,20 @@ evalFn (FnInfo fnInfo@{ body, params, id: maybeFnId }) args = do
     put st
     if isJust maybeFnId then
       pure $ resetFnScope
-        $ substituteFnArgs result (map fst params `zip'` args)
+        $ substituteFnArgs result (map fst params `Array.zip` args)
     else
       modify_ _ { scopeLoc = newScopeLoc } *> pure result
 
   else if unappliedArgsNum > 0 then
     pure $ FnObj $ FnInfo $ fnInfo
-      { params = takeEnd' unappliedArgsNum params
+      { params = Array.takeEnd unappliedArgsNum params
       , argsMap = newSt.argsMap
       }
 
   else do
     let
       { before: preArgs, after: postArgs } =
-        splitAt' (length params) args
+        Array.splitAt (length params) args
     fn <- evalFn (FnInfo fnInfo) preArgs
     evalExpr $ FnApply (Object' fn) postArgs
 
@@ -179,7 +179,7 @@ evalBuiltinFn fnInfo@{ fn, params, defaultParams } args =
   else if unappliedArgsNum > 0 then
     pure $ BuiltinFnObj $ fnInfo
       { fn = \newArgs -> fn (args <> newArgs)
-      , params = takeEnd' unappliedArgsNum params
+      , params = Array.takeEnd unappliedArgsNum params
       , defaultParams = Set.filter zeroOrPos
           $ Set.map (_ - length args) defaultParams
       }
@@ -210,20 +210,20 @@ nestInfixFns fnOps args = do
   let
     indexFn =
       case associativity of
-        L -> findIndex'
-        R -> findLastIndex'
+        L -> Array.findIndex
+        R -> Array.findLastIndex
   idx <- indexFn
     ( \x -> x.associativity == associativity
         && (x.precedence == precedence)
     )
     fnOps
-  { fnName } <- index' fnOps idx
+  { fnName } <- Array.index fnOps idx
   let
-    newFns = fold $ deleteAt' idx fnOps
-    redexArgs = sliceNext' 2 idx args
-    newArgs = fold $ deleteAt' (idx + 1)
+    newFns = fold $ Array.deleteAt idx fnOps
+    redexArgs = Array.slice idx (idx + 2) args
+    newArgs = fold $ Array.deleteAt (idx + 1)
       $ fold
-      $ updateAt' idx (FnApply (FnVar fnName) redexArgs) args
+      $ Array.updateAt idx (FnApply (FnVar fnName) redexArgs) args
   nestInfixFns newFns newArgs
 
 evalCaseBinding
@@ -299,7 +299,7 @@ evalPatternBinding pattern@(ArrayPattern _) (ListObj xs) =
   evalPatternBinding pattern (ArrayObj $ Array.fromFoldable xs)
 
 evalPatternBinding (ArrayPattern patterns) result
-  | Just idx <- findIndex' isSpread patterns
+  | Just idx <- Array.findIndex isSpread patterns
   , length (filter isSpread patterns) == 1
   , ArrayObj results <- result =
       do
@@ -311,18 +311,18 @@ evalPatternBinding (ArrayPattern patterns) result
           (ArrayPattern $ patternsBegin <> patternsEnd)
           (ArrayObj $ resultsBegin <> resultsEnd)
       where
-      { before, after } = splitAt' idx patterns
-      (patternsBegin /\ patternsEnd) = (before /\ fold (tail' after))
-      resultsBegin = take' (length patternsBegin) results
-      resultsBetween = slice' (length patternsBegin)
+      { before, after } = Array.splitAt idx patterns
+      (patternsBegin /\ patternsEnd) = (before /\ fold (Array.tail after))
+      resultsBegin = Array.take (length patternsBegin) results
+      resultsBetween = Array.slice (length patternsBegin)
         (length results - length patternsEnd)
         results
-      resultsEnd = takeEnd' (length patternsEnd) results
+      resultsEnd = Array.takeEnd (length patternsEnd) results
 
 evalPatternBinding (ArrayPattern patterns) result
   | Just results <- extractNList (length patterns) result =
       and <$> traverse (\x -> uncurry evalPatternBinding x)
-        (patterns `zip'` results)
+        (patterns `Array.zip` results)
   | otherwise = pure false
 
 evalPatternBinding Wildcard _ =
