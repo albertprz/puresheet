@@ -26,7 +26,8 @@ import Web.UIEvent.WheelEvent (deltaX, deltaY)
 handleAction
   :: forall slots o m
    . MonadAff m
-  => Action -> HalogenM AppState Action slots o m Unit
+  => Action
+  -> HalogenM AppState Action slots o m Unit
 
 handleAction Initialize = do
   loadPrelude

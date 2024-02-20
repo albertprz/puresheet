@@ -251,8 +251,8 @@ snocSig = [ Var "xs" /\ arrayOf a, Var "y" /\ a ] /\ arrayOf a
 
 concat :: Function
 concat [ ListObj xs ] = concat [ ArrayObj $ Array.fromFoldable xs ]
-concat [ ArrayObj xs ] = foldl (append <.. \x y -> [x, y]) NullObj
-    $ NonEmptyArray xs
+concat [ ArrayObj xs ] = foldl (append <.. \x y -> [ x, y ]) NullObj
+  $ NonEmptyArray xs
 
 concatSig :: Sig
 concatSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ arrayOf a

@@ -22,6 +22,8 @@ opDef = defer \_ -> withError "Operator definition"
   <*> (isToken "=" *> var)
   <*> (L <$ is 'L' <|> R <$ is 'R')
   <*> mandatory (toEnum <$> unsignedInt)
+  where
+  mandatory = (=<<) (fromMaybe empty <<< map pure)
 
 fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
@@ -129,7 +131,3 @@ statements sep parser = (|+) (isToken sep *> parser)
 
 betweenContext :: forall a. String -> Parser a -> Parser (Array a)
 betweenContext sep = betweenCurly <<< statements sep
-
-mandatory :: forall a. Parser (Maybe a) -> Parser a
-mandatory maybeP =
-  fromMaybe empty <<< map pure =<< maybeP

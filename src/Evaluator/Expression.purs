@@ -104,7 +104,7 @@ evalExpr (ArrayRange x y) = evalExpr $ FnApply (varFn "range") [ x, y ]
 
 evalExpr (Array' array) =
   evalExpr
-    $ foldl (FnApply (varFn "snoc") <.. \x y -> [x, y])
+    $ foldl (FnApply (varFn "snoc") <.. \x y -> [ x, y ])
         (Object' $ ArrayObj [])
         array
 

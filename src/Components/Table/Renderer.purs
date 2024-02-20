@@ -11,6 +11,7 @@ import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
 import App.Utils.Dom (mkKeyAction)
 import Bookhound.Parser (runParser)
+import Data.Array as Array
 import Data.HashMap as HashMap
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
@@ -97,14 +98,14 @@ renderBody
     { rows
     , tableData
     } =
-  tbody_ $ toArray do
-    row <- rows
-    pure $ tr_ $ toArray $ cons
+  tbody_ do
+    row <- toArray rows
+    pure $ tr_ $ Array.cons
       (renderRowHeader st row)
       (renderRow row)
   where
   renderRow row = do
-    column <- allColumns
+    column <- toArray allColumns
     let
       cell = { column, row }
       cellValue = HashMap.lookup cell tableData

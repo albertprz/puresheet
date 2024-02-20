@@ -9,14 +9,14 @@ import App.Evaluator.Common (LocalFormulaCtx, lookupBuiltinFn, lookupModuleFn, l
 import App.Parser.Common (qVar, qVarOp)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (FnId, FnSig)
-import App.Utils.Common (refEquals)
+import App.Utils.Common (refEquals, spyShow)
 import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
 import App.Utils.Selection as Selection
 import App.Utils.String (last, startsWith) as String
 import Bookhound.Parser (runParser)
 import Data.Array (filterA)
 import Data.Int as Int
-import Data.String (Pattern(..))
+import Data.String (Pattern(..), stripSuffix)
 import Data.String.CodeUnits (indexOf', lastIndexOf')
 import Data.String.CodeUnits (length, slice, takeRight) as String
 import Halogen.HTML (HTML, span, text)
@@ -54,6 +54,7 @@ performSyntaxHighlight = liftEffect do
   selection <- getSelection =<< window
   caretPosition <- getCaretPosition selection (toNode formulaBox)
   formulaText <- getFormulaBoxContents
+  let x = spyShow "formula" formulaText
   updateFormulaBox formulaText
   traverse_ (setCaretPosition selection $ toNode formulaBox) caretPosition
 

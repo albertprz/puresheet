@@ -126,7 +126,8 @@ deserializeSelectionValues
 deserializeSelectionValues selectedCell str = HashMap.fromArray
   do
     rowValues /\ row <- Array.zip values (toArray (selectedCell.row .. top))
-    value /\ column <- Array.zip rowValues (toArray (selectedCell.column .. top))
+    value /\ column <- Array.zip rowValues
+      (toArray (selectedCell.column .. top))
     pure $ { row, column } /\ parseCellValue value
   where
   values = split (Pattern tab) <$> split (Pattern newline) str

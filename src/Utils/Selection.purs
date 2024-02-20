@@ -28,8 +28,9 @@ getCaretPosition selection parentNode = runMaybeT do
     nodeText <- fold <$> traverse innerText (HTMLElement.fromNode textNode)
     anchorText <- fold <$> traverse innerText (HTMLElement.fromNode textNode)
     let isFont = any (eq "font" <<< localName) (Element.fromNode textNode)
-    if any (refEquals anchor) [ node, textNode ]
-       || isFont && nodeText == anchorText then do
+    if
+      any (refEquals anchor) [ node, textNode ]
+        || (isFont && nodeText == anchorText) then do
       children <- filterMap Element.fromNode
         <$> (NodeList.toArray =<< childNodes textNode)
       let lineBreaks = length $ filter (eq "br" <<< localName) children
@@ -44,9 +45,11 @@ setCaretPosition selection parentNode offset = do
   anchor <- anchorNode selection
   traverse_ adjustSelection =<< go childNode anchor offset
   where
+
   adjustSelection (rangeNode /\ rangeOffset) = do
     range <- Range.createCollapsedRange rangeNode rangeOffset
     resetRange selection range
+
   go node anchor position = do
     len <- String.length <$> textContent node
     if len >= position then
