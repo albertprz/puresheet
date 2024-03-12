@@ -9,14 +9,15 @@ import App.Evaluator.Common (LocalFormulaCtx, lookupBuiltinFn, lookupModuleFn, l
 import App.Parser.Common (qVar, qVarOp)
 import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
 import App.SyntaxTree.FnDef (FnId, FnSig)
-import App.Utils.Common (refEquals, spyShow)
+import App.Utils.Common (refEquals)
 import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
 import App.Utils.Selection as Selection
 import App.Utils.String (last, startsWith) as String
 import Bookhound.Parser (runParser)
 import Data.Array (filterA)
 import Data.Int as Int
-import Data.String (Pattern(..), stripSuffix)
+import Data.String (Pattern(..))
+import Data.String (null, splitAt) as String
 import Data.String.CodeUnits (indexOf', lastIndexOf')
 import Data.String.CodeUnits (length, slice, takeRight) as String
 import Halogen.HTML (HTML, span, text)
@@ -54,7 +55,6 @@ performSyntaxHighlight = liftEffect do
   selection <- getSelection =<< window
   caretPosition <- getCaretPosition selection (toNode formulaBox)
   formulaText <- getFormulaBoxContents
-  let x = spyShow "formula" formulaText
   updateFormulaBox formulaText
   traverse_ (setCaretPosition selection $ toNode formulaBox) caretPosition
 
@@ -91,6 +91,22 @@ displayFunctionType ctx = liftEffect do
         $ StringRenderer.render (const mempty)
         <$> html
     setInnerHTML (toElement formulaSignature) htmlString
+
+introduceFormulaNewLine :: forall m. MonadEffect m => m Unit
+introduceFormulaNewLine = liftEffect do
+  formulaBox <- justSelectElementById formulaBoxId
+  formulaText <- getFormulaBoxContents
+  selection <- getSelection =<< window
+  caretPosition <- getCaretPosition selection (toNode formulaBox)
+  let
+    { before: formulaBegin, after: formulaEnd } =
+      String.splitAt (fromMaybe zero caretPosition) formulaText
+    newFormulaText
+      | String.null formulaEnd = formulaBegin <> "\n\n"
+      | otherwise = formulaBegin <> "\n" <> formulaEnd
+  updateFormulaBox newFormulaText
+  traverse_ (setCaretPosition selection $ toNode formulaBox)
+    ((_ + 1) <$> caretPosition)
 
 syntaxAtomsToElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
 syntaxAtomsToElements = map toElement <<< condenseSyntaxAtoms
@@ -146,8 +162,8 @@ setFormulaBox formulaText = do
   formulaBox <- justSelectElementById formulaBoxId
   liftEffect $ setInnerHTML (toElement formulaBox) htmlString
   where
-  html = unwrap <$> formulaElements formulaText
   htmlString = fold $ StringRenderer.render (const mempty) <$> html
+  html = unwrap <$> formulaElements formulaText
 
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
 emptyFormulaBox = liftEffect

@@ -9,7 +9,7 @@ import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, 
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, isModifierKeyCode, performSyntaxHighlight, prevent, shiftKey, toEvent, toMouseEvent, updateFormulaBox, withPrevent)
+import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, introduceFormulaNewLine, isModifierKeyCode, performSyntaxHighlight, prevent, shiftKey, toEvent, toMouseEvent, updateFormulaBox, withPrevent)
 import App.Utils.HashMap (lookup2) as HashMap
 import App.Utils.Selection (getSelection)
 import App.Utils.Selection as Selection
@@ -70,6 +70,9 @@ handleAction (WriteCell cell value) = do
 
 handleAction (FormulaKeyDown Enter ev)
   | ctrlKey ev = withPrevent ev insertFormula
+
+handleAction (FormulaKeyDown Enter ev) =
+  withPrevent ev (introduceFormulaNewLine *> performSyntaxHighlight)
 
 handleAction (FormulaKeyDown Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell
