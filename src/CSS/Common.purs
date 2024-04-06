@@ -4,6 +4,16 @@ import FatPrelude
 
 import Color (Color, fromHexString)
 import Color as Color
+import Tecton.Internal (Length, Measure, px)
+
+formulaFontSize :: Measure Length
+formulaFontSize = px 21
+
+suggestionsFontSize :: Measure Length
+suggestionsFontSize = px 22
+
+signatureFontSize :: Measure Length
+signatureFontSize = px 24
 
 hex :: String -> Color
 hex = fromMaybe black <<< fromHexString

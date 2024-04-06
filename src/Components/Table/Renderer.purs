@@ -3,13 +3,13 @@ module App.Components.Table.Renderer where
 import FatPrelude hiding (div)
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaContainer, formulaSignature, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
-import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, formulaSignatureId, selectedCellInputId)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaSectionContainer, functionSignature, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, suggestionsDropdown)
+import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, functionSignatureId, selectedCellInputId, suggestionsDropdownId)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
-import App.Utils.Dom (mkKeyAction)
+import App.Utils.KeyCode (mkKeyAction)
 import Bookhound.Parser (runParser)
 import Data.Array as Array
 import Data.HashMap as HashMap
@@ -27,7 +27,7 @@ render
     , selectionState
     } =
   div [ class_ mainContainer ]
-    [ div [ class_ formulaContainer ]
+    [ div [ class_ formulaSectionContainer ]
         [ input
             [ id $ show selectedCellInputId
             , classes [ selectedCellInput ]
@@ -46,10 +46,15 @@ render
                 ]
                 []
             , div
-                [ id $ show formulaSignatureId
-                , classes [ formulaSignature ]
+                [ id $ show functionSignatureId
+                , classes [ functionSignature ]
                 ]
                 [ text mempty ]
+            , div
+                [ id $ show suggestionsDropdownId
+                , class_ suggestionsDropdown
+                ]
+                []
             ]
         , input
             [ id $ show formulaCellInputId
@@ -65,7 +70,7 @@ render
             [ copySelection ]
         , style "border-spacing: 0"
         , onKeyDown $ mkKeyAction KeyDown
-        , onKeyUp $ mkKeyAction KeyRelease
+        , onKeyUp $ mkKeyAction KeyUp
         , onWheel WheelScroll
         ]
         [ renderHeader st

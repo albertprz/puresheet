@@ -5,14 +5,14 @@ import Prim hiding (Type)
 
 import App.CSS.ClassNames (cellSyntax, functionSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Table.Cell (cellParser, showCell)
-import App.Parser.Common (notReservedKeyword, notReservedSymbol, opSymbol, reservedKeywords, reservedSymbols)
-import App.SyntaxTree.Common (QVar(..), preludeModule)
-import App.SyntaxTree.FnDef (FnId, FnSig)
+import App.Parser.Common (module', nonTokenIdent, nonTokenOperator, notReservedKeyword, notReservedSymbol, opSymbol, reservedKeywords, reservedSymbols)
+import App.SyntaxTree.Common (QVar(..))
+import App.SyntaxTree.FnDef (FnSig)
 import App.SyntaxTree.Type (Type(..))
 import App.Utils.String (wrapDoubleQuotes)
 import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators (is, noneOf, oneOf, (->>-), (|*), (|+), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore)
+import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore, upper)
 import Bookhound.Parsers.Char as Parsers
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (betweenDoubleQuotes, betweenQuotes)
@@ -49,8 +49,9 @@ syntaxAtomParser = (|+) atom
       <|> (Char' <$> char)
       <|> (String' <$> string)
       <|> (Cell' <<< showCell <$> cellParser)
-      <|> (Operator <$> varOp)
+      <|> (OtherText <$> module')
       <|> (Function <$> var)
+      <|> (Operator <$> varOp)
       <|> (Keyword <$> oneOf reservedKeywords)
       <|> (Symbol <$> oneOf reservedSymbols)
       <|> (OtherText <<< String.singleton <$> Parsers.anyChar)
@@ -63,18 +64,15 @@ syntaxAtomParser = (|+) atom
   charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
     <|> (is '\\' *> Parsers.anyChar)
   stringLit = noneOf [ '"', '\\' ]
-  operator start = start ->>- (|*) opSymbol
-  idChar = alphaNum <|> underscore <|> quote
-  ident start = start ->>- (|*) idChar
-  var = notReservedKeyword (ident lower)
-  varOp = notReservedSymbol (operator opSymbol)
+  var = notReservedKeyword (nonTokenIdent lower)
+  varOp = notReservedSymbol nonTokenOperator
+  module' = nonTokenIdent upper
 
-fnSigToSyntaxAtoms :: forall r. FnId -> FnSig r -> Array SyntaxAtom
-fnSigToSyntaxAtoms { fnModule, fnName } { params, returnType } =
+fnSigToSyntaxAtoms :: forall r. QVar -> FnSig r -> Array SyntaxAtom
+fnSigToSyntaxAtoms (QVar _ fnName) { params, returnType } =
   fnName' <> params' <> returnType'
   where
-  prettyModule = unlessMaybe (fnModule == preludeModule) fnModule
-  fnName' = [ Function (show (QVar prettyModule fnName) <> " ") ]
+  fnName' = [ Function (show fnName <> " ") ]
   params' = wrapArgList (param <$> params)
   returnType' = foldMap annotation returnType
   annotation = ([ Symbol ": " ] <> _) <$> typeToSyntaxAtoms

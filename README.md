@@ -11,25 +11,25 @@ for use for enterprise, personal & educational purposes.
 
 - [:heavy_check_mark:] Provide a no frills, minimalistic GUI supporting all basic spreadsheet functionality regarding navigation, cell management, formula evaluation & automatic cell updates.
 
-- [:heavy_check_mark:] Expose a high level pure functional dynamic formula language interpreted at the browser, with expresiveness similar to the term level language in Haskell or Purescript, albeit with familiar syntax and idioms to popular spreadhsheet applications and mainstream languages.
+- [:heavy_check_mark:] Expose a high level pure functional dynamic formula language interpreted at the browser, with expresiveness similar to the term level language in Haskell or Purescript, albeit with familiar syntax and idioms to popular spreadsheet applications and mainstream languages.
 
 - [:heavy_check_mark:] Expose a prelude library with commonly used functions and combinators, loaded at startup.
 
 - [:heavy_check_mark:] Support formula edition with syntax highlighting and function signatures for the current function at the cursor.
 
-- Include Opt-in automatic formatting for formulas when evaluated.
-
-- Support auto completion for imported and module aliased global functions.
+- [:heavy_check_mark:] Support auto completion for imported and module aliased top-level functions and operators.
 
 - Expose a view to query (possibly in a Hoogle / Pursuit fashion), view, update and upload new global functions & operators on a per module basis. This view would surface the same editing capatibilities as the formula box in the main spreadsheet view.
 
-- Expose customization options for navigation, keybindings, spreadsheet behaviour as well as display and themes configuration.
+- Include Opt-in automatic formatting for formulas when evaluated.
 
 - Enable the use of formulas for filtering & sorting rows.
 
-- Support authenticated persistence & retrieval from a catalog of private spreadsheets via a future backend.
+- Expose customization options for navigation, keybindings, spreadsheet behaviour as well as display and themes configuration.
 
 - Support Import & Export of spreadsheets from and to Excel and Google Sheets with the proper mapping of cell values & formulas.
+
+- Support authenticated persistence & retrieval from a catalog of private spreadsheets via a future backend.
 
 
 ## Screenshots

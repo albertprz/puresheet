@@ -5,7 +5,7 @@ import FatPrelude
 import App.Components.Table.Cell (CellValue(..))
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, satisfy, withTransform)
-import Bookhound.ParserCombinators (class IsMatch, is, noneOf, oneOf, someSepBy, surroundedBy, (->>-), (</\>), (|*), (|?), (||*))
+import Bookhound.ParserCombinators (class IsMatch, is, noneOf, oneOf, someSepBy, surroundedBy, (->>-), (</\>), (|*), (|?), (||*), (||+))
 import Bookhound.Parsers.Char (alpha, alphaNum, anyChar, comma, dot, lower, upper)
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (betweenDoubleQuotes, betweenParens, betweenQuotes, maybeBetweenSpacing)
@@ -52,13 +52,16 @@ argListOf :: forall a. Parser a -> Parser (Array a)
 argListOf = betweenParens <<< someSepBy comma
 
 ident :: Parser Char -> Parser String
-ident start = token $ start ->>- (|*) alphaNum
+ident = token <<< nonTokenIdent
 
 operator :: Parser String
-operator = token $ (||*) opSymbol
+operator = token nonTokenOperator
 
 nonTokenIdent :: Parser Char -> Parser String
 nonTokenIdent start = start ->>- (|*) alphaNum
+
+nonTokenOperator :: Parser String
+nonTokenOperator = (||+) opSymbol
 
 idChar :: Parser Char
 idChar = alphaNum

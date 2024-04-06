@@ -26,6 +26,7 @@ newtype Module = Module (Array String)
 
 derive newtype instance Eq Module
 derive newtype instance Ord Module
+derive instance Newtype Module _
 instance Show Module where
   show (Module x) = intercalate "." x
 

@@ -59,8 +59,8 @@ cornerHeader = ClassName "corner-header"
 mainContainer :: ClassName
 mainContainer = ClassName "main-container"
 
-formulaContainer :: ClassName
-formulaContainer = ClassName "formula-container"
+formulaSectionContainer :: ClassName
+formulaSectionContainer = ClassName "formula-container"
 
 formulaBoxContainer :: ClassName
 formulaBoxContainer = ClassName "formula-box-container"
@@ -71,8 +71,14 @@ selectedCellInput = ClassName "selected-cell-input"
 formulaCellInput :: ClassName
 formulaCellInput = ClassName "formula-cell-input"
 
-formulaSignature :: ClassName
-formulaSignature = ClassName "formula-signature"
+functionSignature :: ClassName
+functionSignature = ClassName "function-signature"
+
+suggestionsDropdown :: ClassName
+suggestionsDropdown = ClassName "suggestions-dropdown"
+
+suggestionOption :: ClassName
+suggestionOption = ClassName "suggestion-option"
 
 cellSyntax :: ClassName
 cellSyntax = ClassName "cell-syntax"
@@ -97,3 +103,6 @@ functionSyntax = ClassName "function-syntax"
 
 regularSyntax :: ClassName
 regularSyntax = ClassName "regular-syntax"
+
+materialIcons :: ClassName
+materialIcons = ClassName "material-icons"

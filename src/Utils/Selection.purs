@@ -63,6 +63,9 @@ getChildOrNode node = do
   child <- firstChild node
   pure $ unsafeFromJust (child <|> pure node)
 
+getFirstRange :: Selection -> Effect Range
+getFirstRange = getRangeAt zero
+
 resetRange :: Selection -> Range -> Effect Unit
 resetRange selection range = do
   removeAllRanges selection
@@ -75,6 +78,8 @@ moveToEnd selection parent =
 data Selection
 
 foreign import anchorNode :: Selection -> Effect Node
+
+foreign import getRangeAt :: Int -> Selection -> Effect Range
 
 foreign import anchorOffset :: Selection -> Effect Int
 

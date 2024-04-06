@@ -8,7 +8,7 @@ import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
 import App.Components.Table.Selection (MultiSelection, SelectionState)
 import App.SyntaxTree.Common (Module, QVar, QVarOp)
 import App.SyntaxTree.FnDef (FnInfo, OpInfo)
-import App.Utils.Dom (KeyCode)
+import App.Utils.KeyCode (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
@@ -45,7 +45,7 @@ data Action
   | DoubleClickCell Cell MouseEvent
   | FocusInCell Cell FocusEvent
   | KeyDown KeyCode KeyboardEvent
-  | KeyRelease KeyCode KeyboardEvent
+  | KeyUp KeyCode KeyboardEvent
   | FormulaKeyDown KeyCode KeyboardEvent
   | FormulaKeyUp KeyCode KeyboardEvent
   | SelectedCellInputKeyDown KeyCode KeyboardEvent

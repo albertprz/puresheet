@@ -15,8 +15,8 @@ import Data.Array as Array
 import Data.HashMap as HashMap
 import Data.List as List
 import Data.Set as Set
+import Data.String (Pattern(..)) as String
 import Data.String (stripSuffix)
-import Data.String as String
 import Data.Tree.Zipper (Loc, fromTree, toTree)
 
 type LocalFormulaCtx =
@@ -97,9 +97,7 @@ lookupModuleFn qVar@(QVar fnModule fnName) = do
   let fns = getAvailableFns QVar (fnModule /\ fnName) st
   except
     $ note (LexicalError' $ UnknownValue qVar)
-    $ findMap identity
-    $ flip HashMap.lookup st.fnsMap
-    <$> fns
+    $ findMap (flip HashMap.lookup st.fnsMap) fns
 
 lookupOperator :: QVarOp -> EvalM OpInfo
 lookupOperator (QVarOp opModule opName@(VarOp op))
@@ -121,33 +119,13 @@ lookupOperator qVarOp@(QVarOp opModule opName) = do
   let ops = getAvailableFns QVarOp (opModule /\ opName) st
   except
     $ note (LexicalError' $ UnknownOperator qVarOp)
-    $ findMap identity
-    $ flip HashMap.lookup st.operatorsMap
-    <$> ops
+    $ findMap (flip HashMap.lookup st.operatorsMap) ops
 
 lookupBuiltinFn :: Var -> EvalM BuiltinFnInfo
 lookupBuiltinFn fnName =
   except
     $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
     $ HashMap.lookup fnName Builtins.builtinFnsMap
-
-getAvailableFns
-  :: forall a b
-   . (Maybe Module -> a -> b)
-  -> (Maybe Module /\ a)
-  -> LocalFormulaCtx
-  -> MinLenVect 1 b
-getAvailableFns
-  ctor
-  (fnModule /\ fnName)
-  { module', importedModulesMap, aliasedModulesMap } =
-  flip ctor fnName <<< pure <$> cons module' (fromFoldable modules)
-  where
-  modules = case fnModule of
-    Just alias -> fromMaybe Set.empty
-      $ HashMap.lookup (module' /\ alias) aliasedModulesMap
-    Nothing -> fromMaybe Set.empty
-      $ HashMap.lookup module' importedModulesMap
 
 insertFnDef
   :: Scope
@@ -183,14 +161,15 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
   where
   argBindings = HashMap.fromArray
     $ rmap
-        ( FnInfo <<<
-            { id: Nothing
-            , body: _
-            , scope
-            , params: []
-            , argsMap: HashMap.empty
-            , returnType: Nothing
-            }
+        ( FnInfo
+            <<<
+              { id: Nothing
+              , body: _
+              , scope
+              , params: []
+              , argsMap: HashMap.empty
+              , returnType: Nothing
+              }
         )
     <$> Array.zip ((scope /\ _) <<< fst <$> params) args
   args =
@@ -226,6 +205,38 @@ resetScope (Object' (FnObj (FnInfo fnInfo))) =
   Object' $ FnObj $ FnInfo fnInfo { scope = zero }
 
 resetScope x = x
+
+getAvailableFns
+  :: forall a b
+   . (Maybe Module -> a -> b)
+  -> (Maybe Module /\ a)
+  -> LocalFormulaCtx
+  -> Array b
+getAvailableFns ctor (fnModule /\ fnName) st =
+  flip ctor fnName <<< pure <$> getAvailableModules fnModule st
+
+getAvailableModules :: Maybe Module -> LocalFormulaCtx -> Array Module
+getAvailableModules
+  fnModule
+  { module', importedModulesMap, aliasedModulesMap } =
+  Array.cons module'
+    case fnModule of
+      Just alias -> Array.fromFoldable
+        $ fromMaybe Set.empty
+        $ HashMap.lookup (module' /\ alias) aliasedModulesMap
+      Nothing -> Array.fromFoldable
+        $ fromMaybe Set.empty
+        $ HashMap.lookup module' importedModulesMap
+
+getAvailableAliases :: LocalFormulaCtx -> Array Module
+getAvailableAliases { module', aliasedModulesMap } =
+  Array.nub
+    $ map snd
+    $ filter (uncurry filterAliases)
+    $ HashMap.keys aliasedModulesMap
+  where
+  filterAliases fnModule _ =
+    fnModule == module'
 
 isSpread :: Pattern -> Boolean
 isSpread Spread = true

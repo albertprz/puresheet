@@ -79,6 +79,8 @@ type BuiltinFnInfo = FnSig
   , defaultParams :: Set Int
   )
 
+type SimpleFnSig = FnSig ()
+
 type OpInfo =
   { id :: FnOpId
   , fnName :: QVar

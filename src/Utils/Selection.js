@@ -2,6 +2,8 @@
 
 export const anchorNode = selection => () => selection.anchorNode
 
+export const getRangeAt = index => selection => () => selection.getRangeAt(index)
+
 export const anchorOffset = selection => () => selection.anchorOffset
 
 export const addRange = selection => range => () => selection.addRange(range)

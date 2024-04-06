@@ -9,7 +9,8 @@ import App.Components.Table.Models (Action(..), AppState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (class IsEvent, emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, shiftKey, withPrevent)
+import App.Utils.Dom (emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, withPrevent)
+import App.Utils.Event (class IsEvent, shiftKey)
 import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
 import Data.Array as Array

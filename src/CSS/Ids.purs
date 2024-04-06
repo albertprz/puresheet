@@ -14,8 +14,11 @@ selectedCellInputId = ElementId "selected-cell-input"
 formulaCellInputId :: ElementId
 formulaCellInputId = ElementId "formula-cell-input"
 
-formulaSignatureId :: ElementId
-formulaSignatureId = ElementId "formula-signature"
+functionSignatureId :: ElementId
+functionSignatureId = ElementId "function-signature"
+
+suggestionsDropdownId :: ElementId
+suggestionsDropdownId = ElementId "suggestions-dropdown"
 
 inputElement :: ElementType
 inputElement = ElementType "input"

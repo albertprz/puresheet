@@ -2,8 +2,8 @@ module App.CSS.Table where
 
 import CSSPrelude
 
-import App.CSS.ClassNames (formulaBoxContainer, formulaSignature, functionSyntax)
-import App.CSS.Common (darkGreen, darkPink)
+import App.CSS.ClassNames (formulaBoxContainer, functionSignature, functionSyntax, suggestionOption, suggestionsDropdown)
+import App.CSS.Common (darkGreen, darkPink, formulaFontSize, signatureFontSize, suggestionsFontSize)
 import Tecton.Internal (Length, Measure)
 import Tecton.Rule as Rule
 import Type.Prelude (Proxy)
@@ -12,7 +12,7 @@ css :: CSS
 css = do
 
   mainContainerCss
-  formulaContainerCss
+  formulaSectionContainerCss
   formulaCss
   selectedCellInputCss
   formulaCellInputCss
@@ -26,10 +26,10 @@ mainContainerCss = do
     backgroundColor := white
     display := inlineTable
 
-formulaContainerCss :: CSS
-formulaContainerCss = do
+formulaSectionContainerCss :: CSS
+formulaSectionContainerCss = do
 
-  div &. formulaContainer ? Rule.do
+  div &. formulaSectionContainer ? Rule.do
     display := flex
     flexDirection := row
     alignItems := center
@@ -53,17 +53,32 @@ formulaCss = do
     borderStyle := solid
     borderColor := grey2
     borderWidth := px 3
-    fontSize := px 21
+    fontSize := formulaFontSize
     fontWeight := bold
     whiteSpace := breakSpaces
     overflow := auto
 
-  universal &. formulaSignature ? Rule.do
+  universal &. suggestionsDropdown ? Rule.do
+    position := fixed
+    width := rem 16
+    backgroundColor := white
+
+  universal &. suggestionOption ? Rule.do
+    display := flex
+    padding := px 4 ~ px 0
+    alignContent := center
+    cursor := pointer
+    borderWidth := px 1
+    borderStyle := solid
+    borderColor := grey2
+    fontSize := suggestionsFontSize
+
+  universal &. functionSignature ? Rule.do
     height := px 20
     margin := px 20
     marginTop := px 10
     padding := px 0 ~ px 50
-    fontSize := px 24
+    fontSize := signatureFontSize
     fontWeight := bold
     textAlign := center
 
@@ -125,7 +140,7 @@ cellInputCommonCss = do
   padding := px 15
   borderColor := green
   borderWidth := px 3
-  fontSize := px 21
+  fontSize := formulaFontSize
   textAlign := center
   outlineStyle := solid
   outlineColor := green
@@ -212,11 +227,10 @@ cellCss = do
     position := sticky
     top := px 0
     left := px 0
-    zIndex := 10
+    zIndex := 1
     backgroundColor := lightGrey
 
   th &. columnHeader ? Rule.do
-    position := sticky
     top := px 0
 
   th &. rowHeader ? Rule.do

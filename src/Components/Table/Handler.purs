@@ -9,8 +9,10 @@ import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, 
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (KeyCode(..), actOnElementById, ctrlKey, displayFunctionType, emptyFormulaBox, emptyFormulaSignature, focusById, focusCell, focusCellElem, introduceFormulaNewLine, isModifierKeyCode, performSyntaxHighlight, prevent, shiftKey, toEvent, toMouseEvent, updateFormulaBox, withPrevent)
+import App.Utils.Dom (actOnElementById, displayFnSig, displayFnSuggestions, emptyFnSig, emptyFnSuggestions, emptyFormulaBox, focusById, focusCell, focusCellElem, insertFormulaNewLine, performSyntaxHighlight, prevent, updateFormulaBox, withPrevent)
+import App.Utils.Event (ctrlKey, shiftKey, toEvent, toMouseEvent)
 import App.Utils.HashMap (lookup2) as HashMap
+import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
 import App.Utils.Selection (getSelection)
 import App.Utils.Selection as Selection
 import Data.HashMap (insert) as HashMap
@@ -38,9 +40,9 @@ handleAction Initialize = do
 
 handleAction ResizeWindow = do
   { selectedCell } <- get
-  void $ selectCell $ OtherCell { column: mkColumn 'A', row: mkRow 1000 }
-  void $ selectCell $ OtherCell { column: mkColumn 'A', row: mkRow 1 }
-  void $ selectCell $ OtherCell selectedCell
+  selectCell $ OtherCell { column: mkColumn 'A', row: mkRow 1000 }
+  selectCell $ OtherCell { column: mkColumn 'A', row: mkRow 1 }
+  selectCell $ OtherCell selectedCell
   liftEffect $ scroll 0 0 =<< window
 
 handleAction (WriteSelectedCellInput cell) =
@@ -72,7 +74,7 @@ handleAction (FormulaKeyDown Enter ev)
   | ctrlKey ev = withPrevent ev insertFormula
 
 handleAction (FormulaKeyDown Enter ev) =
-  withPrevent ev (introduceFormulaNewLine *> performSyntaxHighlight)
+  withPrevent ev (insertFormulaNewLine *> performSyntaxHighlight)
 
 handleAction (FormulaKeyDown Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell
@@ -84,7 +86,7 @@ handleAction (FormulaKeyDown _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
 handleAction (FormulaKeyUp keyCode _) =
-  unless (isModifierKeyCode keyCode)
+  unless (isModifierKeyCode keyCode) do
     performSyntaxHighlight
 
 handleAction (FocusInFormula ev) = do
@@ -114,7 +116,8 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
 
 handleAction (FocusInCell cell _) = do
   formulaText <- _.formulaText <$$> lookupFormula cell
-  emptyFormulaSignature
+  emptyFnSig
+  emptyFnSuggestions
   case formulaText of
     Just x -> updateFormulaBox x
     Nothing -> emptyFormulaBox
@@ -185,10 +188,10 @@ handleAction (KeyDown (CharKeyCode 'G') ev)
 handleAction (KeyDown _ _) =
   pure unit
 
-handleAction (KeyRelease Control ev) = withPrevent ev $
+handleAction (KeyUp Control ev) = withPrevent ev $
   modify_ _ { selectionState = NotStartedSelection }
 
-handleAction (KeyRelease _ _) =
+handleAction (KeyUp _ _) =
   pure unit
 
 handleAction (WheelScroll ev)
@@ -295,5 +298,7 @@ handleAction (DragHeader Over _ ev) =
 handleAction (DragHeader _ _ _) =
   pure unit
 
-handleAction SelectionChange =
-  displayFunctionType <<< mkLocalContext =<< get
+handleAction SelectionChange = do
+  ctx <- mkLocalContext <$> get
+  displayFnSig ctx
+  displayFnSuggestions ctx

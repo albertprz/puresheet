@@ -4,10 +4,9 @@ module FatPrelude
 
 import App.Utils.Bounded (clampBounded, enumValues, getInBoundedRange, inBoundedRange, inRange, (..)) as X
 import App.Utils.Char (fromUpper, nextChar, prevChar, toUpper, upperEndCode, upperStartCode) as X
-import App.Utils.Common (partialMaybe) as X
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as X
 import App.Utils.Functor (filterByIndex, filterByIndexes, mapp, (<$$>)) as X
-import App.Utils.Maybe (unlessMaybe, unlessMaybe', unsafeFromJust, whenMaybe, whenMaybe') as X
+import App.Utils.Maybe (partialMaybe, unlessMaybe, unlessMaybe', unsafeFromJust, whenMaybe, whenMaybe') as X
 import App.Utils.MinLenVect (fromFoldable, sort, zip, zipGT, zipLT) as X
 import App.Utils.Monoid (unlessMonoid, whenMonoid, (<>?)) as X
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as X

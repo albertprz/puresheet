@@ -2,98 +2,89 @@ module App.Utils.Dom where
 
 import FatPrelude
 
-import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, formulaSignatureId)
+import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, functionSignatureId, suggestionsDropdownId)
 import App.Components.Table.Cell (Cell, showCell)
-import App.Components.Table.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
-import App.Evaluator.Common (LocalFormulaCtx, lookupBuiltinFn, lookupModuleFn, lookupOperator)
-import App.Parser.Common (qVar, qVarOp)
-import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
-import App.SyntaxTree.FnDef (FnId, FnSig)
+import App.Evaluator.Common (LocalFormulaCtx)
+import App.SyntaxTree.Common (QVar)
+import App.SyntaxTree.FnDef (SimpleFnSig)
 import App.Utils.Common (refEquals)
+import App.Utils.Event (class IsEvent, toEvent)
+import App.Utils.Formula (fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, suggestionsElements)
+import App.Utils.Monoid (whenPlus)
+import App.Utils.Range as Range
 import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
 import App.Utils.Selection as Selection
-import App.Utils.String (last, startsWith) as String
-import Bookhound.Parser (runParser)
 import Data.Array (filterA)
 import Data.Int as Int
-import Data.String (Pattern(..))
 import Data.String (null, splitAt) as String
-import Data.String.CodeUnits (indexOf', lastIndexOf')
-import Data.String.CodeUnits (length, slice, takeRight) as String
-import Halogen.HTML (HTML, span, text)
-import Halogen.HTML.Properties (class_)
+import Halogen.HTML (HTML)
 import Halogen.VDom.DOM.StringRenderer as StringRenderer
-import Record.Extra (pick)
-import Unsafe.Coerce (unsafeCoerce)
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
 import Web.DOM.Document (documentElement)
-import Web.DOM.Element (getBoundingClientRect, id, scrollLeft, setScrollLeft)
+import Web.DOM.Element (getBoundingClientRect, id, scrollLeft, setAttribute, setScrollLeft)
 import Web.DOM.Node (firstChild, nodeName, nodeValue, parentNode, setTextContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
-import Web.Event.Event (Event, preventDefault, target)
-import Web.Event.EventTarget (EventTarget)
+import Web.Event.Event (preventDefault)
 import Web.HTML (HTMLElement, window)
-import Web.HTML.Event.DragEvent (DragEvent)
 import Web.HTML.HTMLDocument (HTMLDocument)
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.HTMLElement (focus, toElement, toNode)
 import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window as Window
-import Web.UIEvent.FocusEvent (FocusEvent)
-import Web.UIEvent.InputEvent (InputEvent)
-import Web.UIEvent.KeyboardEvent (KeyboardEvent)
-import Web.UIEvent.KeyboardEvent as KeyboardEvent
-import Web.UIEvent.MouseEvent (MouseEvent)
-import Web.UIEvent.MouseEvent as MouseEvent
-import Web.UIEvent.WheelEvent (WheelEvent)
 
 performSyntaxHighlight :: forall m. MonadEffect m => m Unit
 performSyntaxHighlight = liftEffect do
-  formulaBox <- justSelectElementById formulaBoxId
+  formulaBox <- toNode <$> justSelectElementById formulaBoxId
   selection <- getSelection =<< window
-  caretPosition <- getCaretPosition selection (toNode formulaBox)
   formulaText <- getFormulaBoxContents
+  caretPosition <- getCaretPosition selection formulaBox
   updateFormulaBox formulaText
-  traverse_ (setCaretPosition selection $ toNode formulaBox) caretPosition
+  traverse_ (setCaretPosition selection formulaBox) caretPosition
 
-displayFunctionType :: forall m. MonadEffect m => LocalFormulaCtx -> m Unit
-displayFunctionType ctx = liftEffect do
-  formulaBox <- justSelectElementById formulaBoxId
-  formulaSignature <- justSelectElementById formulaSignatureId
+displayFnSig :: forall m. MonadEffect m => LocalFormulaCtx -> m Unit
+displayFnSig ctx = liftEffect do
+  formulaBox <- toNode <$> justSelectElementById formulaBoxId
   selection <- getSelection =<< window
   ancestors <- getAncestorNodes =<< Selection.anchorNode selection
+  formulaText <- getFormulaBoxContents
+  idx <- getCaretPosition selection formulaBox
+  let
+    fn = getFnAtIndex ctx formulaText =<< idx
+    fnSig = whenPlus (any (refEquals formulaBox) ancestors)
+      ((_ `getFnSig` ctx) =<< fn)
+  maybe emptyFnSig (uncurry setFnSig) (bisequence (fn /\ fnSig))
 
-  when (any (refEquals $ toNode formulaBox) ancestors) do
-    index <- getCaretPosition selection (toNode formulaBox)
+displayFnSuggestions :: forall m. MonadEffect m => LocalFormulaCtx -> m Unit
+displayFnSuggestions ctx = liftEffect do
+  formulaBox <- justSelectElementById formulaBoxId
+  suggestionsDropdown <- toElement
+    <$> justSelectElementById suggestionsDropdownId
+  selection <- getSelection =<< window
+  ancestors <- getAncestorNodes =<< Selection.anchorNode selection
+  rect <- Range.getBoundingClientRect =<< Selection.getFirstRange selection
+
+  if (any (refEquals $ toNode formulaBox) ancestors) then do
     formulaText <- getFormulaBoxContents
-    let
-      fnId = fromMaybe { fnModule: preludeModule, fnName: Var mempty }
-        (getCurrentFnId ctx formulaText =<< index)
-      fnQVar = QVar (Just fnId.fnModule) fnId.fnName
+    idx <- getCaretPosition selection (toNode formulaBox)
+    setStyle suggestionsDropdown
+      [ "top" /\ (show (rect.top + rect.height) <> "px")
+      , "left" /\ (show rect.left <> "px")
+      ]
+    setInnerHTML suggestionsDropdown
+      $ suggestionsElements
+      $ foldMap (getSuggestionsAtIndex ctx formulaText) idx
+  else
+    emptyFnSuggestions
 
-      fnInfo = map unwrap $ hush
-        $ flip evalState ctx
-        $ runExceptT
-        $ lookupModuleFn fnQVar
+setFnSig :: forall m. MonadEffect m => QVar -> SimpleFnSig -> m Unit
+setFnSig fn fnSig = liftEffect do
+  formulaSignatureDisplay <- justSelectElementById functionSignatureId
+  setInnerHTML (toElement formulaSignatureDisplay) (fnSigElements fn fnSig)
 
-      builtinFnInfo = hush
-        $ flip evalState ctx
-        $ runExceptT
-        $ lookupBuiltinFn fnId.fnName
-
-      fnSig :: Maybe (FnSig ())
-      fnSig = pick <$> builtinFnInfo <|> pick <$> fnInfo
-
-      html = unwrap <$> foldMap (fnSigElements fnId) fnSig
-      htmlString = fold
-        $ StringRenderer.render (const mempty)
-        <$> html
-    setInnerHTML (toElement formulaSignature) htmlString
-
-introduceFormulaNewLine :: forall m. MonadEffect m => m Unit
-introduceFormulaNewLine = liftEffect do
+insertFormulaNewLine :: forall m. MonadEffect m => m Unit
+insertFormulaNewLine = liftEffect do
   formulaBox <- justSelectElementById formulaBoxId
   formulaText <- getFormulaBoxContents
   selection <- getSelection =<< window
@@ -108,72 +99,31 @@ introduceFormulaNewLine = liftEffect do
   traverse_ (setCaretPosition selection $ toNode formulaBox)
     ((_ + 1) <$> caretPosition)
 
-syntaxAtomsToElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
-syntaxAtomsToElements = map toElement <<< condenseSyntaxAtoms
-  where
-  toElement atom = span
-    [ class_ $ syntaxAtomToClassName atom ]
-    [ text $ show atom ]
-
-formulaElements :: forall a b. String -> Array (HTML a b)
-formulaElements =
-  syntaxAtomsToElements <<< fold <<< runParser syntaxAtomParser
-
-fnSigElements :: forall a b r. FnId -> FnSig r -> Array (HTML a b)
-fnSigElements id sig =
-  syntaxAtomsToElements $ fnSigToSyntaxAtoms id sig
-
-getCurrentFnId :: LocalFormulaCtx -> String -> Int -> Maybe FnId
-getCurrentFnId ctx formulaText index =
-  qVarToFnId <$> join (hush $ runParser fnParser currentWord)
-  where
-  fnParser = Just <$> qVar <|> lookupOp <$> qVarOp
-  lookupOp op = _.fnName
-    <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
-  qVarToFnId (QVar module' var) =
-    { fnModule: fromMaybe preludeModule module', fnName: var }
-
-  startIndex = fromMaybe 0 $ map inc
-    $ maximum
-    $ filterMap (myLastIndexOf' (dec index) formulaText)
-    $ map Pattern (separators <> [ "(", "[" ])
-
-  endIndex = fromMaybe (String.length formulaText)
-    $ minimum
-    $ filterMap (myIndexOf' index formulaText)
-    $ map Pattern (separators <> [ ")", "]" ])
-
-  currentWord = String.slice startIndex endIndex formulaText
-  separators = [ " ", " ", "\n", "\t", "," ]
-
-  myLastIndexOf' n str pattern = lastIndexOf' pattern n str
-  myIndexOf' n str pattern = indexOf' pattern n str
-
-getFormulaBoxContents :: forall m. MonadEffect m => m String
-getFormulaBoxContents = liftEffect
-  (innerText =<< justSelectElementById formulaBoxId)
+setFormulaBox :: forall m. MonadEffect m => String -> m Unit
+setFormulaBox formulaText = do
+  formulaBox <- justSelectElementById formulaBoxId
+  liftEffect $ setInnerHTML (toElement formulaBox) (formulaElements formulaText)
 
 updateFormulaBox :: forall m. MonadEffect m => String -> m Unit
 updateFormulaBox formulaText =
   emptyFormulaBox *> setFormulaBox formulaText
 
-setFormulaBox :: forall m. Monad m => MonadEffect m => String -> m Unit
-setFormulaBox formulaText = do
-  formulaBox <- justSelectElementById formulaBoxId
-  liftEffect $ setInnerHTML (toElement formulaBox) htmlString
-  where
-  htmlString = fold $ StringRenderer.render (const mempty) <$> html
-  html = unwrap <$> formulaElements formulaText
-
 emptyFormulaBox :: forall m. MonadEffect m => m Unit
-emptyFormulaBox = liftEffect
-  (setTextContent mempty <<< toNode =<< justSelectElementById formulaBoxId)
+emptyFormulaBox = emptyContents formulaBoxId
 
-emptyFormulaSignature :: forall m. MonadEffect m => m Unit
-emptyFormulaSignature = liftEffect
-  ( setTextContent mempty <<< toNode
-      =<< justSelectElementById formulaSignatureId
-  )
+emptyFnSig :: forall m. MonadEffect m => m Unit
+emptyFnSig = emptyContents functionSignatureId
+
+emptyFnSuggestions :: forall m. MonadEffect m => m Unit
+emptyFnSuggestions = emptyContents suggestionsDropdownId
+
+emptyContents :: forall m. ElementId -> MonadEffect m => m Unit
+emptyContents elementId = liftEffect
+  (setTextContent mempty <<< toNode =<< justSelectElementById elementId)
+
+getFormulaBoxContents :: forall m. MonadEffect m => m String
+getFormulaBoxContents = liftEffect
+  (innerText =<< justSelectElementById formulaBoxId)
 
 parseElements
   :: forall m a
@@ -329,91 +279,21 @@ withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
 
 prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
-prevent ev = liftEffect (preventDefault $ toEvent ev)
+prevent ev = liftEffect $ preventDefault $ toEvent ev
 
-mkKeyAction :: forall a. (KeyCode -> KeyboardEvent -> a) -> KeyboardEvent -> a
-mkKeyAction ctor ev = ctor (fetchKeyCode ev) ev
+setStyle :: Element -> Array (String /\ String) -> Effect Unit
+setStyle = flip (setAttribute "style" <<< foldMap (uncurry formatKeyValue))
   where
-  fetchKeyCode = parseKeyCode <<< KeyboardEvent.code
+  formatKeyValue k v = k <> ":" <> v <> ";"
 
-parseKeyCode :: String -> KeyCode
-parseKeyCode "ArrowLeft" = ArrowLeft
-parseKeyCode "ArrowRight" = ArrowRight
-parseKeyCode "ArrowUp" = ArrowUp
-parseKeyCode "ArrowDown" = ArrowDown
-parseKeyCode "Enter" = Enter
-parseKeyCode "Tab" = Tab
-parseKeyCode "Space" = Space
-parseKeyCode "Delete" = Delete
-parseKeyCode "Backspace" = Delete
-parseKeyCode "ShiftLeft" = Shift
-parseKeyCode "ShiftRight" = Shift
-parseKeyCode "ControlLeft" = Control
-parseKeyCode "ControlRight" = Control
-parseKeyCode "MetaLeft" = Control
-parseKeyCode "MetaRight" = Control
-parseKeyCode "Comma" = Comma
-parseKeyCode str
-  | String.startsWith "Key" str
-  , Just ch <- String.last str = CharKeyCode ch
-parseKeyCode str
-  | String.startsWith "Digit" str
-  , Just n <- Int.fromString $ String.takeRight 1 str = DigitKeyCode n
-parseKeyCode str = OtherKeyCode str
+setInnerHTML :: forall a b. Element -> Array (HTML a b) -> Effect Unit
+setInnerHTML elem children = setInnerHTML_ elem
+  $ fold
+  $ StringRenderer.render (const mempty)
+  <$> unwrap
+  <$> children
 
-isModifierKeyCode :: KeyCode -> Boolean
-isModifierKeyCode = flip elem [ Control, Shift ]
-
-toEvent :: forall a. IsEvent a => a -> Event
-toEvent = unsafeCoerce
-
-getTarget :: forall a. IsEvent a => a -> Maybe EventTarget
-getTarget = target <<< toEvent
-
-toMouseEvent :: forall a. IsEvent a => a -> MouseEvent
-toMouseEvent = unsafeCoerce
-
-foreign import setInnerHTML :: Element -> String -> Effect Unit
+foreign import setInnerHTML_ :: Element -> String -> Effect Unit
 
 newtype Height = Height Number
 newtype Width = Width Number
-
-data KeyCode
-  = ArrowLeft
-  | ArrowRight
-  | ArrowUp
-  | ArrowDown
-  | Enter
-  | Tab
-  | Space
-  | Delete
-  | Shift
-  | Control
-  | Comma
-  | CharKeyCode Char
-  | DigitKeyCode Int
-  | OtherKeyCode String
-
-derive instance Eq KeyCode
-
-class ModKeyEvent a where
-  shiftKey :: a -> Boolean
-  ctrlKey :: a -> Boolean
-
-instance ModKeyEvent KeyboardEvent where
-  shiftKey = KeyboardEvent.shiftKey
-  ctrlKey ev = KeyboardEvent.ctrlKey ev || KeyboardEvent.metaKey ev
-
-instance ModKeyEvent MouseEvent where
-  shiftKey = MouseEvent.shiftKey
-  ctrlKey ev = MouseEvent.ctrlKey ev || MouseEvent.metaKey ev
-
-class IsEvent :: forall k. k -> Constraint
-class IsEvent a
-
-instance IsEvent FocusEvent
-instance IsEvent MouseEvent
-instance IsEvent KeyboardEvent
-instance IsEvent InputEvent
-instance IsEvent DragEvent
-instance IsEvent WheelEvent
