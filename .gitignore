@@ -3,7 +3,6 @@
 !.tidyrc.json
 !.github
 
-assets
 output
 generated-docs
 bower_components

@@ -17,7 +17,7 @@ for use for enterprise, personal & educational purposes.
 
 - [:heavy_check_mark:] Support formula edition with syntax highlighting and function signatures for the current function at the cursor.
 
-- [:heavy_check_mark:] Support auto completion for imported and module aliased top-level functions and operators.
+- [:heavy_check_mark:] Support IDE like autocomplete for imported and module aliased top-level functions and operators.
 
 - Expose a view to query (possibly in a Hoogle / Pursuit fashion), view, update and upload new global functions & operators on a per module basis. This view would surface the same editing capatibilities as the formula box in the main spreadsheet view.
 
