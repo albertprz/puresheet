@@ -2,26 +2,24 @@ module App.Utils.Formula where
 
 import FatPrelude hiding (div)
 
-import App.CSS.ClassNames (materialIcons, suggestionOption)
-import App.Components.Table.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
 import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (LocalFormulaCtx, getAvailableAliases, getAvailableModules, lookupBuiltinFn, lookupModuleFn, lookupOperator)
 import App.Parser.Common (ident, module', operator, qTerm, qVar, qVarOp)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..))
 import App.SyntaxTree.FnDef (SimpleFnSig)
 import App.Utils.Monoid (whenPlus)
+import App.Utils.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (lower)
 import Data.Array as Array
 import Data.HashMap as HashMap
 import Data.HashSet as HashSet
-import Data.String (Pattern(..))
 import Data.String.CodeUnits (indexOf', lastIndexOf')
 import Data.String.CodeUnits (length, slice) as String
+import Data.String.Pattern (Pattern(..))
 import Data.String.Utils (startsWith) as String
 import Halogen.HTML (HTML, span, text)
-import Halogen.HTML.Elements (div, i)
 import Halogen.HTML.Properties (class_)
 import Record.Extra (pick)
 
@@ -40,34 +38,20 @@ syntaxAtomsElements = map toElement <<< condenseSyntaxAtoms
     [ class_ $ syntaxAtomToClassName atom ]
     [ text $ show atom ]
 
-suggestionsElements :: forall a b. Array SuggestionTerm -> Array (HTML a b)
-suggestionsElements suggestions =
-  map toElement
-    $ Array.sort
-    $ Array.take 10
-    $ map show suggestions
+getFnAtIndex :: String -> Int -> Maybe SuggestionTerm
+getFnAtIndex formulaText idx =
+  hush $ runParser fnParser currentWord
   where
-  toElement fnName = div
-    [ class_ suggestionOption ]
-    [ i
-        [ class_ materialIcons ]
-        [ text "functions" ]
-    , text fnName
-    ]
-
-getFnAtIndex :: LocalFormulaCtx -> String -> Int -> Maybe QVar
-getFnAtIndex ctx formulaText idx =
-  join (hush $ runParser fnParser currentWord)
-  where
-  fnParser = lookupOp <$> qVarOp <|> Just <$> qVar
-  lookupOp op = _.fnName
-    <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
+  fnParser = VarOpSuggestion <$> qVarOp <|> VarSuggestion <$> qVar
   { currentWord } = getWordAtIndex formulaText idx
 
 getSuggestionsAtIndex
   :: LocalFormulaCtx -> String -> Int -> Array SuggestionTerm
 getSuggestionsAtIndex ctx formulaText idx =
-  Array.nub
+  Array.take (inc $ unwrap $ top @SuggestionId)
+    $ Array.sort
+    $ Array.nub
+    $ filter (notEq currentWord <<< show)
     $ fold
     $ whenPlus (idx == endIndex)
     $ hush
@@ -179,16 +163,39 @@ getAllAvailableFns fnModule st =
   filterOp (QVarOp module' _) =
     all (flip HashSet.member modules) module'
 
+extractSuggestionFn :: LocalFormulaCtx -> SuggestionTerm -> Maybe QVar
+extractSuggestionFn ctx = case _ of
+  VarSuggestion var -> Just var
+  VarOpSuggestion op -> _.fnName
+    <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
+  ModuleSuggestion _ -> Nothing
+
 data SuggestionTerm
-  = ModuleSuggestion Module
+  = VarSuggestion QVar
   | VarOpSuggestion QVarOp
-  | VarSuggestion QVar
+  | ModuleSuggestion Module
+
+newtype SuggestionId = SuggestionId Int
+
+derive instance Eq SuggestionTerm
+
+instance Ord SuggestionTerm where
+  compare (VarSuggestion _) (VarOpSuggestion _) = LT
+  compare (VarOpSuggestion _) (VarSuggestion _) = GT
+  compare x y = comparing show x y
 
 instance Show SuggestionTerm where
   show = case _ of
-    VarOpSuggestion (QVarOp _ op) -> show op
     VarSuggestion (QVar _ fn) -> show fn
+    VarOpSuggestion (QVarOp _ op) -> show op
     ModuleSuggestion module' -> show module'
 
-derive instance Eq SuggestionTerm
-derive instance Ord SuggestionTerm
+derive instance Newtype SuggestionId _
+derive newtype instance Eq SuggestionId
+derive newtype instance Ord SuggestionId
+derive newtype instance Semiring SuggestionId
+derive newtype instance Ring SuggestionId
+
+instance Bounded SuggestionId where
+  bottom = wrap 0
+  top = wrap 9

@@ -2,8 +2,8 @@ module App.CSS.Table where
 
 import CSSPrelude
 
-import App.CSS.ClassNames (formulaBoxContainer, functionSignature, functionSyntax, suggestionOption, suggestionsDropdown)
-import App.CSS.Common (darkGreen, darkPink, formulaFontSize, signatureFontSize, suggestionsFontSize)
+import App.CSS.ClassNames (formulaBoxContainer, functionSignature, functionSyntax, selectedSuggestionOption, suggestionOption, suggestionsDropdown)
+import App.CSS.Common (darkGreen, darkPink, formulaFontSize, lightBlue, signatureFontSize)
 import Tecton.Internal (Length, Measure)
 import Tecton.Rule as Rule
 import Type.Prelude (Proxy)
@@ -60,7 +60,7 @@ formulaCss = do
 
   universal &. suggestionsDropdown ? Rule.do
     position := fixed
-    width := rem 16
+    width := rem 10
     backgroundColor := white
 
   universal &. suggestionOption ? Rule.do
@@ -71,7 +71,10 @@ formulaCss = do
     borderWidth := px 1
     borderStyle := solid
     borderColor := grey2
-    fontSize := suggestionsFontSize
+    fontSize := formulaFontSize
+
+  universal &. selectedSuggestionOption ? Rule.do
+    backgroundColor := lightBlue
 
   universal &. functionSignature ? Rule.do
     height := px 20

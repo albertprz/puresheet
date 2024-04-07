@@ -8,8 +8,7 @@ import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeSelectionChange, subscribeWindowResize)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
-import App.Evaluator.Formula (mkLocalContext)
-import App.Utils.Dom (actOnElementById, displayFnSig, displayFnSuggestions, emptyFnSig, emptyFnSuggestions, emptyFormulaBox, focusById, focusCell, focusCellElem, insertFormulaNewLine, performSyntaxHighlight, prevent, updateFormulaBox, withPrevent)
+import App.Utils.Dom (actOnElementById, displayFnSig, displayFnSuggestions, emptyFnSig, emptyFormulaBox, focusById, focusCell, focusCellElem, insertFormulaNewLine, performAutoComplete, performSyntaxHighlight, prevent, updateFormulaBox, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey, toEvent, toMouseEvent)
 import App.Utils.HashMap (lookup2) as HashMap
 import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
@@ -35,8 +34,8 @@ handleAction Initialize = do
   loadPrelude
   actOnElementById formulaBoxId $ setContentEditable "true"
   handleAction ResizeWindow
-  subscribeSelectionChange
   subscribeWindowResize
+  subscribeSelectionChange
 
 handleAction ResizeWindow = do
   { selectedCell } <- get
@@ -70,19 +69,32 @@ handleAction (WriteCell cell value) = do
     }
   refreshCells $ Set.singleton cell
 
-handleAction (FormulaKeyDown Enter ev)
+handleAction (FormulaKeyDown (Just _) keyCode ev)
+  | keyCode `elem` [ ArrowUp, ArrowDown ] = withPrevent ev do
+      let next = if keyCode == ArrowUp then dec else inc
+      modify_ \st -> st
+        { selectedSuggestionId =
+            clamp bottom
+              (wrap $ dec $ length st.suggestions)
+              $ next st.selectedSuggestionId
+        }
+
+handleAction (FormulaKeyDown (Just suggestion) keyCode ev)
+  | keyCode `elem` [ Enter, Tab ] =
+      withPrevent ev $ performAutoComplete $ show suggestion
+
+handleAction (FormulaKeyDown _ Enter ev)
   | ctrlKey ev = withPrevent ev insertFormula
+  | otherwise = withPrevent ev
+      (insertFormulaNewLine *> performSyntaxHighlight)
 
-handleAction (FormulaKeyDown Enter ev) =
-  withPrevent ev (insertFormulaNewLine *> performSyntaxHighlight)
-
-handleAction (FormulaKeyDown Tab ev) =
+handleAction (FormulaKeyDown _ Tab ev) =
   withPrevent ev $ focusCell =<< gets _.selectedCell
 
-handleAction (FormulaKeyDown (CharKeyCode 'G') ev)
+handleAction (FormulaKeyDown _ (CharKeyCode 'G') ev)
   | ctrlKey ev = withPrevent ev $ focusById formulaCellInputId
 
-handleAction (FormulaKeyDown _ _) =
+handleAction (FormulaKeyDown _ _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
 handleAction (FormulaKeyUp keyCode _) =
@@ -117,7 +129,6 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
 handleAction (FocusInCell cell _) = do
   formulaText <- _.formulaText <$$> lookupFormula cell
   emptyFnSig
-  emptyFnSuggestions
   case formulaText of
     Just x -> updateFormulaBox x
     Nothing -> emptyFormulaBox
@@ -126,6 +137,7 @@ handleAction (FocusInCell cell _) = do
     , formulaState =
         if isJust formulaText then ValidFormula
         else UnknownFormula
+    , suggestions = []
     }
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
@@ -299,6 +311,5 @@ handleAction (DragHeader _ _ _) =
   pure unit
 
 handleAction SelectionChange = do
-  ctx <- mkLocalContext <$> get
-  displayFnSig ctx
-  displayFnSuggestions ctx
+  displayFnSuggestions
+  displayFnSig =<< get

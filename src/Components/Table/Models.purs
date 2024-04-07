@@ -8,6 +8,7 @@ import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
 import App.Components.Table.Selection (MultiSelection, SelectionState)
 import App.SyntaxTree.Common (Module, QVar, QVarOp)
 import App.SyntaxTree.FnDef (FnInfo, OpInfo)
+import App.Utils.Formula (SuggestionId, SuggestionTerm)
 import App.Utils.KeyCode (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
@@ -25,14 +26,16 @@ type AppState =
   , tableFormulas :: HashMap Cell FormulaId
   , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
   , formulaCache :: HashMap FormulaId Formula
-  , rows :: MinLenVect 1 Row
-  , multiSelection :: MultiSelection
-  , selectionState :: SelectionState
-  , draggedHeader :: Maybe Header
   , fnsMap :: HashMap QVar FnInfo
   , operatorsMap :: HashMap QVarOp OpInfo
   , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
   , importedModulesMap :: HashMap Module (Set Module)
+  , rows :: MinLenVect 1 Row
+  , multiSelection :: MultiSelection
+  , selectionState :: SelectionState
+  , draggedHeader :: Maybe Header
+  , suggestions :: Array SuggestionTerm
+  , selectedSuggestionId :: SuggestionId
   }
 
 data Action
@@ -46,7 +49,7 @@ data Action
   | FocusInCell Cell FocusEvent
   | KeyDown KeyCode KeyboardEvent
   | KeyUp KeyCode KeyboardEvent
-  | FormulaKeyDown KeyCode KeyboardEvent
+  | FormulaKeyDown (Maybe SuggestionTerm) KeyCode KeyboardEvent
   | FormulaKeyUp KeyCode KeyboardEvent
   | SelectedCellInputKeyDown KeyCode KeyboardEvent
   | FormulaCellInputKeyDown KeyCode KeyboardEvent

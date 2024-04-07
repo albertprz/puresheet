@@ -38,12 +38,14 @@ initialState = const
   , tableDependencies: HashMap.empty
   , tableFormulas: HashMap.empty
   , formulaCache: HashMap.empty
-  , rows: bottom .. mkRow 100
-  , multiSelection: NoSelection
-  , selectionState: NotStartedSelection
-  , draggedHeader: Nothing
   , fnsMap: HashMap.empty
   , operatorsMap: HashMap.empty
   , aliasedModulesMap: HashMap.empty
   , importedModulesMap: HashMap.empty
+  , rows: mkRow <$> (0 .. 100)
+  , multiSelection: NoSelection
+  , selectionState: NotStartedSelection
+  , draggedHeader: Nothing
+  , suggestions: []
+  , selectedSuggestionId: zero
   }

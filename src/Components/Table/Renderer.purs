@@ -3,19 +3,22 @@ module App.Components.Table.Renderer where
 import FatPrelude hiding (div)
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaSectionContainer, functionSignature, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, suggestionsDropdown)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaSectionContainer, functionSignature, inSelection, mainContainer, materialIcons, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, selectedSuggestionOption, sheetCell, suggestionOption, suggestionsDropdown)
 import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, functionSignatureId, selectedCellInputId, suggestionsDropdownId)
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
 import App.Components.Table.Formula (formulaStateToClass)
 import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
+import App.Utils.Formula (SuggestionTerm)
 import App.Utils.KeyCode (mkKeyAction)
 import Bookhound.Parser (runParser)
+import Data.Array ((!!))
 import Data.Array as Array
 import Data.HashMap as HashMap
 import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
+import Halogen.HTML.Elements (i)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
-import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
+import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, spellcheck, style, tabIndex, type_, value)
 
 render :: forall cs m. AppState -> ComponentHTML Action cs m
 render
@@ -25,6 +28,8 @@ render
     , activeFormula
     , formulaState
     , selectionState
+    , suggestions
+    , selectedSuggestionId
     } =
   div [ class_ mainContainer ]
     [ div [ class_ formulaSectionContainer ]
@@ -40,7 +45,9 @@ render
             [ div
                 [ id $ show formulaBoxId
                 , classes [ formulaBox, formulaStateToClass formulaState ]
-                , onKeyDown $ mkKeyAction FormulaKeyDown
+                , spellcheck false
+                , onKeyDown $ mkKeyAction $ FormulaKeyDown
+                    (suggestions !! unwrap selectedSuggestionId)
                 , onKeyUp $ mkKeyAction FormulaKeyUp
                 , onFocusIn FocusInFormula
                 ]
@@ -49,12 +56,12 @@ render
                 [ id $ show functionSignatureId
                 , classes [ functionSignature ]
                 ]
-                [ text mempty ]
+                []
             , div
                 [ id $ show suggestionsDropdownId
                 , class_ suggestionsDropdown
                 ]
-                []
+                (mapWithIndex (renderSuggestion st) suggestions)
             ]
         , input
             [ id $ show formulaCellInputId
@@ -80,22 +87,32 @@ render
   where
   parseCell = hush <<< runParser cellParser
 
+renderSuggestion :: forall i. AppState -> Int -> SuggestionTerm -> HTML i Action
+renderSuggestion { selectedSuggestionId } n suggestionTerm = div
+  [ classes $ [ suggestionOption ]
+      <>? (wrap n == selectedSuggestionId)
+      /\ selectedSuggestionOption
+  ]
+  [ i
+      [ class_ materialIcons ]
+      [ text "functions" ]
+  , text $ show suggestionTerm
+  ]
+
 renderHeader :: forall i. AppState -> HTML i Action
 renderHeader st =
   thead_
     [ tr_
         $ toArray
         $ cons
-            renderHeaderCorner
+            ( th
+                [ class_ cornerHeader
+                , onClick $ ClickHeader CornerHeader
+                ]
+                [ text mempty ]
+            )
             (renderColumnHeader st <$> allColumns)
     ]
-  where
-  renderHeaderCorner =
-    th
-      [ class_ cornerHeader
-      , onClick $ ClickHeader CornerHeader
-      ]
-      [ text mempty ]
 
 renderBody :: forall i. AppState -> HTML i Action
 renderBody

@@ -80,6 +80,9 @@ suggestionsDropdown = ClassName "suggestions-dropdown"
 suggestionOption :: ClassName
 suggestionOption = ClassName "suggestion-option"
 
+selectedSuggestionOption :: ClassName
+selectedSuggestionOption = ClassName "selected-suggestion-option"
+
 cellSyntax :: ClassName
 cellSyntax = ClassName "cell-syntax"
 

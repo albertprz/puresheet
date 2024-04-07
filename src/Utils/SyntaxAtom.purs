@@ -1,18 +1,18 @@
-module App.Components.Table.SyntaxAtom where
+module App.Utils.SyntaxAtom where
 
 import FatPrelude
 import Prim hiding (Type)
 
 import App.CSS.ClassNames (cellSyntax, functionSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Table.Cell (cellParser, showCell)
-import App.Parser.Common (module', nonTokenIdent, nonTokenOperator, notReservedKeyword, notReservedSymbol, opSymbol, reservedKeywords, reservedSymbols)
+import App.Parser.Common (nonTokenIdent, nonTokenOperator, notReservedKeyword, notReservedSymbol, reservedKeywords, reservedSymbols)
 import App.SyntaxTree.Common (QVar(..))
 import App.SyntaxTree.FnDef (FnSig)
 import App.SyntaxTree.Type (Type(..))
 import App.Utils.String (wrapDoubleQuotes)
 import Bookhound.Parser (Parser)
-import Bookhound.ParserCombinators (is, noneOf, oneOf, (->>-), (|*), (|+), (||*))
-import Bookhound.Parsers.Char (alpha, alphaNum, lower, quote, underscore, upper)
+import Bookhound.ParserCombinators (is, noneOf, oneOf, (->>-), (|+), (||*))
+import Bookhound.Parsers.Char (alpha, lower, upper)
 import Bookhound.Parsers.Char as Parsers
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (betweenDoubleQuotes, betweenQuotes)

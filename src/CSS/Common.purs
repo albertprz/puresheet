@@ -9,9 +9,6 @@ import Tecton.Internal (Length, Measure, px)
 formulaFontSize :: Measure Length
 formulaFontSize = px 21
 
-suggestionsFontSize :: Measure Length
-suggestionsFontSize = px 22
-
 signatureFontSize :: Measure Length
 signatureFontSize = px 24
 
@@ -65,6 +62,9 @@ lighterYellow = hex "#ffffcc"
 
 blue :: Color
 blue = hex "#0066cc"
+
+lightBlue :: Color
+lightBlue = hex "#6699ff"
 
 orange :: Color
 orange = hex "#ff6600"
