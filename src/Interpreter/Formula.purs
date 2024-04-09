@@ -4,7 +4,7 @@ import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
 import App.Components.Table.Formula (FormulaId, getDependencies)
-import App.Components.Table.Models (AppState)
+import App.Components.Table.Models (TableState)
 import App.Evaluator.Formula (evalFormula)
 import App.Interpreter.Expression (RunError(..), run)
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
@@ -20,7 +20,7 @@ type FormulaResult =
   , cellDeps :: Forest FormulaId
   }
 
-runFormula :: AppState -> Cell -> String -> Either RunError FormulaResult
+runFormula :: TableState -> Cell -> String -> Either RunError FormulaResult
 runFormula appState cell =
   (lmap DependencyError' <<< depsFn) <=< (run evalFn)
   where

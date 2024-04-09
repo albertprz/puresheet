@@ -2,24 +2,11 @@ module App.Utils.Dom where
 
 import FatPrelude
 
-import App.CSS.Ids (ElementId(..), ElementType, cellId, formulaBoxId, functionSignatureId, suggestionsDropdownId)
+import App.CSS.Ids (ElementId(..), ElementType, cellId)
 import App.Components.Table.Cell (Cell, showCell)
-import App.Components.Table.Models (AppState)
-import App.Evaluator.Common (LocalFormulaCtx)
-import App.Evaluator.Formula (mkLocalContext)
-import App.SyntaxTree.Common (QVar)
-import App.SyntaxTree.FnDef (SimpleFnSig)
-import App.Utils.Common (refEquals)
 import App.Utils.Event (class IsEvent, toEvent)
-import App.Utils.Formula (SuggestionTerm, extractSuggestionFn, fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getWordAtIndex)
-import App.Utils.Monoid (whenPlus)
-import App.Utils.Range as Range
-import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
-import App.Utils.Selection as Selection
-import Data.Array (filterA, (!!))
+import Data.Array (filterA)
 import Data.Int as Int
-import Data.String (null, splitAt) as String
-import Data.String.CodeUnits (length) as String
 import Halogen.HTML (HTML)
 import Halogen.VDom.DOM.StringRenderer as StringRenderer
 import Web.Clipboard (Clipboard, clipboard)
@@ -37,135 +24,6 @@ import Web.HTML.HTMLElement (focus, toElement, toNode)
 import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window as Window
 
-performSyntaxHighlight :: forall m. MonadEffect m => m Unit
-performSyntaxHighlight = liftEffect do
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
-  selection <- getSelection =<< window
-  formulaText <- getFormulaBoxContents
-  caretPosition <- getCaretPosition selection formulaBox
-  updateFormulaBox formulaText
-  traverse_ (setCaretPosition selection formulaBox) caretPosition
-
-performAutoComplete :: forall m. MonadEffect m => String -> m Unit
-performAutoComplete suggestion = liftEffect do
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
-  selection <- getSelection =<< window
-  formulaText <- getFormulaBoxContents
-  caretPosition <- unsafeFromJust <$> getCaretPosition selection formulaBox
-  let
-    { currentWord, startIndex, endIndex } = getWordAtIndex formulaText
-      caretPosition
-    offset = String.length suggestion - String.length currentWord
-    newFormulaText = (String.splitAt startIndex formulaText).before
-      <> suggestion
-      <> (String.splitAt endIndex formulaText).after
-  updateFormulaBox newFormulaText
-  setCaretPosition selection formulaBox (caretPosition + offset)
-
-displayFnSig
-  :: forall m
-   . MonadEffect m
-  => AppState
-  -> m Unit
-displayFnSig st = liftEffect do
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
-  selection <- getSelection =<< window
-  ancestors <- getAncestorNodes =<< Selection.anchorNode selection
-  formulaText <- getFormulaBoxContents
-  idx <- getCaretPosition selection formulaBox
-  let
-    ctx = mkLocalContext st
-    suggestion = (st.suggestions !! unwrap st.selectedSuggestionId)
-      <|> (getFnAtIndex formulaText =<< idx)
-    fn = extractSuggestionFn ctx =<< suggestion
-    fnSig = whenPlus (any (refEquals formulaBox) ancestors)
-      ((_ `getFnSig` ctx) =<< fn)
-  maybe emptyFnSig (uncurry setFnSig) (bisequence (fn /\ fnSig))
-
-displayFnSuggestions
-  :: forall m
-   . MonadEffect m
-  => MonadState AppState m
-  => m Unit
-displayFnSuggestions = do
-  st <- get
-  rect <- liftEffect $ Range.getBoundingClientRect
-    =<< Selection.getFirstRange
-    =<< getSelection
-    =<< window
-  suggestionsDropdown <- toElement
-    <$> justSelectElementById suggestionsDropdownId
-  liftEffect $ setStyle suggestionsDropdown
-    [ "top" /\ (show (rect.top + rect.height) <> "px")
-    , "left" /\ (show rect.left <> "px")
-    ]
-  suggestions <- getFnSuggestions $ mkLocalContext st
-  when (suggestions /= st.suggestions)
-    ( modify_ _
-        { suggestions = suggestions
-        , selectedSuggestionId = zero
-        }
-    )
-
-getFnSuggestions
-  :: forall m. MonadEffect m => LocalFormulaCtx -> m (Array SuggestionTerm)
-getFnSuggestions ctx = liftEffect do
-  selection <- getSelection =<< window
-  ancestors <- getAncestorNodes =<< Selection.anchorNode selection
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
-  formulaText <- getFormulaBoxContents
-  idx <- getCaretPosition selection formulaBox
-  pure
-    $ whenMonoid (any (refEquals formulaBox) ancestors)
-    $ foldMap (getSuggestionsAtIndex ctx formulaText) idx
-
-setFnSig :: forall m. MonadEffect m => QVar -> SimpleFnSig -> m Unit
-setFnSig fn fnSig = liftEffect do
-  formulaSignatureDisplay <- justSelectElementById functionSignatureId
-  setInnerHTML (toElement formulaSignatureDisplay) (fnSigElements fn fnSig)
-
-insertFormulaNewLine :: forall m. MonadEffect m => m Unit
-insertFormulaNewLine = liftEffect do
-  formulaBox <- justSelectElementById formulaBoxId
-  formulaText <- getFormulaBoxContents
-  selection <- getSelection =<< window
-  caretPosition <- getCaretPosition selection (toNode formulaBox)
-  let
-    { before: formulaBegin, after: formulaEnd } =
-      String.splitAt (fromMaybe zero caretPosition) formulaText
-    newFormulaText
-      | String.null formulaEnd = formulaBegin <> "\n\n"
-      | otherwise = formulaBegin <> "\n" <> formulaEnd
-  updateFormulaBox newFormulaText
-  traverse_ (setCaretPosition selection $ toNode formulaBox)
-    (inc <$> caretPosition)
-
-setFormulaBox :: forall m. MonadEffect m => String -> m Unit
-setFormulaBox formulaText = do
-  formulaBox <- justSelectElementById formulaBoxId
-  liftEffect $ setInnerHTML (toElement formulaBox) (formulaElements formulaText)
-
-updateFormulaBox :: forall m. MonadEffect m => String -> m Unit
-updateFormulaBox formulaText =
-  emptyFormulaBox *> setFormulaBox formulaText
-
-emptyFormulaBox :: forall m. MonadEffect m => m Unit
-emptyFormulaBox = emptyContents formulaBoxId
-
-emptyFnSig :: forall m. MonadEffect m => m Unit
-emptyFnSig = emptyContents functionSignatureId
-
-emptyFnSuggestions :: forall m. MonadEffect m => m Unit
-emptyFnSuggestions = emptyContents suggestionsDropdownId
-
-emptyContents :: forall m. ElementId -> MonadEffect m => m Unit
-emptyContents elementId = liftEffect
-  (setTextContent mempty <<< toNode =<< justSelectElementById elementId)
-
-getFormulaBoxContents :: forall m. MonadEffect m => m String
-getFormulaBoxContents = liftEffect
-  (innerText =<< justSelectElementById formulaBoxId)
-
 parseElements
   :: forall m a
    . MonadEffect m
@@ -174,6 +32,10 @@ parseElements
   -> m (Array a)
 parseElements parseFn elems = liftEffect
   (filterMap parseFn <$> traverse id elems)
+
+emptyContents :: forall m. ElementId -> MonadEffect m => m Unit
+emptyContents elementId = liftEffect
+  (setTextContent mempty <<< toNode =<< justSelectElementById elementId)
 
 getVisibleCols :: forall m. MonadEffect m => m (Array Element)
 getVisibleCols = selectAllVisibleElements $ QuerySelector "th.column-header"

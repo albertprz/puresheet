@@ -3,13 +3,15 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.Components.Editor (EditorSlot, _editor)
+import App.Components.Editor.Models (EditorQuery(..))
 import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
 import App.Components.Table.Formula (Formula, FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
-import App.Components.Table.Models (Action(..), AppState)
+import App.Components.Table.Models (TableAction(..), TableState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
 import App.Interpreter.Module (reloadModule)
-import App.Utils.Dom (emptyFormulaBox, focusCell, getClipboard, getFormulaBoxContents, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, withPrevent)
+import App.Utils.Dom (focusCell, getClipboard, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, withPrevent)
 import App.Utils.Event (class IsEvent, shiftKey)
 import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
@@ -24,21 +26,20 @@ import Data.Tree (Forest)
 import Effect.Class.Console as Logger
 import Foreign (ForeignError, readString, unsafeToForeign)
 import Foreign.Index ((!))
-import Halogen (HalogenM, subscribe')
+import Halogen (HalogenM, subscribe', tell)
 import Halogen.Query.Event (eventListener)
 import Promise.Aff as Promise
 import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
 import Web.Event.Event (EventType(..))
 import Web.HTML (window)
-import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window as Window
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
 cellArrowMove
   :: forall m
    . MonadEffect m
-  => MonadState AppState m
+  => MonadState TableState m
   => KeyboardEvent
   -> CellMove
   -> m Unit
@@ -54,7 +55,7 @@ cellArrowMove ev move =
 cellMove
   :: forall m a
    . MonadEffect m
-  => MonadState AppState m
+  => MonadState TableState m
   => IsEvent a
   => a
   -> CellMove
@@ -66,7 +67,7 @@ cellMove _ move = do
 selectAllCells
   :: forall m a
    . MonadEffect m
-  => MonadState AppState m
+  => MonadState TableState m
   => IsEvent a
   => a
   -> m Unit
@@ -74,7 +75,12 @@ selectAllCells ev = withPrevent ev $
   modify_ _ { multiSelection = AllSelection }
 
 copyCells
-  :: forall m a. MonadAff m => MonadState AppState m => IsEvent a => a -> m Unit
+  :: forall m a
+   . MonadAff m
+  => MonadState TableState m
+  => IsEvent a
+  => a
+  -> m Unit
 copyCells ev = withPrevent ev do
   cellContents <- gets \st -> serializeSelectionValues st.multiSelection
     st.selectedCell
@@ -83,7 +89,12 @@ copyCells ev = withPrevent ev do
   liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
 
 pasteCells
-  :: forall m a. MonadAff m => MonadState AppState m => IsEvent a => a -> m Unit
+  :: forall m a
+   . MonadAff m
+  => MonadState TableState m
+  => IsEvent a
+  => a
+  -> m Unit
 pasteCells ev = withPrevent ev do
   st <- get
   clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
@@ -97,7 +108,8 @@ pasteCells ev = withPrevent ev do
     }
   refreshCells (Set.fromFoldable $ HashMap.keys newValues)
 
-deleteCells :: forall m. MonadEffect m => MonadState AppState m => m Unit
+deleteCells
+  :: forall r a o m. HalogenM TableState a (editor :: EditorSlot | r) o m Unit
 deleteCells = do
   st <- get
   let
@@ -109,10 +121,10 @@ deleteCells = do
     , formulaState = UnknownFormula
     }
   refreshCells $ Set.fromFoldable cellsToDelete
-  emptyFormulaBox
+  tell _editor unit $ UpdateEditorContent mempty
 
 selectCell
-  :: forall m. MonadEffect m => MonadState AppState m => CellMove -> m Unit
+  :: forall m. MonadEffect m => MonadState TableState m => CellMove -> m Unit
 selectCell move = do
   target <- goToCell move
   modify_ _
@@ -124,7 +136,7 @@ selectCell move = do
 goToCell
   :: forall m
    . MonadEffect m
-  => MonadState AppState m
+  => MonadState TableState m
   => CellMove
   -> m Cell
 goToCell move = do
@@ -160,7 +172,7 @@ goToCellHelper cols origin { column, row } visibleCols
   | otherwise = focusCell { column, row }
 
 adjustRows
-  :: forall m. MonadState AppState m => Int -> Row -> Row -> Row -> m Unit
+  :: forall m. MonadState TableState m => Int -> Row -> Row -> Row -> m Unit
 adjustRows rowRange currentRow maxRow minRow
 
   | inc currentRow > maxRow =
@@ -176,7 +188,7 @@ adjustRows rowRange currentRow maxRow minRow
 
   | otherwise = pure unit
 
-refreshCells :: forall m. MonadState AppState m => Set Cell -> m Unit
+refreshCells :: forall m. MonadState TableState m => Set Cell -> m Unit
 refreshCells affectedCells = do
   st <- get
   traverse_ refreshCellsFromDeps $ cellDeps st
@@ -185,13 +197,14 @@ refreshCells affectedCells = do
     NonEmptySet.fromSet affectedCells
 
 refreshCellsFromDeps
-  :: forall m. MonadState AppState m => Forest FormulaId -> m Unit
+  :: forall m. MonadState TableState m => Forest FormulaId -> m Unit
 refreshCellsFromDeps cellDeps =
   traverse_ (traverse_ applyFormula) cellDeps
 
-insertFormula :: forall m. MonadEffect m => MonadState AppState m => m Unit
-insertFormula = do
-  formulaText <- String.normalize' NFKD <$> getFormulaBoxContents
+insertFormula
+  :: forall m. MonadEffect m => MonadState TableState m => String -> m Unit
+insertFormula editorText = do
+  let formulaText = String.normalize' NFKD editorText
   st <- get
   case runFormula st st.formulaCell formulaText of
     Right { result, affectedCells, formulaCells, cellDeps } -> do
@@ -217,7 +230,7 @@ insertFormula = do
       Logger.error (show err) *>
         modify_ _ { formulaState = InvalidFormula }
 
-applyFormula :: forall m. MonadState AppState m => FormulaId -> m Unit
+applyFormula :: forall m. MonadState TableState m => FormulaId -> m Unit
 applyFormula formulaId = do
   st <- get
   let
@@ -236,12 +249,12 @@ applyFormula formulaId = do
     Left _ ->
       pure unit
 
-lookupFormula :: forall m. MonadState AppState m => Cell -> m (Maybe Formula)
+lookupFormula :: forall m. MonadState TableState m => Cell -> m (Maybe Formula)
 lookupFormula cell = do
   { formulaCache, tableFormulas } <- get
   pure $ HashMap.lookup2 cell tableFormulas formulaCache
 
-setRows :: forall m. MonadEffect m => MonadState AppState m => m Unit
+setRows :: forall m. MonadEffect m => MonadState TableState m => m Unit
 setRows = do
   { selectedCell, rows } <- get
   let Row (firstRow) = head rows
@@ -260,7 +273,7 @@ getPrelude = runExceptT
   =<< unsafeToForeign
   <$> liftEffect window
 
-loadPrelude :: forall m. MonadEffect m => MonadState AppState m => m Unit
+loadPrelude :: forall m. MonadEffect m => MonadState TableState m => m Unit
 loadPrelude = do
   tryLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
   case tryLoad of
@@ -271,21 +284,10 @@ loadPrelude = do
         )
     Right _ -> pure unit
 
-subscribeSelectionChange
-  :: forall slots o m
-   . MonadEffect m
-  => HalogenM AppState Action slots o m Unit
-subscribeSelectionChange = do
-  doc <- liftEffect $ Window.document =<< window
-  subscribe' \_ -> eventListener
-    (EventType "selectionchange")
-    (HTMLDocument.toEventTarget doc)
-    (const $ Just SelectionChange)
-
 subscribeWindowResize
   :: forall slots o m
    . MonadEffect m
-  => HalogenM AppState Action slots o m Unit
+  => HalogenM TableState TableAction slots o m Unit
 subscribeWindowResize = do
   window' <- liftEffect window
   subscribe' \_ -> eventListener

@@ -4,25 +4,27 @@ import FatPrelude
 
 import App.CSS.MainPage as MainPage
 import App.Components.Table as Table
-import Halogen as H
-import Halogen.HTML as HH
+import CSSPrelude (ComponentHTML)
+import Halogen (Component, Slot, defaultEval, mkComponent, mkEval)
+import Halogen.HTML (div_, slot_)
 import Tecton.Halogen (styleSheet)
 
-component :: forall q i o m. MonadAff m => H.Component q i o m
+component :: forall q m. MonadAff m => Component q Unit Unit m
 component =
-  H.mkComponent
+  mkComponent
     { initialState: const Nothing
     , render
-    , eval: H.mkEval H.defaultEval
+    , eval: mkEval defaultEval
     }
 
-render :: forall s i q o m x. MonadAff m => i -> HH.HTML (Slots s q o m x) s
+render :: forall i m. MonadAff m => i -> ComponentHTML Unit Slots m
 render = const $
-  HH.div_
+  div_
     [ styleSheet MainPage.css
-    , HH.slot_ _table unit Table.component unit
+    , slot_ _table unit Table.component unit
     ]
 
-type Slots s q o m x = H.ComponentSlot (table :: H.Slot q o Unit | x) m s
+type Slots = (table :: forall q. Slot q Unit Unit)
 
-_table = Proxy :: Proxy "table"
+_table :: Proxy "table"
+_table = Proxy

@@ -6,23 +6,22 @@ import Prim hiding (Row)
 import App.Components.Table.Cell (CellValue(..), mkColumn, mkRow)
 import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.Handler (handleAction)
-import App.Components.Table.Models (Action(..), AppState)
+import App.Components.Table.Models (TableAction(..), TableState)
 import App.Components.Table.Renderer (render)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import Data.HashMap as HashMap
-import Halogen as H
+import Halogen (Component, defaultEval, mkComponent, mkEval)
 
-component
-  :: forall q i o m. MonadAff m => H.Component q i o m
+component :: forall q m. MonadAff m => Component q Unit Unit m
 component =
-  H.mkComponent
+  mkComponent
     { initialState
     , render
-    , eval: H.mkEval H.defaultEval
+    , eval: mkEval defaultEval
         { handleAction = handleAction, initialize = Just Initialize }
     }
 
-initialState :: forall a. a -> AppState
+initialState :: forall a. a -> TableState
 initialState = const
   { selectedCell: { column: mkColumn 'A', row: mkRow 1 }
   , formulaCell: { column: mkColumn 'A', row: mkRow 1 }
@@ -46,6 +45,4 @@ initialState = const
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection
   , draggedHeader: Nothing
-  , suggestions: []
-  , selectedSuggestionId: zero
   }

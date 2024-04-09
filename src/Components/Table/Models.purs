@@ -8,7 +8,6 @@ import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
 import App.Components.Table.Selection (MultiSelection, SelectionState)
 import App.SyntaxTree.Common (Module, QVar, QVarOp)
 import App.SyntaxTree.FnDef (FnInfo, OpInfo)
-import App.Utils.Formula (SuggestionId, SuggestionTerm)
 import App.Utils.KeyCode (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
@@ -16,7 +15,7 @@ import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.WheelEvent (WheelEvent)
 
-type AppState =
+type TableState =
   { selectedCell :: Cell
   , formulaCell :: Cell
   , activeFormula :: Boolean
@@ -34,11 +33,9 @@ type AppState =
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
-  , suggestions :: Array SuggestionTerm
-  , selectedSuggestionId :: SuggestionId
   }
 
-data Action
+data TableAction
   = Initialize
   | WriteSelectedCellInput (Maybe Cell)
   | WriteFormulaCellInput (Maybe Cell)
@@ -49,16 +46,15 @@ data Action
   | FocusInCell Cell FocusEvent
   | KeyDown KeyCode KeyboardEvent
   | KeyUp KeyCode KeyboardEvent
-  | FormulaKeyDown (Maybe SuggestionTerm) KeyCode KeyboardEvent
-  | FormulaKeyUp KeyCode KeyboardEvent
   | SelectedCellInputKeyDown KeyCode KeyboardEvent
   | FormulaCellInputKeyDown KeyCode KeyboardEvent
-  | FocusInFormula FocusEvent
+  | FocusInEditor
+  | FocusOutEditor
+  | SubmitEditor String
   | WheelScroll WheelEvent
   | HoverCell EventTransition Cell MouseEvent
   | HoverHeader EventTransition Header MouseEvent
   | DragHeader EventTransition Header DragEvent
-  | SelectionChange
   | ResizeWindow
 
 data EventTransition

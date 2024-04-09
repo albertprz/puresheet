@@ -3,33 +3,35 @@ module App.Components.Table.Renderer where
 import FatPrelude hiding (div)
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaBox, formulaBoxContainer, formulaCellInput, formulaSectionContainer, functionSignature, inSelection, mainContainer, materialIcons, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, selectedSuggestionOption, sheetCell, suggestionOption, suggestionsDropdown)
-import App.CSS.Ids (cellId, formulaBoxId, formulaCellInputId, functionSignatureId, selectedCellInputId, suggestionsDropdownId)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
+import App.CSS.Ids (cellId, formulaCellInputId, selectedCellInputId)
+import App.Components.Editor (EditorSlot, _editor)
+import App.Components.Editor as Editor
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
-import App.Components.Table.Formula (formulaStateToClass)
-import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
+import App.Components.Table.Handler (handleEditorOutput)
+import App.Components.Table.Models (EventTransition(..), TableAction(..), TableState)
 import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
-import App.Utils.Formula (SuggestionTerm)
 import App.Utils.KeyCode (mkKeyAction)
 import Bookhound.Parser (runParser)
-import Data.Array ((!!))
+import CSSPrelude (ComponentHTML)
 import Data.Array as Array
 import Data.HashMap as HashMap
-import Halogen.HTML (ClassName, ComponentHTML, HTML, div, input, table, tbody_, td, text, th, thead_, tr_)
-import Halogen.HTML.Elements (i)
+import Halogen.HTML (ClassName, HTML, div, input, slot, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
-import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, spellcheck, style, tabIndex, type_, value)
+import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
 
-render :: forall cs m. AppState -> ComponentHTML Action cs m
+render
+  :: forall m
+   . MonadAff m
+  => TableState
+  -> ComponentHTML TableAction Slots m
 render
   st@
     { selectedCell
     , formulaCell
     , activeFormula
-    , formulaState
     , selectionState
-    , suggestions
-    , selectedSuggestionId
+    , formulaState
     } =
   div [ class_ mainContainer ]
     [ div [ class_ formulaSectionContainer ]
@@ -40,29 +42,7 @@ render
             , onValueChange $ WriteSelectedCellInput <<< parseCell
             , onKeyDown $ mkKeyAction SelectedCellInputKeyDown
             ]
-        , div
-            [ class_ formulaBoxContainer ]
-            [ div
-                [ id $ show formulaBoxId
-                , classes [ formulaBox, formulaStateToClass formulaState ]
-                , spellcheck false
-                , onKeyDown $ mkKeyAction $ FormulaKeyDown
-                    (suggestions !! unwrap selectedSuggestionId)
-                , onKeyUp $ mkKeyAction FormulaKeyUp
-                , onFocusIn FocusInFormula
-                ]
-                []
-            , div
-                [ id $ show functionSignatureId
-                , classes [ functionSignature ]
-                ]
-                []
-            , div
-                [ id $ show suggestionsDropdownId
-                , class_ suggestionsDropdown
-                ]
-                (mapWithIndex (renderSuggestion st) suggestions)
-            ]
+        , slot _editor unit Editor.component { formulaState } handleEditorOutput
         , input
             [ id $ show formulaCellInputId
             , class_ formulaCellInput
@@ -87,19 +67,7 @@ render
   where
   parseCell = hush <<< runParser cellParser
 
-renderSuggestion :: forall i. AppState -> Int -> SuggestionTerm -> HTML i Action
-renderSuggestion { selectedSuggestionId } n suggestionTerm = div
-  [ classes $ [ suggestionOption ]
-      <>? (wrap n == selectedSuggestionId)
-      /\ selectedSuggestionOption
-  ]
-  [ i
-      [ class_ materialIcons ]
-      [ text "functions" ]
-  , text $ show suggestionTerm
-  ]
-
-renderHeader :: forall i. AppState -> HTML i Action
+renderHeader :: forall i. TableState -> HTML i TableAction
 renderHeader st =
   thead_
     [ tr_
@@ -114,7 +82,7 @@ renderHeader st =
             (renderColumnHeader st <$> allColumns)
     ]
 
-renderBody :: forall i. AppState -> HTML i Action
+renderBody :: forall i. TableState -> HTML i TableAction
 renderBody
   st@
     { rows
@@ -133,7 +101,7 @@ renderBody
       cellValue = HashMap.lookup cell tableData
     pure $ renderBodyCell st cell cellValue
 
-renderRowHeader :: forall i. AppState -> Row -> HTML i Action
+renderRowHeader :: forall i. TableState -> Row -> HTML i TableAction
 renderRowHeader { selectedCell, multiSelection } row =
   th
     [ id $ show row
@@ -152,7 +120,7 @@ renderRowHeader { selectedCell, multiSelection } row =
     [ text $ show row ]
 
 renderColumnHeader
-  :: forall i. AppState -> Column -> HTML i Action
+  :: forall i. TableState -> Column -> HTML i TableAction
 renderColumnHeader { selectedCell, multiSelection } column =
   th
     [ id $ show column
@@ -172,10 +140,10 @@ renderColumnHeader { selectedCell, multiSelection } column =
 
 renderBodyCell
   :: forall i
-   . AppState
+   . TableState
   -> Cell
   -> Maybe CellValue
-  -> HTML i Action
+  -> HTML i TableAction
 renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
   td
     [ id $ show cellId <> showCell cell
@@ -197,7 +165,7 @@ renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
         ]
     ]
 
-bodyCellSelectionClasses :: AppState -> Cell -> Array ClassName
+bodyCellSelectionClasses :: TableState -> Cell -> Array ClassName
 bodyCellSelectionClasses { selectedCell, multiSelection } cell =
   [ sheetCell ]
     <>? (selectedCell == cell)
@@ -212,3 +180,5 @@ bodyCellSelectionClasses { selectedCell, multiSelection } cell =
     /\ atLeftSelection
     <>? isCellAtRightSelection multiSelection cell
     /\ atRightSelection
+
+type Slots = (editor :: EditorSlot)

@@ -3,7 +3,7 @@ module App.Evaluator.Formula where
 import FatPrelude
 
 import App.Components.Table.Cell (Cell, CellValue)
-import App.Components.Table.Models (AppState)
+import App.Components.Table.Models (TableState)
 import App.Evaluator.Common (LocalFormulaCtx, nonEmptyCellValue)
 import App.Evaluator.Errors (EvalError(..), SerializationError(..))
 import App.Evaluator.Expression (evalExpr)
@@ -16,7 +16,7 @@ import Data.Tree.Zipper (fromTree)
 import Matrix as Matrix
 
 evalFormula
-  :: AppState
+  :: TableState
   -> Cell
   -> FnBody
   -> Either EvalError
@@ -46,14 +46,14 @@ evalFormula appState { column, row } body = do
         )
 
 evalExprInApp
-  :: AppState -> FnBody -> Either EvalError Object
+  :: TableState -> FnBody -> Either EvalError Object
 evalExprInApp appState = evalExprInCtx $ mkLocalContext appState
 
 evalExprInCtx :: LocalFormulaCtx -> FnBody -> Either EvalError Object
 evalExprInCtx formulaCtx exprBody = do
   flip evalState formulaCtx $ runExceptT $ evalExpr exprBody
 
-mkLocalContext :: AppState -> LocalFormulaCtx
+mkLocalContext :: TableState -> LocalFormulaCtx
 mkLocalContext appState =
   { tableData: appState.tableData
   , fnsMap: appState.fnsMap

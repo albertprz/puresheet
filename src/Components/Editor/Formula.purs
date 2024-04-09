@@ -1,4 +1,4 @@
-module App.Utils.Formula where
+module App.Editor.Formula where
 
 import FatPrelude hiding (div)
 
@@ -25,14 +25,14 @@ import Record.Extra (pick)
 
 formulaElements :: forall a b. String -> Array (HTML a b)
 formulaElements =
-  syntaxAtomsElements <<< fold <<< runParser syntaxAtomParser
+  syntaxAtomsToElements <<< fold <<< runParser syntaxAtomParser
 
 fnSigElements :: forall a b. QVar -> SimpleFnSig -> Array (HTML a b)
 fnSigElements =
-  syntaxAtomsElements <.. fnSigToSyntaxAtoms
+  syntaxAtomsToElements <.. fnSigToSyntaxAtoms
 
-syntaxAtomsElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
-syntaxAtomsElements = map toElement <<< condenseSyntaxAtoms
+syntaxAtomsToElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
+syntaxAtomsToElements = map toElement <<< condenseSyntaxAtoms
   where
   toElement atom = span
     [ class_ $ syntaxAtomToClassName atom ]

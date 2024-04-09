@@ -2,40 +2,36 @@ module App.Components.Table.Handler where
 
 import FatPrelude
 
-import App.CSS.Ids (formulaBoxId, formulaCellInputId, inputElement, selectedCellInputId)
+import App.CSS.Ids (formulaBoxId, inputElement, selectedCellInputId)
+import App.Components.Editor (EditorSlot, _editor)
+import App.Components.Editor.Models (EditorOutput, EditorQuery(..))
+import App.Components.Editor.Models as EditorOutput
 import App.Components.Table.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
 import App.Components.Table.Formula (FormulaState(..))
-import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeSelectionChange, subscribeWindowResize)
-import App.Components.Table.Models (Action(..), AppState, EventTransition(..))
+import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeWindowResize)
+import App.Components.Table.Models (EventTransition(..), TableAction(..), TableState)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
-import App.Utils.Dom (actOnElementById, displayFnSig, displayFnSuggestions, emptyFnSig, emptyFormulaBox, focusById, focusCell, focusCellElem, insertFormulaNewLine, performAutoComplete, performSyntaxHighlight, prevent, updateFormulaBox, withPrevent)
-import App.Utils.Event (ctrlKey, shiftKey, toEvent, toMouseEvent)
+import App.Utils.Dom (focusById, focusCell, focusCellElem, prevent, withPrevent)
+import App.Utils.Event (ctrlKey, shiftKey, toMouseEvent)
 import App.Utils.HashMap (lookup2) as HashMap
-import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
-import App.Utils.Selection (getSelection)
-import App.Utils.Selection as Selection
+import App.Utils.KeyCode (KeyCode(..))
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
-import Halogen (HalogenM)
-import Web.Event.Event (target)
+import Halogen (HalogenM, tell)
 import Web.HTML (window)
-import Web.HTML.HTMLElement (setContentEditable, toNode)
-import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
-  :: forall slots o m
+  :: forall o m r
    . MonadAff m
-  => Action
-  -> HalogenM AppState Action slots o m Unit
+  => TableAction
+  -> HalogenM TableState TableAction (editor :: EditorSlot | r) o m Unit
 
 handleAction Initialize = do
   loadPrelude
-  actOnElementById formulaBoxId $ setContentEditable "true"
   handleAction ResizeWindow
   subscribeWindowResize
-  subscribeSelectionChange
 
 handleAction ResizeWindow = do
   { selectedCell } <- get
@@ -69,41 +65,7 @@ handleAction (WriteCell cell value) = do
     }
   refreshCells $ Set.singleton cell
 
-handleAction (FormulaKeyDown (Just _) keyCode ev)
-  | keyCode `elem` [ ArrowUp, ArrowDown ] = withPrevent ev do
-      let next = if keyCode == ArrowUp then dec else inc
-      modify_ \st -> st
-        { selectedSuggestionId =
-            clamp bottom
-              (wrap $ dec $ length st.suggestions)
-              $ next st.selectedSuggestionId
-        }
-
-handleAction (FormulaKeyDown (Just suggestion) keyCode ev)
-  | keyCode `elem` [ Enter, Tab ] =
-      withPrevent ev $ performAutoComplete $ show suggestion
-
-handleAction (FormulaKeyDown _ Enter ev)
-  | ctrlKey ev = withPrevent ev insertFormula
-  | otherwise = withPrevent ev
-      (insertFormulaNewLine *> performSyntaxHighlight)
-
-handleAction (FormulaKeyDown _ Tab ev) =
-  withPrevent ev $ focusCell =<< gets _.selectedCell
-
-handleAction (FormulaKeyDown _ (CharKeyCode 'G') ev)
-  | ctrlKey ev = withPrevent ev $ focusById formulaCellInputId
-
-handleAction (FormulaKeyDown _ _ _) =
-  modify_ _ { formulaState = UnknownFormula }
-
-handleAction (FormulaKeyUp keyCode _) =
-  unless (isModifierKeyCode keyCode) do
-    performSyntaxHighlight
-
-handleAction (FocusInFormula ev) = do
-  selection <- liftEffect $ getSelection =<< window
-  liftEffect $ traverse_ (Selection.moveToEnd selection) formulaBox
+handleAction FocusInEditor = do
   whenM (not <$> gets _.activeFormula)
     ( modify_ \st -> st
         { activeFormula = true
@@ -111,9 +73,12 @@ handleAction (FocusInFormula ev) = do
             HashMap.lookup2 st.selectedCell st.tableFormulas st.formulaCache
         }
     )
-  where
-  formulaBox =
-    toNode <$> (HTMLElement.fromEventTarget =<< (target $ toEvent ev))
+
+handleAction FocusOutEditor =
+  focusCell =<< gets _.selectedCell
+
+handleAction (SubmitEditor editorText) =
+  insertFormula editorText
 
 handleAction (ClickCell cell ev) = withPrevent ev do
   { selectedCell } <- get
@@ -128,16 +93,12 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
 
 handleAction (FocusInCell cell _) = do
   formulaText <- _.formulaText <$$> lookupFormula cell
-  emptyFnSig
-  case formulaText of
-    Just x -> updateFormulaBox x
-    Nothing -> emptyFormulaBox
+  tell _editor unit $ UpdateEditorContent $ fromMaybe mempty formulaText
   modify_ _
     { activeFormula = false
     , formulaState =
         if isJust formulaText then ValidFormula
         else UnknownFormula
-    , suggestions = []
     }
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
@@ -310,6 +271,8 @@ handleAction (DragHeader Over _ ev) =
 handleAction (DragHeader _ _ _) =
   pure unit
 
-handleAction SelectionChange = do
-  displayFnSuggestions
-  displayFnSig =<< get
+handleEditorOutput :: EditorOutput -> TableAction
+handleEditorOutput = case _ of
+  EditorOutput.FocusInEditor -> FocusInEditor
+  EditorOutput.FocusOutEditor -> FocusOutEditor
+  EditorOutput.SubmitEditor x -> SubmitEditor x
