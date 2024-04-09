@@ -17,6 +17,7 @@
   , "foldable-traversable"
   , "foreign"
   , "halogen"
+  , "halogen-store"
   , "halogen-vdom-string-renderer"
   , "integers"
   , "js-promise-aff"

@@ -6,8 +6,6 @@ import Prim hiding (Row)
 import App.Components.Table.Cell (Cell, CellValue, Header, Row)
 import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
 import App.Components.Table.Selection (MultiSelection, SelectionState)
-import App.SyntaxTree.Common (Module, QVar, QVarOp)
-import App.SyntaxTree.FnDef (FnInfo, OpInfo)
 import App.Utils.KeyCode (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
@@ -25,10 +23,6 @@ type TableState =
   , tableFormulas :: HashMap Cell FormulaId
   , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
   , formulaCache :: HashMap FormulaId Formula
-  , fnsMap :: HashMap QVar FnInfo
-  , operatorsMap :: HashMap QVarOp OpInfo
-  , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
-  , importedModulesMap :: HashMap Module (Set Module)
   , rows :: MinLenVect 1 Row
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState

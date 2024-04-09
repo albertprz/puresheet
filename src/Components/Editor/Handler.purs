@@ -3,6 +3,7 @@ module App.Components.Editor.Handler where
 import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, formulaCellInputId)
+import App.Components.AppStore (Store, StoreAction)
 import App.Components.Editor.HandlerHelpers (displayFnSig, displayFnSuggestions, getEditorContent, insertEditorNewLine, performAutoComplete, performSyntaxHighlight, subscribeSelectionChange, updateEditorContent)
 import App.Components.Editor.Models (EditorAction(..), EditorOutput(..), EditorQuery(..), EditorState)
 import App.Components.Table.Formula (FormulaState(..))
@@ -11,6 +12,7 @@ import App.Utils.Event (ctrlKey, toEvent)
 import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
 import App.Utils.Selection as Selection
 import Halogen (HalogenM, raise)
+import Halogen.Store.Monad (class MonadStore, getStore)
 import Web.Event.Event (target)
 import Web.HTML (window)
 import Web.HTML.HTMLElement (fromEventTarget, setContentEditable, toNode)
@@ -18,6 +20,7 @@ import Web.HTML.HTMLElement (fromEventTarget, setContentEditable, toNode)
 handleAction
   :: forall m
    . MonadAff m
+  => MonadStore StoreAction Store m
   => EditorAction
   -> HalogenM EditorState EditorAction () EditorOutput m Unit
 
@@ -70,8 +73,10 @@ handleAction (FocusIn ev) = do
     toNode <$> (fromEventTarget =<< target (toEvent ev))
 
 handleAction SelectionChange = do
+  st <- get
+  store <- getStore
   displayFnSuggestions
-  displayFnSig =<< get
+  displayFnSig st store
 
 handleAction (Receive { formulaState }) =
   modify_ _ { formulaState = formulaState }

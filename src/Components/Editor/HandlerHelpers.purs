@@ -3,10 +3,11 @@ module App.Components.Editor.HandlerHelpers where
 import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, functionSignatureId, suggestionsDropdownId)
+import App.Components.AppStore (Store, mkLocalContext)
 import App.Components.Editor.Models (EditorAction(..), EditorState)
 import App.Editor.Formula (SuggestionTerm, extractSuggestionFn, fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getWordAtIndex)
 import App.Evaluator.Common (LocalFormulaCtx)
-import App.SyntaxTree.Common (QVar, preludeModule)
+import App.SyntaxTree.Common (QVar)
 import App.SyntaxTree.FnDef (SimpleFnSig)
 import App.Utils.Common (refEquals)
 import App.Utils.Dom (emptyContents, getAncestorNodes, justSelectElementById, setInnerHTML, setStyle)
@@ -15,12 +16,11 @@ import App.Utils.Range as Range
 import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
 import App.Utils.Selection as Selection
 import Data.Array ((!!))
-import Data.HashMap as HashMap
 import Data.String (null, splitAt) as String
 import Data.String.CodeUnits (length) as String
-import Data.Tree.Zipper (fromTree)
-import Halogen (HalogenM, subscribe')
+import Halogen (HalogenM, subscribe)
 import Halogen.Query.Event (eventListener)
+import Halogen.Store.Monad (class MonadStore, getStore)
 import Web.Event.Event (EventType(..))
 import Web.HTML (window)
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -56,15 +56,16 @@ displayFnSig
   :: forall m
    . MonadEffect m
   => EditorState
+  -> Store
   -> m Unit
-displayFnSig st = liftEffect do
+displayFnSig st store = liftEffect do
   formulaBox <- toNode <$> justSelectElementById formulaBoxId
   selection <- getSelection =<< window
   ancestors <- getAncestorNodes =<< Selection.anchorNode selection
   formulaText <- getEditorContent
   idx <- getCaretPosition selection formulaBox
   let
-    ctx = mkLocalContext st
+    ctx = mkLocalContext store
     suggestion = (st.suggestions !! unwrap st.selectedSuggestionId)
       <|> (getFnAtIndex formulaText =<< idx)
     fn = extractSuggestionFn ctx =<< suggestion
@@ -73,9 +74,10 @@ displayFnSig st = liftEffect do
   maybe emptyFnSig (uncurry setFnSig) (bisequence (fn /\ fnSig))
 
 displayFnSuggestions
-  :: forall m
+  :: forall a m
    . MonadEffect m
   => MonadState EditorState m
+  => MonadStore a Store m
   => m Unit
 displayFnSuggestions = do
   st <- get
@@ -89,7 +91,8 @@ displayFnSuggestions = do
     [ "top" /\ (show (rect.top + rect.height) <> "px")
     , "left" /\ (show rect.left <> "px")
     ]
-  suggestions <- getFnSuggestions $ mkLocalContext st
+  store <- getStore
+  suggestions <- getFnSuggestions $ mkLocalContext store
   when (suggestions /= st.suggestions)
     ( modify_ _
         { suggestions = suggestions
@@ -155,28 +158,12 @@ getEditorContent = liftEffect
   (innerText =<< justSelectElementById formulaBoxId)
 
 subscribeSelectionChange
-  :: forall slots o m
+  :: forall slots st o m
    . MonadEffect m
-  => HalogenM EditorState EditorAction slots o m Unit
+  => HalogenM st EditorAction slots o m Unit
 subscribeSelectionChange = do
   doc <- liftEffect $ Window.document =<< window
-  subscribe' \_ -> eventListener
+  void $ subscribe $ eventListener
     (EventType "selectionchange")
     (HTMLDocument.toEventTarget doc)
     (const $ Just SelectionChange)
-
--- TODO: From global store
-mkLocalContext :: EditorState -> LocalFormulaCtx
-mkLocalContext _ =
-  { tableData: HashMap.empty
-  , fnsMap: HashMap.empty
-  , operatorsMap: HashMap.empty
-  , aliasedModulesMap: HashMap.empty
-  , importedModulesMap: HashMap.empty
-  , localFnsMap: HashMap.empty
-  , argsMap: HashMap.empty
-  , module': preludeModule
-  , scope: zero
-  , scopeLoc: fromTree $ mkLeaf zero
-  , lambdaCount: zero
-  }

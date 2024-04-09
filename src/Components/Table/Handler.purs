@@ -3,6 +3,7 @@ module App.Components.Table.Handler where
 import FatPrelude
 
 import App.CSS.Ids (formulaBoxId, inputElement, selectedCellInputId)
+import App.Components.AppStore (Store, StoreAction)
 import App.Components.Editor (EditorSlot, _editor)
 import App.Components.Editor.Models (EditorOutput, EditorQuery(..))
 import App.Components.Editor.Models as EditorOutput
@@ -18,6 +19,7 @@ import App.Utils.KeyCode (KeyCode(..))
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
 import Halogen (HalogenM, tell)
+import Halogen.Store.Monad (class MonadStore)
 import Web.HTML (window)
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -25,6 +27,7 @@ import Web.UIEvent.WheelEvent (deltaX, deltaY)
 handleAction
   :: forall o m r
    . MonadAff m
+  => MonadStore StoreAction Store m
   => TableAction
   -> HalogenM TableState TableAction (editor :: EditorSlot | r) o m Unit
 

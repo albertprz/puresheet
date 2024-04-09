@@ -3,6 +3,7 @@ module App.Components.Table where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.Components.AppStore (Store, StoreAction)
 import App.Components.Table.Cell (CellValue(..), mkColumn, mkRow)
 import App.Components.Table.Formula (FormulaState(..))
 import App.Components.Table.Handler (handleAction)
@@ -11,8 +12,13 @@ import App.Components.Table.Renderer (render)
 import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
 import Data.HashMap as HashMap
 import Halogen (Component, defaultEval, mkComponent, mkEval)
+import Halogen.Store.Monad (class MonadStore)
 
-component :: forall q m. MonadAff m => Component q Unit Unit m
+component
+  :: forall q m
+   . MonadAff m
+  => MonadStore StoreAction Store m
+  => Component q Unit Unit m
 component =
   mkComponent
     { initialState
@@ -37,10 +43,6 @@ initialState = const
   , tableDependencies: HashMap.empty
   , tableFormulas: HashMap.empty
   , formulaCache: HashMap.empty
-  , fnsMap: HashMap.empty
-  , operatorsMap: HashMap.empty
-  , aliasedModulesMap: HashMap.empty
-  , importedModulesMap: HashMap.empty
   , rows: mkRow <$> (0 .. 100)
   , multiSelection: NoSelection
   , selectionState: NotStartedSelection

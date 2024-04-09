@@ -16,15 +16,15 @@ import Data.Tree.Zipper (fromTree)
 import Matrix as Matrix
 
 evalFormula
-  :: TableState
+  :: LocalFormulaCtx
   -> Cell
   -> FnBody
   -> Either EvalError
        { result :: HashMap Cell CellValue
        , affectedCells :: NonEmptySet Cell
        }
-evalFormula appState { column, row } body = do
-  objectResult <- evalExprInApp appState body
+evalFormula ctx { column, row } body = do
+  objectResult <- evalExprInCtx ctx body
   note (SerializationError' CellValueSerializationError)
     $
       ( \result -> { result, affectedCells: _ } <$>
@@ -45,25 +45,6 @@ evalFormula appState { column, row } body = do
             getInBoundedRange (row + wrap y)
         )
 
-evalExprInApp
-  :: TableState -> FnBody -> Either EvalError Object
-evalExprInApp appState = evalExprInCtx $ mkLocalContext appState
-
 evalExprInCtx :: LocalFormulaCtx -> FnBody -> Either EvalError Object
 evalExprInCtx formulaCtx exprBody = do
   flip evalState formulaCtx $ runExceptT $ evalExpr exprBody
-
-mkLocalContext :: TableState -> LocalFormulaCtx
-mkLocalContext appState =
-  { tableData: appState.tableData
-  , fnsMap: appState.fnsMap
-  , operatorsMap: appState.operatorsMap
-  , aliasedModulesMap: appState.aliasedModulesMap
-  , importedModulesMap: appState.importedModulesMap
-  , localFnsMap: HashMap.empty
-  , argsMap: HashMap.empty
-  , module': preludeModule
-  , scope: zero
-  , scopeLoc: fromTree $ mkLeaf zero
-  , lambdaCount: zero
-  }

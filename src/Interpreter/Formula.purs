@@ -2,6 +2,7 @@ module App.Interpreter.Formula (runFormula) where
 
 import FatPrelude
 
+import App.Components.AppStore (Store, mkLocalContext)
 import App.Components.Table.Cell (Cell, CellValue)
 import App.Components.Table.Formula (FormulaId, getDependencies)
 import App.Components.Table.Models (TableState)
@@ -20,15 +21,21 @@ type FormulaResult =
   , cellDeps :: Forest FormulaId
   }
 
-runFormula :: TableState -> Cell -> String -> Either RunError FormulaResult
-runFormula appState cell =
+runFormula
+  :: TableState
+  -> Store
+  -> Cell
+  -> String
+  -> Either RunError FormulaResult
+runFormula tableState store cell =
   (lmap DependencyError' <<< depsFn) <=< (run evalFn)
   where
+  ctx = (mkLocalContext store) { tableData = tableState.tableData }
   depsFn { result, affectedCells, formulaCells } =
     { result, affectedCells, formulaCells, cellDeps: _ }
-      <$> getDependencies appState affectedCells formulaCells
+      <$> getDependencies tableState affectedCells formulaCells
   evalFn body = evalFnHelper body
-    <$> evalFormula appState cell body
+    <$> evalFormula ctx cell body
   evalFnHelper body { result, affectedCells } =
     { result
     , affectedCells

@@ -3,6 +3,7 @@ module App.Components.Table.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
+import App.Components.AppStore (Store, StoreAction)
 import App.Components.Editor (EditorSlot, _editor)
 import App.Components.Editor.Models (EditorQuery(..))
 import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
@@ -17,17 +18,17 @@ import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
 import Data.Array as Array
 import Data.HashMap (insert, keys, lookup, union, unionWith) as HashMap
-import Data.List.NonEmpty (NonEmptyList)
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.String.Utils (NormalizationForm(..))
 import Data.String.Utils as String
 import Data.Tree (Forest)
 import Effect.Class.Console as Logger
-import Foreign (ForeignError, readString, unsafeToForeign)
+import Foreign (readString, unsafeToForeign)
 import Foreign.Index ((!))
-import Halogen (HalogenM, subscribe', tell)
+import Halogen (HalogenM, subscribe, tell)
 import Halogen.Query.Event (eventListener)
+import Halogen.Store.Monad (class MonadStore, getStore, updateStore)
 import Promise.Aff as Promise
 import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
@@ -92,6 +93,7 @@ pasteCells
   :: forall m a
    . MonadAff m
   => MonadState TableState m
+  => MonadStore StoreAction Store m
   => IsEvent a
   => a
   -> m Unit
@@ -109,7 +111,9 @@ pasteCells ev = withPrevent ev do
   refreshCells (Set.fromFoldable $ HashMap.keys newValues)
 
 deleteCells
-  :: forall r a o m. HalogenM TableState a (editor :: EditorSlot | r) o m Unit
+  :: forall r a o m
+   . MonadStore StoreAction Store m
+  => HalogenM TableState a (editor :: EditorSlot | r) o m Unit
 deleteCells = do
   st <- get
   let
@@ -188,7 +192,12 @@ adjustRows rowRange currentRow maxRow minRow
 
   | otherwise = pure unit
 
-refreshCells :: forall m. MonadState TableState m => Set Cell -> m Unit
+refreshCells
+  :: forall m
+   . MonadState TableState m
+  => MonadStore StoreAction Store m
+  => Set Cell
+  -> m Unit
 refreshCells affectedCells = do
   st <- get
   traverse_ refreshCellsFromDeps $ cellDeps st
@@ -197,16 +206,26 @@ refreshCells affectedCells = do
     NonEmptySet.fromSet affectedCells
 
 refreshCellsFromDeps
-  :: forall m. MonadState TableState m => Forest FormulaId -> m Unit
+  :: forall m
+   . MonadState TableState m
+  => MonadStore StoreAction Store m
+  => Forest FormulaId
+  -> m Unit
 refreshCellsFromDeps cellDeps =
   traverse_ (traverse_ applyFormula) cellDeps
 
 insertFormula
-  :: forall m. MonadEffect m => MonadState TableState m => String -> m Unit
+  :: forall m
+   . MonadEffect m
+  => MonadState TableState m
+  => MonadStore StoreAction Store m
+  => String
+  -> m Unit
 insertFormula editorText = do
   let formulaText = String.normalize' NFKD editorText
   st <- get
-  case runFormula st st.formulaCell formulaText of
+  store <- getStore
+  case runFormula st store st.formulaCell formulaText of
     Right { result, affectedCells, formulaCells, cellDeps } -> do
       let formulaId = newFormulaId $ HashMap.keys st.formulaCache
       modify_ _
@@ -230,13 +249,19 @@ insertFormula editorText = do
       Logger.error (show err) *>
         modify_ _ { formulaState = InvalidFormula }
 
-applyFormula :: forall m. MonadState TableState m => FormulaId -> m Unit
+applyFormula
+  :: forall m
+   . MonadState TableState m
+  => MonadStore StoreAction Store m
+  => FormulaId
+  -> m Unit
 applyFormula formulaId = do
   st <- get
+  store <- getStore
   let
     { formulaText, startingCell } =
       unsafeFromJust $ HashMap.lookup formulaId st.formulaCache
-    eitherResult = runFormula st startingCell formulaText
+    eitherResult = runFormula st store startingCell formulaText
   case eitherResult of
     Right { result, affectedCells } ->
       modify_ _
@@ -266,23 +291,28 @@ setRows = do
   parseRow = hush <<< runParser rowParser
 
 getPrelude
-  :: forall m. MonadEffect m => m (Either (NonEmptyList ForeignError) String)
-getPrelude = runExceptT
-  $ readString
-  =<< (_ ! "prelude")
-  =<< unsafeToForeign
-  <$> liftEffect window
+  :: forall m. MonadEffect m => m String
+getPrelude =
+  map (fromRight mempty)
+    $ runExceptT
+    $ readString
+    =<< (_ ! "prelude")
+    =<< unsafeToForeign
+    <$> liftEffect window
 
-loadPrelude :: forall m. MonadEffect m => MonadState TableState m => m Unit
+loadPrelude
+  :: forall m. MonadEffect m => MonadStore StoreAction Store m => m Unit
 loadPrelude = do
-  tryLoad <- sequence <$> (traverse reloadModule =<< getPrelude)
-  case tryLoad of
-    Left err ->
-      Logger.error
-        ( "Prelude load error \n" <> "Parse Error: " <>
-            show err
-        )
-    Right _ -> pure unit
+  prelude <- getPrelude
+  store <- getStore
+  (errors /\ newStore) <- runStateT (reloadModule prelude) store
+  either logError (const $ updateStore $ const newStore) errors
+  where
+  logError err =
+    Logger.error
+      ( "Prelude load error \n" <> "Parse Error: " <>
+          show err
+      )
 
 subscribeWindowResize
   :: forall slots o m
@@ -290,7 +320,7 @@ subscribeWindowResize
   => HalogenM TableState TableAction slots o m Unit
 subscribeWindowResize = do
   window' <- liftEffect window
-  subscribe' \_ -> eventListener
+  void $ subscribe $ eventListener
     (EventType "resize")
     (Window.toEventTarget window')
     (const $ Just ResizeWindow)

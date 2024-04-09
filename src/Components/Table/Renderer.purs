@@ -5,6 +5,7 @@ import Prim hiding (Row)
 
 import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
 import App.CSS.Ids (cellId, formulaCellInputId, selectedCellInputId)
+import App.Components.AppStore (Store, StoreAction)
 import App.Components.Editor (EditorSlot, _editor)
 import App.Components.Editor as Editor
 import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
@@ -19,10 +20,12 @@ import Data.HashMap as HashMap
 import Halogen.HTML (ClassName, HTML, div, input, slot, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
+import Halogen.Store.Monad (class MonadStore)
 
 render
   :: forall m
    . MonadAff m
+  => MonadStore StoreAction Store m
   => TableState
   -> ComponentHTML TableAction Slots m
 render
