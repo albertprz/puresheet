@@ -2,6 +2,7 @@ module App.Evaluator.Builtins
   ( builtinFnsMap
   ) where
 
+import FatPrelude hiding (add, and, append, div, eq, gcd, lcm, length, mod, neg, not, notEq, null, or, sub)
 import Prim hiding (Function, Type)
 
 import App.Evaluator.Object (extractList, isElement)
@@ -10,18 +11,14 @@ import App.SyntaxTree.FnDef (BuiltinFnInfo, Object(..))
 import App.SyntaxTree.Type (Type(..), TypeParam(..), TypeVar(..))
 import App.Utils.String (head, init, last, tail) as String
 import Data.Array as Array
+import Data.Array.NonEmpty as NonEmptyArray
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
-import Data.Bifunctor (rmap)
 import Data.EuclideanRing as Ring
-import Data.Foldable (foldl)
 import Data.HashMap as HashMap
 import Data.Int (toNumber)
-import Data.List (List(..))
 import Data.List as List
 import Data.Set as Set
 import Data.String.CodeUnits (drop, dropRight, length, singleton, slice, take, takeRight, toCharArray) as String
-import Data.Tuple.Nested (type (/\))
-import FatPrelude (HashMap, Maybe(..), all, bimap, elem, fold, fromCharArray, fromMaybe, toArray, toCharArray, traverse, ($), (&&), (*), (+), (-), (..), (/), (/=), (/\), (<), (<$>), (<..), (<<<), (<=), (<>), (==), (>), (>=), (||))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
 
@@ -44,6 +41,7 @@ builtinFnsMap = unsafePartial $ HashMap.fromArray
     , ("neg" /\ (neg /\ negSig /\ []))
     , ("concat" /\ (concat /\ concatSig /\ []))
     , ("transpose" /\ (transpose /\ transposeSig /\ []))
+    , ("flatten" /\ (flatten /\ flattenSig /\ []))
     , ("head" /\ (head /\ headSig /\ []))
     , ("tail" /\ (tail /\ tailSig /\ []))
     , ("init" /\ (init /\ initSig /\ []))
@@ -91,14 +89,14 @@ isArray [ ListObj _ ] = BoolObj true
 isArray _ = BoolObj false
 
 isArraySig :: Sig
-isArraySig = [ Var "x" /\ object ] /\ bool
+isArraySig = [ Var "x" /\ a ] /\ bool
 
 isNull :: Function
 isNull [ NullObj ] = BoolObj true
 isNull _ = BoolObj false
 
 isNullSig :: Sig
-isNullSig = [ Var "x" /\ object ] /\ bool
+isNullSig = [ Var "x" /\ a ] /\ bool
 
 -- Boolean Fns
 not :: Function
@@ -258,7 +256,8 @@ concatSig :: Sig
 concatSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ arrayOf a
 
 transpose :: Function
-transpose [ ListObj xs ] = transpose [ ArrayObj $ Array.fromFoldable xs ]
+transpose [ ListObj xs ] =
+  transpose [ ArrayObj $ Array.fromFoldable xs ]
 transpose [ ArrayObj xs ]
   | Just xss <- traverse extractList xs =
       ArrayObj $ (ArrayObj <$> Array.transpose xss)
@@ -269,6 +268,16 @@ transposeSig :: Sig
 transposeSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ]
   /\ (arrayOf $ arrayOf a)
 
+flatten :: Function
+flatten [ ListObj xs ] =
+  flatten [ ArrayObj $ Array.fromFoldable xs ]
+flatten [ ArrayObj xs ]
+  | Just xss <- traverse extractList xs =
+      ArrayObj $ Array.concat xss
+
+flattenSig :: Sig
+flattenSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ (arrayOf a)
+
 contains :: Function
 contains [ x, ListObj y ] = BoolObj $ List.elem x y
 contains [ x, ArrayObj y ] = BoolObj $ Array.elem x y
@@ -278,8 +287,10 @@ containsSig :: Sig
 containsSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ bool
 
 range :: Function
-range [ IntObj x, IntObj y ] = ArrayObj $ IntObj <$> toArray (x .. y)
-range [ CharObj x, CharObj y ] = ArrayObj $ CharObj <$> toArray (x .. y)
+range [ IntObj x, IntObj y ] = ArrayObj $ IntObj <$> NonEmptyArray.toArray
+  (x .. y)
+range [ CharObj x, CharObj y ] = ArrayObj $ CharObj <$> NonEmptyArray.toArray
+  (x .. y)
 
 rangeSig :: Sig
 rangeSig = [ Var "start" /\ a, Var "end" /\ a ] /\ arrayOf a
@@ -391,9 +402,6 @@ number = typeVar "Number"
 
 float :: Type
 float = typeVar "Float"
-
-object :: Type
-object = typeVar "Object"
 
 typeVar :: String -> Type
 typeVar = TypeVar' <<< TypeVar

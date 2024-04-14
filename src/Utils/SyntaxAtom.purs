@@ -4,7 +4,7 @@ import FatPrelude
 import Prim hiding (Type)
 
 import App.CSS.ClassNames (cellSyntax, functionSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
-import App.Components.Table.Cell (cellParser, showCell)
+import App.Components.Spreadsheet.Cell (cellParser, showCell)
 import App.Parser.Common (nonTokenIdent, nonTokenOperator, notReservedKeyword, notReservedSymbol, reservedKeywords, reservedSymbols)
 import App.SyntaxTree.Common (QVar(..))
 import App.SyntaxTree.FnDef (FnSig)

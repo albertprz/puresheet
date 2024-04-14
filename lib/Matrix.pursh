@@ -1,0 +1,38 @@
+module Matrix
+
+
+def add (xss: [[Number]], yss: [[Number]]): [[Number]] =
+    zipWith (Prelude.add, xss, yss)
+
+def sub (xss: [[Number]], yss: [[Number]]): [[Number]] =
+    zipWith (Prelude.sub, xss, yss)
+
+def mult (xss: [[Number]], yss: [[Number]]): [[Number]] =
+    zipWith (Prelude.mult, xss, yss)
+
+def div (xss: [[Number]], yss: [[Number]]): [[Number]] =
+    zipWith (Prelude.div, xss, yss)
+
+def map (f: A -> B, xss: [[A]]): [[B]] =
+    Prelude.map (Prelude.map (f), xss)
+
+def filter (f: A -> Boolean, xss: [[A]]): [[A]] =
+    Prelude.map (Prelude.filter (f), xss)
+
+def reduce (f: B -> A -> B, start: B, xss: [A]): B =
+    Prelude.reduce (f, start, Prelude.map (Prelude.reduce (f, start), xss))
+
+def fold (f: A -> A -> A, xss: [[A]]): A =
+    Prelude.fold (f, Prelude.map (Prelude.fold(f), xss))
+
+def zipWith (f: A -> B -> C, xss: [[A]], yss: [[B]]): [[C]] =
+    Prelude.zipWith (Prelude.zipWith (f), xss, yss)
+
+def sum (xss: [[Number]]): Number  =
+    reduce (Prelude.add, 0, xss)
+
+def product (xss: [[Number]]): Number =
+    reduce (Prelude.mult, 0, xss)
+
+def average (xss: [[Number]]): Number =
+    Prelude.div (sum (xss), 2)

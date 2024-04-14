@@ -2,10 +2,11 @@ module App.Evaluator.Object where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellValue(..))
+import App.Components.Spreadsheet.Cell (CellValue(..))
 import App.Evaluator.Errors (EvalError(..), MatchError(..))
 import App.SyntaxTree.FnDef (Object(..))
 import Data.Array as Array
+import Data.List as List
 import Matrix (Matrix)
 import Matrix as Matrix
 
@@ -45,18 +46,24 @@ extractBool _ = Left $ MatchError' InvalidGuard
 
 extractShallowList :: Object -> Maybe (Array Object)
 extractShallowList (ArrayObj xs) | all isElement xs = Just xs
+extractShallowList (ListObj xs) | all isElement xs =
+  Just $ Array.fromFoldable xs
 extractShallowList _ = Nothing
 
 isElement :: Object -> Boolean
 isElement (ArrayObj _) = false
+isElement (ListObj _) = false
 isElement _ = true
 
 extractList :: Object -> Maybe (Array Object)
 extractList (ArrayObj xs) = Just xs
+extractList (ListObj xs) = Just $ Array.fromFoldable xs
 extractList _ = Nothing
 
 extractNList :: Int -> Object -> Maybe (Array Object)
-extractNList n (ArrayObj xs) | length xs == n = Just xs
+extractNList n (ArrayObj xs) | Array.length xs == n = Just xs
+extractNList n (ListObj xs) | List.length xs == n = Just
+  $ Array.fromFoldable xs
 extractNList _ _ = Nothing
 
 nonNullObj :: Object -> Boolean

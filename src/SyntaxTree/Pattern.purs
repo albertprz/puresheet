@@ -2,7 +2,7 @@ module App.SyntaxTree.Pattern where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellValue)
+import App.Components.Spreadsheet.Cell (CellValue)
 import App.SyntaxTree.Common (Var)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)

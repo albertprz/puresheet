@@ -5,7 +5,7 @@ import FatPrelude hiding (div)
 import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (LocalFormulaCtx, getAvailableAliases, getAvailableModules, lookupBuiltinFn, lookupModuleFn, lookupOperator)
 import App.Parser.Common (ident, module', operator, qTerm, qVar, qVarOp)
-import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..))
+import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (SimpleFnSig)
 import App.Utils.Monoid (whenPlus)
 import App.Utils.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
@@ -14,11 +14,11 @@ import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (lower)
 import Data.Array as Array
 import Data.HashMap as HashMap
-import Data.HashSet as HashSet
+import Data.Set as Set
 import Data.String.CodeUnits (indexOf', lastIndexOf')
 import Data.String.CodeUnits (length, slice) as String
 import Data.String.Pattern (Pattern(..))
-import Data.String.Utils (startsWith) as String
+import Data.String.Utils (endsWith, startsWith) as String
 import Halogen.HTML (HTML, span, text)
 import Halogen.HTML.Properties (class_)
 import Record.Extra (pick)
@@ -43,37 +43,39 @@ getFnAtIndex formulaText idx =
   hush $ runParser fnParser currentWord
   where
   fnParser = VarOpSuggestion <$> qVarOp <|> VarSuggestion <$> qVar
-  { currentWord } = getWordAtIndex formulaText idx
+  { currentWord } = getWordAtIndex [] formulaText idx
 
 getSuggestionsAtIndex
   :: LocalFormulaCtx -> String -> Int -> Array SuggestionTerm
 getSuggestionsAtIndex ctx formulaText idx =
   Array.take (inc $ unwrap $ top @SuggestionId)
-    $ Array.sort
-    $ Array.nub
-    $ filter (notEq currentWord <<< show)
+    $ filter (not <<< uniqueSuggestionPred)
+    $ Array.fromFoldable vars
+  where
+  { currentWord, endIndex } = getWordAtIndex [] formulaText idx
+  vars = whenMonoid (idx == endIndex)
     $ fold
-    $ whenPlus (idx == endIndex)
     $ hush
     $ runParser varParser currentWord
-  where
-  partialQVarOp = uncurry QVarOp <$> qTerm (VarOp <$> operator)
-  partialQVar = uncurry QVar <$> qTerm (Var <$> ident lower)
   varParser =
     ((_ `filterFns` ctx) <$> partialQVar)
       <|> ((_ `filterOps` ctx) <$> partialQVarOp)
       <|> ((_ `getAllAvailableFns` ctx) <$> (module' <* is '.'))
       <|> ((_ `filterModules` ctx) <$> module')
-  { currentWord, endIndex } = getWordAtIndex formulaText idx
+  partialQVar = uncurry QVar <$> qTerm (Var <$> ident lower)
+  partialQVarOp = uncurry QVarOp <$> qTerm (VarOp <$> operator)
+  uniqueSuggestionPred x =
+    String.endsWith (show x) currentWord && Set.size vars == 1
 
 getWordAtIndex
-  :: String
+  :: Array String
+  -> String
   -> Int
   -> { currentWord :: String
      , endIndex :: Int
      , startIndex :: Int
      }
-getWordAtIndex formulaText idx =
+getWordAtIndex otherSeparators formulaText idx =
   { currentWord: String.slice startIndex endIndex formulaText
   , startIndex
   , endIndex
@@ -82,19 +84,19 @@ getWordAtIndex formulaText idx =
   startIndex = fromMaybe 0 $ map inc
     $ maximum
     $ filterMap (\pat -> lastIndexOf' pat idx formulaText)
-    $ map Pattern (separators <> [ "(", "[" ])
+    $ map Pattern ([ "(", "[" ] <> separators)
   endIndex = fromMaybe (String.length formulaText)
     $ minimum
     $ filterMap (\pat -> indexOf' pat idx formulaText)
-    $ map Pattern (separators <> [ ")", "]" ])
-  separators = [ " ", " ", "\n", "\t", "," ]
+    $ map Pattern ([ ")", "]" ] <> separators)
+  separators = [ " ", " ", "\n", "\t", "," ] <> otherSeparators
 
 getFnSig :: QVar -> LocalFormulaCtx -> Maybe SimpleFnSig
 getFnSig qVar@(QVar fnModule fnName) ctx =
   pick <$> builtinFnInfo <|> pick <$> fnInfo
   where
   builtinFnInfo =
-    whenPlus (isNothing fnModule)
+    whenPlus (all (_ == ctx.module') fnModule)
       $ hush
       $ flip evalState ctx
       $ runExceptT
@@ -106,40 +108,44 @@ getFnSig qVar@(QVar fnModule fnName) ctx =
       $ runExceptT
       $ lookupModuleFn qVar
 
-filterFns :: QVar -> LocalFormulaCtx -> Array SuggestionTerm
+filterFns :: QVar -> LocalFormulaCtx -> Set SuggestionTerm
 filterFns (QVar fnModule fnVar) st =
-  map VarSuggestion (builtinFns <> moduleFns)
+  Set.map VarSuggestion (moduleFns <> builtinFns)
   where
-  modules = HashSet.fromFoldable $ getAvailableModules fnModule st
-  moduleFns =
-    filter filterFn
-      $ HashMap.keys st.fnsMap
-  builtinFns = whenMonoid (isNothing fnModule)
-    ( map (QVar Nothing)
-        $ filter filterBuiltinFn
-        $ HashMap.keys Builtins.builtinFnsMap
-    )
+  modules = getAvailableModules fnModule st
+  moduleFns = Set.fromFoldable
+    $ filter filterFn
+    $ HashMap.keys st.fnsMap
+  builtinFns = Set.fromFoldable
+    $ whenMonoid
+        ( fnModule == Just preludeModule
+            || (isNothing fnModule && st.module' == preludeModule)
+        )
+    $ map (QVar Nothing)
+    $ filter filterBuiltinFn
+    $ HashMap.keys Builtins.builtinFnsMap
   filterFn (QVar module' fn) =
-    all (flip HashSet.member modules) module'
-      && String.startsWith (unwrap fnVar) (unwrap fn)
+    all (flip Set.member modules) module'
+      && filterBuiltinFn fn
   filterBuiltinFn fn =
     String.startsWith (unwrap fnVar) (unwrap fn)
 
-filterOps :: QVarOp -> LocalFormulaCtx -> Array SuggestionTerm
+filterOps :: QVarOp -> LocalFormulaCtx -> Set SuggestionTerm
 filterOps (QVarOp opModule opVar) st =
-  map VarOpSuggestion
+  Set.fromFoldable
+    $ map VarOpSuggestion
     $ filter filterOp
     $ HashMap.keys st.operatorsMap
   where
-  modules = HashSet.fromFoldable $ getAvailableModules opModule st
+  modules = getAvailableModules opModule st
   filterOp (QVarOp module' op) =
-    all (flip HashSet.member modules) module'
+    all (flip Set.member modules) module'
       && String.startsWith (unwrap opVar) (unwrap op)
 
-filterModules :: Module -> LocalFormulaCtx -> Array SuggestionTerm
+filterModules :: Module -> LocalFormulaCtx -> Set SuggestionTerm
 filterModules fnModule st =
-  map ModuleSuggestion
-    $ filter filterModule (aliases <> modules)
+  Set.map ModuleSuggestion
+    $ Set.filter filterModule (aliases <> modules <> st.modules)
   where
   modules = getAvailableModules Nothing st
   aliases = getAvailableAliases st
@@ -147,21 +153,27 @@ filterModules fnModule st =
     String.startsWith (fold $ unwrap fnModule) (fold $ unwrap module')
 
 getAllAvailableFns
-  :: Module -> LocalFormulaCtx -> Array SuggestionTerm
+  :: Module -> LocalFormulaCtx -> Set SuggestionTerm
 getAllAvailableFns fnModule st =
-  fns <> ops
+  fns <> ops <> builtins
   where
-  modules = HashSet.fromFoldable $ getAvailableModules (Just fnModule) st
-  fns = map VarSuggestion
+  modules = getAvailableModules (Just fnModule) st
+  fns = Set.fromFoldable
+    $ map VarSuggestion
     $ filter filterFn
     $ HashMap.keys st.fnsMap
-  ops = map VarOpSuggestion
+  ops = Set.fromFoldable
+    $ map VarOpSuggestion
     $ filter filterOp
     $ HashMap.keys st.operatorsMap
+  builtins = Set.fromFoldable
+    $ map (VarSuggestion <<< QVar (Just preludeModule))
+    $ whenMonoid (fnModule == preludeModule)
+    $ HashMap.keys Builtins.builtinFnsMap
   filterFn (QVar module' _) =
-    all (flip HashSet.member modules) module'
+    all (flip Set.member modules) module'
   filterOp (QVarOp module' _) =
-    all (flip HashSet.member modules) module'
+    all (flip Set.member modules) module'
 
 extractSuggestionFn :: LocalFormulaCtx -> SuggestionTerm -> Maybe QVar
 extractSuggestionFn ctx = case _ of

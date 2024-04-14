@@ -29,15 +29,15 @@ op :+ = snoc L7
 
 op + = add L8
 
-op |+| = arrayAdd L8
+op |+| = Array.add L8
 
-op ||+|| = matrixAdd L8
+op ||+|| = Matrix.add L8
 
 op - = sub L9
 
-op |-| = arraySub L9
+op |-| = Array.sub L9
 
-op ||-|| = matrixSub L9
+op ||-|| = Matrix.sub L9
 
 op <<< = compose R9
 
@@ -45,15 +45,15 @@ op >>> = composeFlipped R9
 
 op * = mult L10
 
-op |*| = arrayMult L10
+op |*| = Array.mult L10
 
-op ||*|| = matrixMult L10
+op ||*|| = Matrix.mult L10
 
 op / = div L11
 
-op |/| = arrayMult L11
+op |/| = Array.mult L11
 
-op ||/|| = matrixMult L11
+op ||/|| = Matrix.mult L11
 
 op % = mod L11
 
@@ -79,9 +79,6 @@ def map (f: A -> B, xs: [A]): [B] =
         | [ x, xs @ ... ] => f (x) +: map (f, xs)
     }
 
-def mapMatrix (f: A -> B, xss: [[A]]): [[B]] =
-    map (map (f), xss)
-
 def filter (f: A -> Boolean, xs: [A]): [A] =
     switch (xs) {
         | []                        => []
@@ -89,22 +86,10 @@ def filter (f: A -> Boolean, xs: [A]): [A] =
                         ? otherwise => filter (f, xs)
     }
 
-def filterMatrix (f: A -> Boolean, xss: [[A]]): [[A]] =
-    map (filter (f), xss)
-
 def reduce (f: B -> A -> B, start: B, xs: [A]): B =
         switch (xs) {
         | []             => start
         | [ x, xs @ ... ] => f (x, reduce (f, start, xs))
-    }
-
-def reduceMatrix (f: B -> A -> B, start: B, xss: [A]): B =
-    xss |map> reduce(f, start) |> reduce (f, start)
-
-def reduceRecur (f: B -> A -> B, start: B, xs: [A] | [[A]]): B =
-    cond {
-        ? all (isArray, xs)  => reduceMatrix (f, start, xs)
-        ? otherwise          => reduce (f, start, xs)
     }
 
 def fold (f: A -> A -> A, xs: [A]): A =
@@ -113,36 +98,28 @@ def fold (f: A -> A -> A, xs: [A]): A =
         | [ x, xs @ ... ] => reduce (f, x, xs)
     }
 
-def foldMatrix (f: A -> A -> A, xss: [[A]]): A =
-    xss |map> fold(f) |> fold (f)
-
-def foldRecur (f: A -> A -> A, xs: [A] | [[A]]): A =
-    cond {
-        ? all (isArray, xs)  => foldMatrix (f, xs)
-        ? otherwise          => fold (f, xs)
-    }
-
 def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
     cond {
-        ? empty (xs) || empty (ys) => []
+        ? isEmpty (xs) || isEmpty (ys) => []
         ? otherwise =>
-            f (head (xs), head (ys)) +: zipWith(f, tail (xs), tail (ys))
+            f (head (xs), head (ys)) +: zipWith (f, tail (xs), tail (ys))
     }
-
-def zipMatrixWith (f: A -> B -> C, xss: [[A]], yss: [[B]]): [[C]] =
-    zipWith (zipWith (f), xss, yss)
 
 def iterate (f: A -> A, start: A, n: Int): [A] =
     cond {
         ? n == 0     => [start]
-        ? otherwise => start +: iterate (f, f(start), n - 1)
+        ? otherwise => start +: iterate (f, f (start), n - 1)
     }
 
-def empty (xs: [A]): Boolean =
-    length (xs) == 0
+def isEmpty (xs: [A]): Boolean =
+    switch (xs) {
+        | [] => true
+        | "" => true
+        | _  => false
+    }
 
-def nonEmpty (xs: [A]): Boolean =
-    not (empty (xs))
+def isNotEmpty (xs: [A]): Boolean =
+    not (isEmpty (xs))
 
 def all (f: A -> Boolean, xs: [A]): Boolean =
     reduce (and, true, map (f, xs))
@@ -151,35 +128,11 @@ def any (f: A -> Boolean, xs: [A]): Boolean =
     reduce (or, false, map (f, xs))
 
 
-def sum (xs: [Number] | [[Number]]): Number  =
-    reduceRecur (add, 0, xs)
+def sum (xs: [Number]): Number  =
+    reduce (add, 0, xs)
 
-def product (xs: [Number] | [[Number]]): Number =
-    reduceRecur (mult, 0, xs)
+def product (xs: [Number]): Number =
+    reduce (mult, 0, xs)
 
-def average (xs: [Number] | [[Number]]): Number =
+def average (xs: [Number]): Number =
     sum (xs) / 2
-
-def arrayAdd (xs: [Number], ys: [Number]): [Number] =
-    zipWith (add, xs, ys)
-
-def arraySub (xs: [Number], ys: [Number]): [Number] =
-    zipWith (sub, xs, ys)
-
-def arrayMult (xs: [Number], ys: [Number]): [Number] =
-    zipWith (mult, xs, ys)
-
-def arrayDiv (xs: [Number], ys: [Number]): [Number] =
-    zipWith (div, xs, ys)
-
-def matrixAdd (xss: [[Number]], ys: [[Number]]): [[Number]] =
-    zipWithMatrix (add)
-
-def matrixSub (xss: [[Number]], ys: [[Number]]): [[Number]] =
-    zipWithMatrix (sub)
-
-def matrixMult (xss: [[Number]], ys: [[Number]]): [[Number]] =
-    zipWithMatrix (mult)
-
-def matrixDiv (xss: [[Number]], ys: [[Number]]): [[Number]] =
-    zipWithMatrix (div)

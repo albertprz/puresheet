@@ -2,7 +2,7 @@ module Interpreter.ExpressionSpec where
 
 import TestPrelude
 
-import App.Components.Table.Cell (Column(..), Row(..))
+import App.Components.Spreadsheet.Cell (Column(..), Row(..))
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
 import App.Interpreter.Expression (RunError(..))
@@ -11,6 +11,7 @@ import App.Interpreter.Module (reloadModule)
 import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (Object(..))
 import Data.HashMap as HashMap
+import Data.Set as Set
 import Data.Tree.Zipper (fromTree)
 import Effect.Unsafe (unsafePerformEffect)
 import Node.Encoding (Encoding(..))
@@ -275,7 +276,7 @@ evalError = Left <<< EvalError'
 
 formulaCtx :: LocalFormulaCtx
 formulaCtx = unsafePerformEffect $
-  execStateT loadModuleFile newFormulaCtx
+  execStateT loadModuleFile emptyFormulaCtx
   where
   loadModuleFile = do
     fp <- liftEffect $ realpath "lib/Prelude.pursh"
@@ -284,7 +285,7 @@ formulaCtx = unsafePerformEffect $
     liftEffect $
       either (throw <<< ("Parser Error: " <> _) <<< show) pure resultOrErr
 
-  newFormulaCtx =
+  emptyFormulaCtx =
     { tableData: HashMap.empty
     , fnsMap: HashMap.empty
     , operatorsMap: HashMap.empty
@@ -292,6 +293,7 @@ formulaCtx = unsafePerformEffect $
     , importedModulesMap: HashMap.empty
     , localFnsMap: HashMap.empty
     , argsMap: HashMap.empty
+    , modules: Set.empty
     , module': preludeModule
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero

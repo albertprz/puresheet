@@ -1,9 +1,9 @@
-module App.Components.Table.Formula where
+module App.Components.Spreadsheet.Formula where
 
 import FatPrelude
 
 import App.CSS.ClassNames (invalidFormula, unknownFormula, validFormula)
-import App.Components.Table.Cell (Cell)
+import App.Components.Spreadsheet.Cell (Cell)
 import Data.Array as Array
 import Data.HashMap as HashMap
 import Data.List as List

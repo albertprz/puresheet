@@ -3,7 +3,7 @@ module App.Utils.Dom where
 import FatPrelude
 
 import App.CSS.Ids (ElementId(..), ElementType, cellId)
-import App.Components.Table.Cell (Cell, showCell)
+import App.Components.Spreadsheet.Cell (Cell, showCell)
 import App.Utils.Event (class IsEvent, toEvent)
 import Data.Array (filterA)
 import Data.Int as Int

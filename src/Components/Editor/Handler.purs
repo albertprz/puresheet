@@ -2,31 +2,24 @@ module App.Components.Editor.Handler where
 
 import FatPrelude
 
-import App.CSS.Ids (formulaBoxId, formulaCellInputId)
-import App.Components.AppStore (Store, StoreAction)
+import App.AppM (AppM)
+import App.CSS.Ids (formulaCellInputId)
 import App.Components.Editor.HandlerHelpers (displayFnSig, displayFnSuggestions, getEditorContent, insertEditorNewLine, performAutoComplete, performSyntaxHighlight, subscribeSelectionChange, updateEditorContent)
 import App.Components.Editor.Models (EditorAction(..), EditorOutput(..), EditorQuery(..), EditorState)
-import App.Components.Table.Formula (FormulaState(..))
-import App.Utils.Dom (actOnElementById, focusById, withPrevent)
+import App.Components.Spreadsheet.Formula (FormulaState(..))
+import App.Utils.Dom (focusById, withPrevent)
 import App.Utils.Event (ctrlKey, toEvent)
 import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
 import App.Utils.Selection as Selection
 import Halogen (HalogenM, raise)
-import Halogen.Store.Monad (class MonadStore, getStore)
+import Halogen.Store.Monad (getStore)
 import Web.Event.Event (target)
 import Web.HTML (window)
-import Web.HTML.HTMLElement (fromEventTarget, setContentEditable, toNode)
+import Web.HTML.HTMLElement (fromEventTarget, toNode)
 
 handleAction
-  :: forall m
-   . MonadAff m
-  => MonadStore StoreAction Store m
-  => EditorAction
-  -> HalogenM EditorState EditorAction () EditorOutput m Unit
-
-handleAction Initialize = do
-  actOnElementById formulaBoxId $ setContentEditable "true"
-  subscribeSelectionChange
+  :: EditorAction
+  -> HalogenM EditorState EditorAction () EditorOutput AppM Unit
 
 handleAction (KeyDown (Just _) keyCode ev)
   | keyCode `elem` [ ArrowUp, ArrowDown ] = withPrevent ev do
@@ -40,7 +33,7 @@ handleAction (KeyDown (Just _) keyCode ev)
 
 handleAction (KeyDown (Just suggestion) keyCode ev)
   | keyCode `elem` [ Enter, Tab ] =
-      withPrevent ev $ performAutoComplete $ show suggestion
+      withPrevent ev $ performAutoComplete suggestion
 
 handleAction (KeyDown _ Enter ev)
   | ctrlKey ev = withPrevent ev do
@@ -50,9 +43,8 @@ handleAction (KeyDown _ Enter ev)
       insertEditorNewLine
       performSyntaxHighlight
 
-handleAction (KeyDown _ Tab ev) = withPrevent ev do
-  modify_ _ { suggestions = [] }
-  raise FocusOutEditor
+handleAction (KeyDown _ Tab ev) =
+  withPrevent ev $ raise FocusOutEditor
 
 handleAction (KeyDown _ (CharKeyCode 'G') ev)
   | ctrlKey ev = withPrevent ev $ focusById formulaCellInputId
@@ -78,14 +70,22 @@ handleAction SelectionChange = do
   displayFnSuggestions
   displayFnSig st store
 
+handleAction (ClickSuggestion suggestion ev) =
+  withPrevent ev $ traverse_ performAutoComplete suggestion
+
+handleAction (HoverSuggestion suggestionId _) =
+  modify_ _ { selectedSuggestionId = suggestionId }
+
+handleAction Initialize =
+  subscribeSelectionChange
+
 handleAction (Receive { formulaState }) =
   modify_ _ { formulaState = formulaState }
 
 handleQuery
-  :: forall a m
-   . MonadEffect m
-  => EditorQuery a
-  -> HalogenM EditorState EditorAction () EditorOutput m (Maybe a)
+  :: forall a
+   . EditorQuery a
+  -> HalogenM EditorState EditorAction () EditorOutput AppM (Maybe a)
 handleQuery (UpdateEditorContent text next) = do
   updateEditorContent text
   pure $ Just next

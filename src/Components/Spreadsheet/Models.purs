@@ -1,11 +1,13 @@
-module App.Components.Table.Models where
+module App.Components.Spreadsheet.Models where
 
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellValue, Header, Row)
-import App.Components.Table.Formula (Formula, FormulaId, FormulaState)
-import App.Components.Table.Selection (MultiSelection, SelectionState)
+import App.Components.Editor (EditorSlot)
+import App.Components.Spreadsheet.Cell (Cell, CellValue, Header, Row)
+import App.Components.Spreadsheet.Formula (Formula, FormulaId, FormulaState)
+import App.Components.Spreadsheet.Selection (MultiSelection, SelectionState)
+import App.Routes (Route)
 import App.Utils.KeyCode (KeyCode)
 import Web.HTML.Event.DragEvent (DragEvent)
 import Web.UIEvent.FocusEvent (FocusEvent)
@@ -13,8 +15,9 @@ import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.MouseEvent (MouseEvent)
 import Web.UIEvent.WheelEvent (WheelEvent)
 
-type TableState =
-  { selectedCell :: Cell
+type SpreadsheetState =
+  { route :: Route
+  , selectedCell :: Cell
   , formulaCell :: Cell
   , activeFormula :: Boolean
   , activeInput :: Boolean
@@ -23,15 +26,14 @@ type TableState =
   , tableFormulas :: HashMap Cell FormulaId
   , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
   , formulaCache :: HashMap FormulaId Formula
-  , rows :: MinLenVect 1 Row
+  , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
   }
 
-data TableAction
-  = Initialize
-  | WriteSelectedCellInput (Maybe Cell)
+data SpreadsheetAction
+  = WriteSelectedCellInput (Maybe Cell)
   | WriteFormulaCellInput (Maybe Cell)
   | WriteCell Cell CellValue
   | ClickHeader Header MouseEvent
@@ -50,6 +52,12 @@ data TableAction
   | HoverHeader EventTransition Header MouseEvent
   | DragHeader EventTransition Header DragEvent
   | ResizeWindow
+  | Initialize
+  | Receive SpreadsheetInput
+
+type SpreadsheetInput = { route :: Route }
+
+type Slots = (editor :: EditorSlot)
 
 data EventTransition
   = Start

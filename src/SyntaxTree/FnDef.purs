@@ -3,7 +3,7 @@ module App.SyntaxTree.FnDef where
 import FatPrelude
 import Prim hiding (Type)
 
-import App.Components.Table.Cell (Cell, CellValue)
+import App.Components.Spreadsheet.Cell (Cell, CellValue)
 import App.SyntaxTree.Common (Module, QVar, QVarOp, Var, VarOp)
 import App.SyntaxTree.Pattern (Pattern)
 import App.SyntaxTree.Type (Type)
@@ -14,7 +14,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Partial.Unsafe (unsafeCrashWith)
 
-data OpDef = OpDef VarOp Var Associativity Precedence
+data OpDef = OpDef VarOp QVar Associativity Precedence
 
 data FnDef = FnDef Var (Array (Var /\ Maybe Type)) (Maybe Type) FnBody
 

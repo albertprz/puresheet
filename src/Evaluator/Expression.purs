@@ -82,9 +82,9 @@ evalExpr
   evalExpr $ Array' (Array' <$> matrix)
   where
   matrix = do
-    row <- toArray (rowX .. rowY)
+    row <- (rowX .. rowY)
     pure $ do
-      column <- toArray (colX .. colY)
+      column <- (colX .. colY)
       pure $ Cell' { column, row }
 
 evalExpr
@@ -93,10 +93,10 @@ evalExpr
   )
   | rowX == rowY =
       evalExpr $ Array' $ Cell' <<< { column: _, row: rowX }
-        <$> toArray (colX .. colY)
+        <$> (colX .. colY)
   | colX == colY =
       evalExpr $ Array' $ Cell' <<< { column: colX, row: _ }
-        <$> toArray (rowX .. rowY)
+        <$> (rowX .. rowY)
   | otherwise =
       raiseError $ TypeError' $ InvalidCellArrayRange x y
 
@@ -108,8 +108,8 @@ evalExpr (Array' array) =
         (Object' $ ArrayObj [])
         array
 
-evalExpr (FnVar qVar@(QVar module' var))
-  | module' == Nothing || module' == Just preludeModule =
+evalExpr (FnVar qVar@(QVar fnModule var))
+  | fnModule == Nothing || fnModule == Just preludeModule =
       getBuiltinFnInfo var <|> getFnInfo qVar
 
 evalExpr (FnVar fn) =

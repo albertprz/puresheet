@@ -2,10 +2,10 @@ module App.Interpreter.Formula (runFormula) where
 
 import FatPrelude
 
-import App.Components.AppStore (Store, mkLocalContext)
-import App.Components.Table.Cell (Cell, CellValue)
-import App.Components.Table.Formula (FormulaId, getDependencies)
-import App.Components.Table.Models (TableState)
+import App.AppStore (Store, mkLocalContext)
+import App.Components.Spreadsheet.Cell (Cell, CellValue)
+import App.Components.Spreadsheet.Formula (FormulaId, getDependencies)
+import App.Components.Spreadsheet.Models (SpreadsheetState)
 import App.Evaluator.Formula (evalFormula)
 import App.Interpreter.Expression (RunError(..), run)
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
@@ -22,7 +22,7 @@ type FormulaResult =
   }
 
 runFormula
-  :: TableState
+  :: SpreadsheetState
   -> Store
   -> Cell
   -> String
@@ -73,8 +73,8 @@ extractCells
   ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
   ) = Set.fromUnfoldable do
-  row <- toArray (rowX .. rowY)
-  column <- toArray (colX .. colY)
+  row <- rowX .. rowY
+  column <- colX .. colY
   pure { column, row }
 
 extractCells
@@ -82,9 +82,9 @@ extractCells
       { column: colY, row: rowY }
   )
   | rowX == rowY =
-      Set.fromUnfoldable $ { column: _, row: rowX } <$> toArray (colX .. colY)
+      Set.fromUnfoldable $ { column: _, row: rowX } <$> (colX .. colY)
   | colX == colY =
-      Set.fromUnfoldable $ { column: colX, row: _ } <$> toArray (rowX .. rowY)
+      Set.fromUnfoldable $ { column: colX, row: _ } <$> (rowX .. rowY)
   | otherwise = mempty
 
 extractCells (ArrayRange x y) =

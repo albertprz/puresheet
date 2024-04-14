@@ -2,7 +2,7 @@ module App.Evaluator.Errors where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell, showCell)
+import App.Components.Spreadsheet.Cell (Cell, showCell)
 import App.SyntaxTree.Common (QVar, QVarOp)
 import App.SyntaxTree.FnDef (Object)
 

@@ -2,7 +2,7 @@ module App.Interpreter.Expression where
 
 import FatPrelude
 
-import App.Components.Table.Formula (DependencyError)
+import App.Components.Spreadsheet.Formula (DependencyError)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError)
 import App.Evaluator.Formula (evalExprInCtx)

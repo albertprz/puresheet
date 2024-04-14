@@ -2,7 +2,7 @@ module App.Evaluator.Common where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell, CellValue(..))
+import App.Components.Spreadsheet.Cell (Cell, CellValue(..))
 import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.Parser.Common (var)
@@ -12,6 +12,7 @@ import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is)
 import Data.Array as Array
+import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap as HashMap
 import Data.List as List
 import Data.Set as Set
@@ -25,6 +26,7 @@ type LocalFormulaCtx =
   , operatorsMap :: HashMap QVarOp OpInfo
   , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
   , importedModulesMap :: HashMap Module (Set Module)
+  , modules :: Set Module
   , localFnsMap :: HashMap (Scope /\ Var) FnInfo
   , argsMap :: HashMap (Scope /\ Var) FnInfo
   , module' :: Module
@@ -41,7 +43,7 @@ registerBindings bindings = do
   let (Scope maxScope) = fromMaybe scope $ maximum $ toTree scopeLoc
   let scopes = Scope <<< (_ + maxScope) <$> (1 .. length bindings)
   traverse_ (\(n /\ x) -> registerLocalFn n x)
-    ((toArray scopes) `Array.zip` bindings)
+    ((NonEmptyArray.toArray scopes) `Array.zip` bindings)
   modify_ \st -> st
     { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
         st.scopeLoc
@@ -208,29 +210,30 @@ resetScope x = x
 
 getAvailableFns
   :: forall a b
-   . (Maybe Module -> a -> b)
+   . Ord b
+  => (Maybe Module -> a -> b)
   -> (Maybe Module /\ a)
   -> LocalFormulaCtx
-  -> Array b
+  -> Set b
 getAvailableFns ctor (fnModule /\ fnName) st =
-  flip ctor fnName <<< pure <$> getAvailableModules fnModule st
+  Set.map (flip ctor fnName <<< pure) $ getAvailableModules fnModule st
 
-getAvailableModules :: Maybe Module -> LocalFormulaCtx -> Array Module
+getAvailableModules :: Maybe Module -> LocalFormulaCtx -> Set Module
 getAvailableModules
   fnModule
-  { module', importedModulesMap, aliasedModulesMap } =
-  Array.cons module'
-    case fnModule of
-      Just alias -> Array.fromFoldable
+  { module', modules, importedModulesMap, aliasedModulesMap } =
+  case fnModule of
+    Just alias ->
+      Set.union (Set.filter (_ == alias) modules)
         $ fromMaybe Set.empty
         $ HashMap.lookup (module' /\ alias) aliasedModulesMap
-      Nothing -> Array.fromFoldable
-        $ fromMaybe Set.empty
-        $ HashMap.lookup module' importedModulesMap
+    Nothing -> Set.insert module'
+      $ fromMaybe Set.empty
+      $ HashMap.lookup module' importedModulesMap
 
-getAvailableAliases :: LocalFormulaCtx -> Array Module
+getAvailableAliases :: LocalFormulaCtx -> Set Module
 getAvailableAliases { module', aliasedModulesMap } =
-  Array.nub
+  Set.fromFoldable
     $ map snd
     $ filter (uncurry filterAliases)
     $ HashMap.keys aliasedModulesMap

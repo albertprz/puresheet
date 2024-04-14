@@ -1,4 +1,4 @@
-module App.Components.Table.Cell where
+module App.Components.Spreadsheet.Cell where
 
 import FatPrelude
 import Prim hiding (Row)
@@ -13,6 +13,8 @@ import Data.HashMap (keys) as HashMap
 import Data.Number.Format (fixed)
 import Data.Number.Format (toStringWith) as Number
 import Data.String.CodeUnits as String
+import Data.Unfoldable (class Unfoldable1)
+import Debug (spy)
 
 parseCellValue :: String -> CellValue
 parseCellValue input =
@@ -104,10 +106,10 @@ swapTableMapRow origin target tableDict =
           (\cell -> cell.row == origin || cell.row == target)
           (HashMap.keys tableDict)
 
-allColumns :: MinLenVect 1 Column
+allColumns :: forall @f. Unfoldable1 f => f Column
 allColumns = enumValues
 
-allRows :: MinLenVect 1 Row
+allRows :: forall @f. Unfoldable1 f => f Row
 allRows = enumValues
 
 mkColumn :: Char -> Column
@@ -182,7 +184,7 @@ instance Hashable Row where
 
 instance Bounded Row where
   bottom = one
-  top = wrap 10_000
+  top = wrap 1_000
 
 instance BoundedEnum Row where
   cardinality = newtypeCardinality

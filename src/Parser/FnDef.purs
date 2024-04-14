@@ -2,7 +2,7 @@ module App.Parser.FnDef (opDef, fnDef, fnBody, statements) where
 
 import FatPrelude hiding (guard)
 
-import App.Components.Table.Cell (cellParser)
+import App.Components.Spreadsheet.Cell (cellParser)
 import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, var, varOp)
 import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
@@ -19,7 +19,7 @@ opDef :: Parser OpDef
 opDef = defer \_ -> withError "Operator definition"
   $ OpDef
   <$> varOp
-  <*> (isToken "=" *> var)
+  <*> (isToken "=" *> qVar)
   <*> (L <$ is 'L' <|> R <$ is 'R')
   <*> mandatory (toEnum <$> unsignedInt)
   where

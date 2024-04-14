@@ -1,0 +1,14 @@
+module Array
+
+
+def add (xs: [Number], ys: [Number]): [Number] =
+    Prelude.zipWith (Prelude.add, xs, ys)
+
+def sub (xs: [Number], ys: [Number]): [Number] =
+    Prelude.zipWith (Prelude.sub, xs, ys)
+
+def mult (xs: [Number], ys: [Number]): [Number] =
+    Prelude.zipWith (Prelude.mult, xs, ys)
+
+def div (xs: [Number], ys: [Number]): [Number] =
+    Prelude.zipWith (Prelude.div, xs, ys)

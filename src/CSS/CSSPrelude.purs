@@ -12,7 +12,7 @@ module CSSPrelude
 
 import Tecton hiding (ElementId(..))
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, cellSyntax, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaSectionContainer, inSelection, invalidFormula, keywordSyntax, mainContainer, numberSyntax, operatorSyntax, regularSyntax, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheet, sheetCell, stringSyntax, strippedSheet, symbolSyntax, unknownFormula, validFormula) as ClassNames
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, cellSyntax, columnHeader, copySelection, cornerHeader, formulaBox, formulaCellInput, formulaSectionContainer, inSelection, invalidFormula, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheet, sheetCell, spreadsheetContainer, stringSyntax, strippedSheet, symbolSyntax, unknownFormula, validFormula) as ClassNames
 import App.CSS.Common (black, blue, brown, darkGrey, green, grey, grey2, hex, lightGreen, lightGrey, lighterGreen, lighterGrey, lighterRed, lighterYellow, mustard, orange, pink, purple, red, white, yellow) as Common
 import App.CSS.Ids (ElementId(..), cellId, formulaBoxId, formulaCellInputId, inputElement, selectedCellInputId) as Ids
 import Data.Tuple (Tuple) as Tuple

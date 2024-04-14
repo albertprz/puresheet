@@ -4,19 +4,15 @@ import Prelude
 
 import App.Utils.Maybe (whenMaybe')
 import App.Utils.Number (inc)
-import Data.Enum (class BoundedEnum, class Enum, Cardinality, enumFromTo)
-import Data.FastVect.MinLenVect (MinLenVect, fromUnsizedNonEmptyArray)
+import Data.Enum (class BoundedEnum, Cardinality, enumFromTo)
 import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import PointFree ((<..))
+import Data.Unfoldable1 (class Unfoldable1)
 
-infixr 8 enumFromToVect as ..
+infixr 8 enumFromTo as ..
 
-enumValues :: forall a. BoundedEnum a => MinLenVect 1 a
-enumValues = enumFromToVect bottom top
-
-enumFromToVect :: forall a. Enum a => a -> a -> MinLenVect 1 a
-enumFromToVect = fromUnsizedNonEmptyArray <.. enumFromTo
+enumValues :: forall @f a. Unfoldable1 f => BoundedEnum a => f a
+enumValues = enumFromTo bottom top
 
 getInBoundedRange :: forall a. Bounded a => a -> Maybe a
 getInBoundedRange = whenMaybe' inBoundedRange

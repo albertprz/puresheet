@@ -2,17 +2,14 @@ module App.Evaluator.Formula where
 
 import FatPrelude
 
-import App.Components.Table.Cell (Cell, CellValue)
-import App.Components.Table.Models (TableState)
+import App.Components.Spreadsheet.Cell (Cell, CellValue)
 import App.Evaluator.Common (LocalFormulaCtx, nonEmptyCellValue)
 import App.Evaluator.Errors (EvalError(..), SerializationError(..))
 import App.Evaluator.Expression (evalExpr)
 import App.Evaluator.Object (objectToCellValues)
-import App.SyntaxTree.Common (preludeModule)
 import App.SyntaxTree.FnDef (FnBody, Object)
 import Data.HashMap as HashMap
 import Data.Set.NonEmpty as NonEmptySet
-import Data.Tree.Zipper (fromTree)
 import Matrix as Matrix
 
 evalFormula

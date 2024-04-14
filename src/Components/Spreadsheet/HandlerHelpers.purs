@@ -1,22 +1,22 @@
-module App.Components.Table.HandlerHelpers where
+module App.Components.Spreadsheet.HandlerHelpers where
 
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.AppStore (Store, StoreAction)
+import App.AppStore (Store, StoreAction)
 import App.Components.Editor (EditorSlot, _editor)
 import App.Components.Editor.Models (EditorQuery(..))
-import App.Components.Table.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
-import App.Components.Table.Formula (Formula, FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
-import App.Components.Table.Models (TableAction(..), TableState)
-import App.Components.Table.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
+import App.Components.Spreadsheet.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
+import App.Components.Spreadsheet.Formula (Formula, FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
+import App.Components.Spreadsheet.Models (SpreadsheetAction(..), SpreadsheetState)
+import App.Components.Spreadsheet.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
-import App.Interpreter.Module (reloadModule)
 import App.Utils.Dom (focusCell, getClipboard, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, withPrevent)
 import App.Utils.Event (class IsEvent, shiftKey)
 import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
 import Data.Array as Array
+import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap (insert, keys, lookup, union, unionWith) as HashMap
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
@@ -24,11 +24,9 @@ import Data.String.Utils (NormalizationForm(..))
 import Data.String.Utils as String
 import Data.Tree (Forest)
 import Effect.Class.Console as Logger
-import Foreign (readString, unsafeToForeign)
-import Foreign.Index ((!))
 import Halogen (HalogenM, subscribe, tell)
 import Halogen.Query.Event (eventListener)
-import Halogen.Store.Monad (class MonadStore, getStore, updateStore)
+import Halogen.Store.Monad (class MonadStore, getStore)
 import Promise.Aff as Promise
 import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
@@ -40,7 +38,7 @@ import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 cellArrowMove
   :: forall m
    . MonadEffect m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => KeyboardEvent
   -> CellMove
   -> m Unit
@@ -56,7 +54,7 @@ cellArrowMove ev move =
 cellMove
   :: forall m a
    . MonadEffect m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => IsEvent a
   => a
   -> CellMove
@@ -68,7 +66,7 @@ cellMove _ move = do
 selectAllCells
   :: forall m a
    . MonadEffect m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => IsEvent a
   => a
   -> m Unit
@@ -78,7 +76,7 @@ selectAllCells ev = withPrevent ev $
 copyCells
   :: forall m a
    . MonadAff m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => IsEvent a
   => a
   -> m Unit
@@ -92,7 +90,7 @@ copyCells ev = withPrevent ev do
 pasteCells
   :: forall m a
    . MonadAff m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => MonadStore StoreAction Store m
   => IsEvent a
   => a
@@ -113,7 +111,7 @@ pasteCells ev = withPrevent ev do
 deleteCells
   :: forall r a o m
    . MonadStore StoreAction Store m
-  => HalogenM TableState a (editor :: EditorSlot | r) o m Unit
+  => HalogenM SpreadsheetState a (editor :: EditorSlot | r) o m Unit
 deleteCells = do
   st <- get
   let
@@ -128,7 +126,11 @@ deleteCells = do
   tell _editor unit $ UpdateEditorContent mempty
 
 selectCell
-  :: forall m. MonadEffect m => MonadState TableState m => CellMove -> m Unit
+  :: forall m
+   . MonadEffect m
+  => MonadState SpreadsheetState m
+  => CellMove
+  -> m Unit
 selectCell move = do
   target <- goToCell move
   modify_ _
@@ -140,7 +142,7 @@ selectCell move = do
 goToCell
   :: forall m
    . MonadEffect m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => CellMove
   -> m Cell
 goToCell move = do
@@ -176,7 +178,13 @@ goToCellHelper cols origin { column, row } visibleCols
   | otherwise = focusCell { column, row }
 
 adjustRows
-  :: forall m. MonadState TableState m => Int -> Row -> Row -> Row -> m Unit
+  :: forall m
+   . MonadState SpreadsheetState m
+  => Int
+  -> Row
+  -> Row
+  -> Row
+  -> m Unit
 adjustRows rowRange currentRow maxRow minRow
 
   | inc currentRow > maxRow =
@@ -194,7 +202,7 @@ adjustRows rowRange currentRow maxRow minRow
 
 refreshCells
   :: forall m
-   . MonadState TableState m
+   . MonadState SpreadsheetState m
   => MonadStore StoreAction Store m
   => Set Cell
   -> m Unit
@@ -207,7 +215,7 @@ refreshCells affectedCells = do
 
 refreshCellsFromDeps
   :: forall m
-   . MonadState TableState m
+   . MonadState SpreadsheetState m
   => MonadStore StoreAction Store m
   => Forest FormulaId
   -> m Unit
@@ -217,7 +225,7 @@ refreshCellsFromDeps cellDeps =
 insertFormula
   :: forall m
    . MonadEffect m
-  => MonadState TableState m
+  => MonadState SpreadsheetState m
   => MonadStore StoreAction Store m
   => String
   -> m Unit
@@ -251,7 +259,7 @@ insertFormula editorText = do
 
 applyFormula
   :: forall m
-   . MonadState TableState m
+   . MonadState SpreadsheetState m
   => MonadStore StoreAction Store m
   => FormulaId
   -> m Unit
@@ -274,15 +282,16 @@ applyFormula formulaId = do
     Left _ ->
       pure unit
 
-lookupFormula :: forall m. MonadState TableState m => Cell -> m (Maybe Formula)
+lookupFormula
+  :: forall m. MonadState SpreadsheetState m => Cell -> m (Maybe Formula)
 lookupFormula cell = do
   { formulaCache, tableFormulas } <- get
   pure $ HashMap.lookup2 cell tableFormulas formulaCache
 
-setRows :: forall m. MonadEffect m => MonadState TableState m => m Unit
+setRows :: forall m. MonadEffect m => MonadState SpreadsheetState m => m Unit
 setRows = do
   { selectedCell, rows } <- get
-  let Row (firstRow) = head rows
+  let Row (firstRow) = NonEmptyArray.head rows
   visibleRows <- parseElements parseRow =<< getVisibleRows
   modify_ _
     { rows = Row <$> firstRow .. (firstRow + length visibleRows + 2) }
@@ -290,34 +299,10 @@ setRows = do
   where
   parseRow = hush <<< runParser rowParser
 
-getPrelude
-  :: forall m. MonadEffect m => m String
-getPrelude =
-  map (fromRight mempty)
-    $ runExceptT
-    $ readString
-    =<< (_ ! "prelude")
-    =<< unsafeToForeign
-    <$> liftEffect window
-
-loadPrelude
-  :: forall m. MonadEffect m => MonadStore StoreAction Store m => m Unit
-loadPrelude = do
-  prelude <- getPrelude
-  store <- getStore
-  (errors /\ newStore) <- runStateT (reloadModule prelude) store
-  either logError (const $ updateStore $ const newStore) errors
-  where
-  logError err =
-    Logger.error
-      ( "Prelude load error \n" <> "Parse Error: " <>
-          show err
-      )
-
 subscribeWindowResize
   :: forall slots o m
    . MonadEffect m
-  => HalogenM TableState TableAction slots o m Unit
+  => HalogenM SpreadsheetState SpreadsheetAction slots o m Unit
 subscribeWindowResize = do
   window' <- liftEffect window
   void $ subscribe $ eventListener

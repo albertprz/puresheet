@@ -15,8 +15,9 @@ import Web.HTML (HTMLElement)
 import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window (Window)
 
-getCaretPosition :: Selection -> Node -> Effect (Maybe Int)
-getCaretPosition selection parentNode = runMaybeT do
+getCaretPosition
+  :: forall m. MonadEffect m => Selection -> Node -> m (Maybe Int)
+getCaretPosition selection parentNode = liftEffect $ runMaybeT do
   childNode <- MaybeT $ firstChild parentNode
   MaybeT $ join $ go childNode
     <$> anchorNode selection
@@ -39,8 +40,9 @@ getCaretPosition selection parentNode = runMaybeT do
       sibling <- MaybeT $ nextSibling node
       MaybeT $ go sibling anchor (position + len)
 
-setCaretPosition :: Selection -> Node -> Int -> Effect Unit
-setCaretPosition selection parentNode offset = do
+setCaretPosition
+  :: forall m. MonadEffect m => Selection -> Node -> Int -> m Unit
+setCaretPosition selection parentNode offset = liftEffect do
   childNode <- unsafeFromJust <$> firstChild parentNode
   anchor <- anchorNode selection
   traverse_ adjustSelection =<< go childNode anchor offset

@@ -1,17 +1,17 @@
-module App.Components.Table.Handler where
+module App.Components.Spreadsheet.Handler where
 
 import FatPrelude
 
+import App.AppM (AppM)
 import App.CSS.Ids (formulaBoxId, inputElement, selectedCellInputId)
-import App.Components.AppStore (Store, StoreAction)
-import App.Components.Editor (EditorSlot, _editor)
+import App.Components.Editor (_editor)
 import App.Components.Editor.Models (EditorOutput, EditorQuery(..))
 import App.Components.Editor.Models as EditorOutput
-import App.Components.Table.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
-import App.Components.Table.Formula (FormulaState(..))
-import App.Components.Table.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, loadPrelude, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeWindowResize)
-import App.Components.Table.Models (EventTransition(..), TableAction(..), TableState)
-import App.Components.Table.Selection (MultiSelection(..), SelectionState(..))
+import App.Components.Spreadsheet.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
+import App.Components.Spreadsheet.Formula (FormulaState(..))
+import App.Components.Spreadsheet.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeWindowResize)
+import App.Components.Spreadsheet.Models (EventTransition(..), Slots, SpreadsheetAction(..), SpreadsheetState)
+import App.Components.Spreadsheet.Selection (MultiSelection(..), SelectionState(..))
 import App.Utils.Dom (focusById, focusCell, focusCellElem, prevent, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey, toMouseEvent)
 import App.Utils.HashMap (lookup2) as HashMap
@@ -19,22 +19,14 @@ import App.Utils.KeyCode (KeyCode(..))
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
 import Halogen (HalogenM, tell)
-import Halogen.Store.Monad (class MonadStore)
 import Web.HTML (window)
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
 
 handleAction
-  :: forall o m r
-   . MonadAff m
-  => MonadStore StoreAction Store m
-  => TableAction
-  -> HalogenM TableState TableAction (editor :: EditorSlot | r) o m Unit
-
-handleAction Initialize = do
-  loadPrelude
-  handleAction ResizeWindow
-  subscribeWindowResize
+  :: forall o
+   . SpreadsheetAction
+  -> HalogenM SpreadsheetState SpreadsheetAction Slots o AppM Unit
 
 handleAction ResizeWindow = do
   { selectedCell } <- get
@@ -96,7 +88,11 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
 
 handleAction (FocusInCell cell _) = do
   formulaText <- _.formulaText <$$> lookupFormula cell
-  tell _editor unit $ UpdateEditorContent $ fromMaybe mempty formulaText
+  { selectedCell } <- get
+  when (cell /= selectedCell)
+    $ tell _editor unit
+    $ UpdateEditorContent
+    $ fromMaybe mempty formulaText
   modify_ _
     { activeFormula = false
     , formulaState =
@@ -274,7 +270,14 @@ handleAction (DragHeader Over _ ev) =
 handleAction (DragHeader _ _ _) =
   pure unit
 
-handleEditorOutput :: EditorOutput -> TableAction
+handleAction Initialize = do
+  handleAction ResizeWindow
+  subscribeWindowResize
+
+handleAction (Receive { route }) =
+  modify_ _ { route = route }
+
+handleEditorOutput :: EditorOutput -> SpreadsheetAction
 handleEditorOutput = case _ of
   EditorOutput.FocusInEditor -> FocusInEditor
   EditorOutput.FocusOutEditor -> FocusOutEditor

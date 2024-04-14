@@ -16,6 +16,7 @@ type RegisterModuleCtx r =
   , operatorsMap :: HashMap QVarOp OpInfo
   , aliasedModulesMap :: HashMap (Module /\ Module) (Set Module)
   , importedModulesMap :: HashMap Module (Set Module)
+  , modules :: Set Module
   | r
   }
 
@@ -50,9 +51,20 @@ registerModuleDef
   => ModuleDef
   -> m Unit
 registerModuleDef (ModuleDef module' imports opDefs fnDefs) =
-  registerModuleImports module' imports
+  registerModule module'
+    *> registerModuleImports module' imports
     *> registerModuleOps module' opDefs
     *> registerModuleFns module' fnDefs
+
+registerModule
+  :: forall r m
+   . MonadState (RegisterModuleCtx r) m
+  => Module
+  -> m Unit
+registerModule module' =
+  modify_ \st -> st
+    { modules = Set.insert module' st.modules
+    }
 
 registerModuleImports
   :: forall r m
@@ -88,10 +100,10 @@ registerModuleOps opModule opDefs =
         st.operatorsMap
     }
   where
-  toEntry (OpDef opName fnName associativity precedence) =
+  toEntry (OpDef opName qVar associativity precedence) =
     QVarOp (Just opModule) opName /\
       { id: { opModule, opName }
-      , fnName: QVar (Just opModule) fnName
+      , fnName: qVar
       , precedence
       , associativity
       }

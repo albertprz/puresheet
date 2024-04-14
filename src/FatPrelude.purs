@@ -7,7 +7,6 @@ import App.Utils.Char (fromUpper, nextChar, prevChar, toUpper, upperEndCode, upp
 import App.Utils.Foldable (findMapEither, intercalate1, maximum1, maximumBy1, minimum1, minimumBy1) as X
 import App.Utils.Functor (filterByIndex, filterByIndexes, mapp, (<$$>)) as X
 import App.Utils.Maybe (partialMaybe, unlessMaybe, unlessMaybe', unsafeFromJust, whenMaybe, whenMaybe') as X
-import App.Utils.MinLenVect (fromFoldable, sort, zip, zipGT, zipLT) as X
 import App.Utils.Monoid (unlessMonoid, whenMonoid, (<>?)) as X
 import App.Utils.Number (abs, coalesce, dec, inc, neg, pos, zeroOrNeg, zeroOrPos) as X
 import App.Utils.String (newline, showParensCsv, str, tab, wrapBackQuotes, wrapBoth, wrapCurly, wrapParens, wrapQuotes) as X
@@ -19,12 +18,12 @@ import Control.Monad.State (class MonadState, StateT(..), evalState, evalStateT,
 import Control.Monad.Trans.Class (class MonadTrans, lift) as X
 import Control.MonadPlus (class Alt, class Alternative, class MonadPlus, class Plus, alt, empty, guard, (<|>)) as X
 import Data.Array (length) as X
+import Data.Array.NonEmpty (NonEmptyArray) as X
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as X
 import Data.Bitraversable (class Bifoldable, class Bitraversable, biall, biany, bifold, bifoldMap, bifoldl, bifoldr, bifor, bifor_, bisequence, bisequence_, bitraverse, bitraverse_, lfor, ltraverse, rfor, rtraverse) as X
 import Data.Char (fromCharCode, toCharCode) as X
 import Data.Either (Either(..), blush, choose, either, fromLeft, fromLeft', fromRight, fromRight', hush, isLeft, isRight, note, note') as X
 import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, downFrom, downFromIncluding, enumFromThenTo, enumFromTo, fromEnum, pred, succ, toEnum, toEnumWithDefaults, upFrom, upFromIncluding) as X
-import Data.FastVect.MinLenVect (MinLenVect, cons, drop, fromArray, fromUnsizedArray, fromVect, generate, head, index, indexModulo, last, mapWithTerm, reifyMinLenVect, replicate, set, singleton, snoc, splitAt, take, toArray, toNonEmptyArray, toVect) as X
 import Data.Filterable (class Compactable, class Filterable, cleared, compact, eitherBool, filter, filterMap, maybeBool, partition, partitionMap, separate) as X
 import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldl, foldr, for_, indexl, indexr, intercalate, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sum, surround, surroundMap) as X
 import Data.Function (applyN, on) as X

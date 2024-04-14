@@ -2,6 +2,12 @@ module App.CSS.ClassNames where
 
 import Halogen (ClassName(..))
 
+headerMenu :: ClassName
+headerMenu = ClassName "header-menu"
+
+navButton :: ClassName
+navButton = ClassName "nav-button"
+
 sheet :: ClassName
 sheet = ClassName "sheet"
 
@@ -56,8 +62,14 @@ rowHeader = ClassName "row-header"
 cornerHeader :: ClassName
 cornerHeader = ClassName "corner-header"
 
-mainContainer :: ClassName
-mainContainer = ClassName "main-container"
+invisibleContainer :: ClassName
+invisibleContainer = ClassName "invisible-container"
+
+spreadsheetContainer :: ClassName
+spreadsheetContainer = ClassName "spreadsheet-container"
+
+explorerContainer :: ClassName
+explorerContainer = ClassName "explorer-container"
 
 formulaSectionContainer :: ClassName
 formulaSectionContainer = ClassName "formula-container"

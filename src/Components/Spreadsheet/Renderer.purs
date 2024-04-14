@@ -1,42 +1,43 @@
-module App.Components.Table.Renderer where
+module App.Components.Spreadsheet.Renderer where
 
 import FatPrelude hiding (div)
 import Prim hiding (Row)
 
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, mainContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell)
+import App.AppM (AppM)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, invisibleContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, spreadsheetContainer)
 import App.CSS.Ids (cellId, formulaCellInputId, selectedCellInputId)
-import App.Components.AppStore (Store, StoreAction)
-import App.Components.Editor (EditorSlot, _editor)
+import App.Components.Editor (_editor)
 import App.Components.Editor as Editor
-import App.Components.Table.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
-import App.Components.Table.Handler (handleEditorOutput)
-import App.Components.Table.Models (EventTransition(..), TableAction(..), TableState)
-import App.Components.Table.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
+import App.Components.Spreadsheet.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
+import App.Components.Spreadsheet.Handler (handleEditorOutput)
+import App.Components.Spreadsheet.Models (EventTransition(..), Slots, SpreadsheetAction(..), SpreadsheetState)
+import App.Components.Spreadsheet.Selection (SelectionState(..), isCellAboveSelection, isCellAtLeftSelection, isCellAtRightSelection, isCellBelowSelection, isCellInSelection, isColumnSelected, isRowSelected)
+import App.Routes (Route(..))
 import App.Utils.KeyCode (mkKeyAction)
 import Bookhound.Parser (runParser)
 import CSSPrelude (ComponentHTML)
 import Data.Array as Array
+import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap as HashMap
 import Halogen.HTML (ClassName, HTML, div, input, slot, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
-import Halogen.Store.Monad (class MonadStore)
 
-render
-  :: forall m
-   . MonadAff m
-  => MonadStore StoreAction Store m
-  => TableState
-  -> ComponentHTML TableAction Slots m
+render :: SpreadsheetState -> ComponentHTML SpreadsheetAction Slots AppM
 render
   st@
-    { selectedCell
+    { route
+    , selectedCell
     , formulaCell
     , activeFormula
     , selectionState
     , formulaState
     } =
-  div [ class_ mainContainer ]
+  div
+    [ class_
+        if (route == SpreadsheetView) then spreadsheetContainer
+        else invisibleContainer
+    ]
     [ div [ class_ formulaSectionContainer ]
         [ input
             [ id $ show selectedCellInputId
@@ -45,7 +46,8 @@ render
             , onValueChange $ WriteSelectedCellInput <<< parseCell
             , onKeyDown $ mkKeyAction SelectedCellInputKeyDown
             ]
-        , slot _editor unit Editor.component { formulaState } handleEditorOutput
+        , slot _editor unit Editor.component { formulaState }
+            handleEditorOutput
         , input
             [ id $ show formulaCellInputId
             , class_ formulaCellInput
@@ -70,12 +72,11 @@ render
   where
   parseCell = hush <<< runParser cellParser
 
-renderHeader :: forall i. TableState -> HTML i TableAction
+renderHeader :: forall i. SpreadsheetState -> HTML i SpreadsheetAction
 renderHeader st =
   thead_
     [ tr_
-        $ toArray
-        $ cons
+        $ Array.cons
             ( th
                 [ class_ cornerHeader
                 , onClick $ ClickHeader CornerHeader
@@ -85,26 +86,26 @@ renderHeader st =
             (renderColumnHeader st <$> allColumns)
     ]
 
-renderBody :: forall i. TableState -> HTML i TableAction
+renderBody :: forall i. SpreadsheetState -> HTML i SpreadsheetAction
 renderBody
   st@
     { rows
     , tableData
     } =
   tbody_ do
-    row <- toArray rows
+    row <- NonEmptyArray.toArray rows
     pure $ tr_ $ Array.cons
       (renderRowHeader st row)
       (renderRow row)
   where
   renderRow row = do
-    column <- toArray allColumns
+    column <- allColumns
     let
       cell = { column, row }
       cellValue = HashMap.lookup cell tableData
     pure $ renderBodyCell st cell cellValue
 
-renderRowHeader :: forall i. TableState -> Row -> HTML i TableAction
+renderRowHeader :: forall i. SpreadsheetState -> Row -> HTML i SpreadsheetAction
 renderRowHeader { selectedCell, multiSelection } row =
   th
     [ id $ show row
@@ -123,7 +124,7 @@ renderRowHeader { selectedCell, multiSelection } row =
     [ text $ show row ]
 
 renderColumnHeader
-  :: forall i. TableState -> Column -> HTML i TableAction
+  :: forall i. SpreadsheetState -> Column -> HTML i SpreadsheetAction
 renderColumnHeader { selectedCell, multiSelection } column =
   th
     [ id $ show column
@@ -143,10 +144,10 @@ renderColumnHeader { selectedCell, multiSelection } column =
 
 renderBodyCell
   :: forall i
-   . TableState
+   . SpreadsheetState
   -> Cell
   -> Maybe CellValue
-  -> HTML i TableAction
+  -> HTML i SpreadsheetAction
 renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
   td
     [ id $ show cellId <> showCell cell
@@ -168,7 +169,7 @@ renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
         ]
     ]
 
-bodyCellSelectionClasses :: TableState -> Cell -> Array ClassName
+bodyCellSelectionClasses :: SpreadsheetState -> Cell -> Array ClassName
 bodyCellSelectionClasses { selectedCell, multiSelection } cell =
   [ sheetCell ]
     <>? (selectedCell == cell)
@@ -183,5 +184,3 @@ bodyCellSelectionClasses { selectedCell, multiSelection } cell =
     /\ atLeftSelection
     <>? isCellAtRightSelection multiSelection cell
     /\ atRightSelection
-
-type Slots = (editor :: EditorSlot)

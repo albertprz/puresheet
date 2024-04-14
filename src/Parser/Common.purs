@@ -2,7 +2,7 @@ module App.Parser.Common where
 
 import FatPrelude
 
-import App.Components.Table.Cell (CellValue(..))
+import App.Components.Spreadsheet.Cell (CellValue(..))
 import App.SyntaxTree.Common (Module(..), QVar(..), QVarOp(..), Var(..), VarOp(..))
 import Bookhound.Parser (Parser, satisfy, withTransform)
 import Bookhound.ParserCombinators (class IsMatch, is, noneOf, oneOf, someSepBy, surroundedBy, (->>-), (</\>), (|*), (|?), (||*), (||+))

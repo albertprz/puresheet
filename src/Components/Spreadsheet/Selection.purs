@@ -1,10 +1,11 @@
-module App.Components.Table.Selection where
+module App.Components.Spreadsheet.Selection where
 
 import FatPrelude
 import Prim hiding (Row)
 
-import App.Components.Table.Cell (Cell, CellMove(..), CellValue, Column, Row, allColumns, allRows, getCell, getColumnCell, getRowCell, nextRowCell, parseCellValue, prevColumnCell)
+import App.Components.Spreadsheet.Cell (Cell, CellMove(..), CellValue, Column, Row, allColumns, allRows, getCell, getColumnCell, getRowCell, nextRowCell, parseCellValue, prevColumnCell)
 import Data.Array as Array
+import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap as HashMap
 import Data.String.Pattern (Pattern(..))
 
@@ -125,9 +126,10 @@ deserializeSelectionValues
   :: Cell -> String -> HashMap Cell CellValue
 deserializeSelectionValues selectedCell str = HashMap.fromArray
   do
-    rowValues /\ row <- Array.zip values (toArray (selectedCell.row .. top))
+    rowValues /\ row <- Array.zip values
+      (NonEmptyArray.toArray (selectedCell.row .. top))
     value /\ column <- Array.zip rowValues
-      (toArray (selectedCell.column .. top))
+      (NonEmptyArray.toArray (selectedCell.column .. top))
     pure $ { row, column } /\ parseCellValue value
   where
   values = split (Pattern tab) <$> split (Pattern newline) str
@@ -135,14 +137,14 @@ deserializeSelectionValues selectedCell str = HashMap.fromArray
 getTargetCells
   :: MultiSelection
   -> Cell
-  -> (MinLenVect 1 (MinLenVect 1 Cell))
+  -> (NonEmptyArray (NonEmptyArray Cell))
 getTargetCells selection selectedCell =
-  fromMaybe (singleton $ singleton selectedCell)
+  fromMaybe (pure $ pure selectedCell)
     (getSelectionCells selection)
 
 getSelectionCells
   :: MultiSelection
-  -> Maybe (MinLenVect 1 (MinLenVect 1 Cell))
+  -> Maybe (NonEmptyArray (NonEmptyArray Cell))
 getSelectionCells selection = do
   columnBounds /\ rowBounds <- getSelectionBounds selection
   pure do
@@ -168,18 +170,19 @@ isRowsSelection _ = false
 
 getSelectionBounds
   :: MultiSelection
-  -> Maybe (MinLenVect 1 Column /\ MinLenVect 1 Row)
+  -> Maybe (NonEmptyArray Column /\ NonEmptyArray Row)
 getSelectionBounds NoSelection = Nothing
 getSelectionBounds AllSelection =
   Just $ allColumns /\ allRows
 getSelectionBounds (ColumnsSelection origin target) =
-  Just $ sort (origin .. target) /\ allRows
+  Just $ NonEmptyArray.sort (origin .. target) /\ allRows
 getSelectionBounds (RowsSelection origin target) =
-  Just $ allColumns /\ sort (origin .. target)
+  Just $ allColumns /\ NonEmptyArray.sort (origin .. target)
 getSelectionBounds
   ( CellsSelection { column: column, row: row }
       { column: column', row: row' }
-  ) = Just $ sort (column .. column') /\ sort (row .. row')
+  ) = Just $ NonEmptyArray.sort (column .. column') /\ NonEmptyArray.sort
+  (row .. row')
 
 data MultiSelection
   = RowsSelection Row Row
