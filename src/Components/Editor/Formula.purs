@@ -6,8 +6,7 @@ import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (LocalFormulaCtx, getAvailableAliases, getAvailableModules, lookupBuiltinFn, lookupModuleFn, lookupOperator)
 import App.Parser.Common (ident, module', operator, qTerm, qVar, qVarOp)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
-import App.SyntaxTree.FnDef (SimpleFnSig)
-import App.Utils.Monoid (whenPlus)
+import App.SyntaxTree.FnDef (FnSig)
 import App.Utils.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is)
@@ -27,7 +26,7 @@ formulaElements :: forall a b. String -> Array (HTML a b)
 formulaElements =
   syntaxAtomsToElements <<< fold <<< runParser syntaxAtomParser
 
-fnSigElements :: forall a b. QVar -> SimpleFnSig -> Array (HTML a b)
+fnSigElements :: forall a b. QVar -> FnSig -> Array (HTML a b)
 fnSigElements =
   syntaxAtomsToElements <.. fnSigToSyntaxAtoms
 
@@ -42,7 +41,7 @@ getFnAtIndex :: String -> Int -> Maybe SuggestionTerm
 getFnAtIndex formulaText idx =
   hush $ runParser fnParser currentWord
   where
-  fnParser = VarOpSuggestion <$> qVarOp <|> VarSuggestion <$> qVar
+  fnParser = OpSuggestion <$> qVarOp <|> FnSuggestion <$> qVar
   { currentWord } = getWordAtIndex [] formulaText idx
 
 getSuggestionsAtIndex
@@ -60,7 +59,7 @@ getSuggestionsAtIndex ctx formulaText idx =
   varParser =
     ((_ `filterFns` ctx) <$> partialQVar)
       <|> ((_ `filterOps` ctx) <$> partialQVarOp)
-      <|> ((_ `getAllAvailableFns` ctx) <$> (module' <* is '.'))
+      <|> ((_ `getAllAvailableFns` ctx) <<< Just <$> (module' <* is '.'))
       <|> ((_ `filterModules` ctx) <$> module')
   partialQVar = uncurry QVar <$> qTerm (Var <$> ident lower)
   partialQVarOp = uncurry QVarOp <$> qTerm (VarOp <$> operator)
@@ -91,16 +90,15 @@ getWordAtIndex otherSeparators formulaText idx =
     $ map Pattern ([ ")", "]" ] <> separators)
   separators = [ " ", " ", "\n", "\t", "," ] <> otherSeparators
 
-getFnSig :: QVar -> LocalFormulaCtx -> Maybe SimpleFnSig
-getFnSig qVar@(QVar fnModule fnName) ctx =
+getFnSig :: QVar -> LocalFormulaCtx -> Maybe FnSig
+getFnSig qVar ctx =
   pick <$> builtinFnInfo <|> pick <$> fnInfo
   where
   builtinFnInfo =
-    whenPlus (all (_ == ctx.module') fnModule)
-      $ hush
+    hush
       $ flip evalState ctx
       $ runExceptT
-      $ lookupBuiltinFn fnName
+      $ lookupBuiltinFn qVar
   fnInfo =
     map unwrap
       $ hush
@@ -109,67 +107,64 @@ getFnSig qVar@(QVar fnModule fnName) ctx =
       $ lookupModuleFn qVar
 
 filterFns :: QVar -> LocalFormulaCtx -> Set SuggestionTerm
-filterFns (QVar fnModule fnVar) st =
-  Set.map VarSuggestion (moduleFns <> builtinFns)
+filterFns (QVar fnModule fnVar) ctx = moduleFns <> builtinFns
   where
-  modules = getAvailableModules fnModule st
-  moduleFns = Set.fromFoldable
-    $ filter filterFn
-    $ HashMap.keys st.fnsMap
-  builtinFns = Set.fromFoldable
-    $ whenMonoid
-        ( fnModule == Just preludeModule
-            || (isNothing fnModule && st.module' == preludeModule)
-        )
-    $ map (QVar Nothing)
-    $ filter filterBuiltinFn
-    $ HashMap.keys Builtins.builtinFnsMap
+  modules = getAvailableModules fnModule ctx
+  moduleFns =
+    Set.map FnSuggestion
+      $ Set.fromFoldable
+      $ filter filterFn
+      $ HashMap.keys ctx.fnsMap
+  builtinFns =
+    Set.map BuiltinFnSuggestion
+      $ Set.fromFoldable
+      $ filter filterFn
+      $ HashMap.keys Builtins.builtinFnsMap
   filterFn (QVar module' fn) =
     all (flip Set.member modules) module'
-      && filterBuiltinFn fn
-  filterBuiltinFn fn =
-    String.startsWith (unwrap fnVar) (unwrap fn)
+      && String.startsWith (unwrap fnVar) (unwrap fn)
 
 filterOps :: QVarOp -> LocalFormulaCtx -> Set SuggestionTerm
-filterOps (QVarOp opModule opVar) st =
+filterOps (QVarOp opModule opVar) ctx =
   Set.fromFoldable
-    $ map VarOpSuggestion
+    $ map OpSuggestion
     $ filter filterOp
-    $ HashMap.keys st.operatorsMap
+    $ HashMap.keys ctx.operatorsMap
   where
-  modules = getAvailableModules opModule st
+  modules = getAvailableModules opModule ctx
   filterOp (QVarOp module' op) =
     all (flip Set.member modules) module'
       && String.startsWith (unwrap opVar) (unwrap op)
 
 filterModules :: Module -> LocalFormulaCtx -> Set SuggestionTerm
-filterModules fnModule st =
+filterModules fnModule ctx =
   Set.map ModuleSuggestion
-    $ Set.filter filterModule (aliases <> modules <> st.modules)
+    $ Set.filter filterModule (aliases <> modules <> ctx.modules)
   where
-  modules = getAvailableModules Nothing st
-  aliases = getAvailableAliases st
+  modules = getAvailableModules Nothing ctx
+  aliases = getAvailableAliases ctx
   filterModule module' =
     String.startsWith (fold $ unwrap fnModule) (fold $ unwrap module')
 
-getAllAvailableFns
-  :: Module -> LocalFormulaCtx -> Set SuggestionTerm
-getAllAvailableFns fnModule st =
-  fns <> ops <> builtins
+getAllAvailableFns :: Maybe Module -> LocalFormulaCtx -> Set SuggestionTerm
+getAllAvailableFns fnModule ctx =
+  fns <> builtins <> ops
   where
-  modules = getAvailableModules (Just fnModule) st
+  modules = case fnModule of
+    Just _ -> getAvailableModules fnModule ctx
+    Nothing -> ctx.modules
   fns = Set.fromFoldable
-    $ map VarSuggestion
+    $ map FnSuggestion
     $ filter filterFn
-    $ HashMap.keys st.fnsMap
-  ops = Set.fromFoldable
-    $ map VarOpSuggestion
-    $ filter filterOp
-    $ HashMap.keys st.operatorsMap
+    $ HashMap.keys ctx.fnsMap
   builtins = Set.fromFoldable
-    $ map (VarSuggestion <<< QVar (Just preludeModule))
-    $ whenMonoid (fnModule == preludeModule)
+    $ map BuiltinFnSuggestion
+    $ filter filterFn
     $ HashMap.keys Builtins.builtinFnsMap
+  ops = Set.fromFoldable
+    $ map OpSuggestion
+    $ filter filterOp
+    $ HashMap.keys ctx.operatorsMap
   filterFn (QVar module' _) =
     all (flip Set.member modules) module'
   filterOp (QVarOp module' _) =
@@ -177,14 +172,16 @@ getAllAvailableFns fnModule st =
 
 extractSuggestionFn :: LocalFormulaCtx -> SuggestionTerm -> Maybe QVar
 extractSuggestionFn ctx = case _ of
-  VarSuggestion var -> Just var
-  VarOpSuggestion op -> _.fnName
+  FnSuggestion var -> Just var
+  BuiltinFnSuggestion var -> Just var
+  OpSuggestion op -> _.fnName
     <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
   ModuleSuggestion _ -> Nothing
 
 data SuggestionTerm
-  = VarSuggestion QVar
-  | VarOpSuggestion QVarOp
+  = FnSuggestion QVar
+  | BuiltinFnSuggestion QVar
+  | OpSuggestion QVarOp
   | ModuleSuggestion Module
 
 newtype SuggestionId = SuggestionId Int
@@ -192,15 +189,33 @@ newtype SuggestionId = SuggestionId Int
 derive instance Eq SuggestionTerm
 
 instance Ord SuggestionTerm where
-  compare (VarSuggestion _) (VarOpSuggestion _) = LT
-  compare (VarOpSuggestion _) (VarSuggestion _) = GT
+  compare (FnSuggestion _) (OpSuggestion _) = LT
+  compare (BuiltinFnSuggestion _) (OpSuggestion _) = LT
+  compare (OpSuggestion _) (FnSuggestion _) = GT
+  compare (OpSuggestion _) (BuiltinFnSuggestion _) = GT
+  compare (OpSuggestion x) (OpSuggestion y)
+    | String.length (show x) /= String.length (show y) =
+        comparing (String.length <<< show) x y
+  compare x y
+    | show x == show y =
+        if moduleFromSuggestion x == Just preludeModule then LT
+        else if moduleFromSuggestion y == Just preludeModule then GT
+        else comparing (show <<< moduleFromSuggestion) x y
   compare x y = comparing show x y
 
 instance Show SuggestionTerm where
   show = case _ of
-    VarSuggestion (QVar _ fn) -> show fn
-    VarOpSuggestion (QVarOp _ op) -> show op
+    FnSuggestion (QVar _ fn) -> show fn
+    OpSuggestion (QVarOp _ op) -> show op
+    BuiltinFnSuggestion (QVar _ fn) -> show fn
     ModuleSuggestion module' -> show module'
+
+moduleFromSuggestion :: SuggestionTerm -> Maybe Module
+moduleFromSuggestion = case _ of
+  FnSuggestion (QVar x _) -> x
+  OpSuggestion (QVarOp x _) -> x
+  BuiltinFnSuggestion (QVar x _) -> x
+  ModuleSuggestion x -> Just x
 
 derive instance Newtype SuggestionId _
 derive newtype instance Eq SuggestionId

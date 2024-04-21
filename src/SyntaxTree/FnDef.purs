@@ -11,12 +11,14 @@ import Data.Array as Array
 import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Enum.Generic (genericCardinality, genericFromEnum, genericPred, genericSucc, genericToEnum)
 import Data.Generic.Rep (class Generic)
+import Data.Number.Format as Number
 import Data.Show.Generic (genericShow)
 import Partial.Unsafe (unsafeCrashWith)
 
 data OpDef = OpDef VarOp QVar Associativity Precedence
 
-data FnDef = FnDef Var (Array (Var /\ Maybe Type)) (Maybe Type) FnBody
+data FnDef = FnDef Var (Array (Var /\ Maybe Type)) (Maybe Type) String
+  FnBody
 
 data FnBody
   = FnApply FnBody (Array FnBody)
@@ -66,20 +68,18 @@ data Object
   | NullObj
 
 newtype FnInfo = FnInfo
-  ( FnSig
-      ( id :: Maybe FnId
-      , body :: FnBody
-      , scope :: Scope
-      , argsMap :: HashMap (Scope /\ Var) FnInfo
-      )
-  )
+  { id :: Maybe FnId
+  , body :: FnBody
+  , scope :: Scope
+  , argsMap :: HashMap (Scope /\ Var) FnInfo
+  | FnSigRow
+  }
 
-type BuiltinFnInfo = FnSig
-  ( fn :: Array Object -> Object
+type BuiltinFnInfo =
+  { fn :: Array Object -> Object
   , defaultParams :: Set Int
-  )
-
-type SimpleFnSig = FnSig ()
+  | FnSigRow
+  }
 
 type OpInfo =
   { id :: FnOpId
@@ -90,13 +90,15 @@ type OpInfo =
 
 type FnId = { fnModule :: Module, fnName :: Var }
 
-type FnSig r =
-  { params :: Array (Var /\ Maybe Type)
-  , returnType :: Maybe Type
-  | r
-  }
-
 type FnOpId = { opModule :: Module, opName :: VarOp }
+
+type FnSig = Record FnSigRow
+
+type FnSigRow =
+  ( params :: Array (Var /\ Maybe Type)
+  , returnType :: Maybe Type
+  , doc :: String
+  )
 
 data Precedence
   = P0
@@ -123,10 +125,10 @@ instance Show Object where
   show = case _ of
     (BoolObj x) -> show x
     (IntObj x) -> show x
-    (FloatObj x) -> show x
+    (FloatObj x) -> Number.toStringWith (Number.fixed 3) x
     (CharObj x) -> show x
     (StringObj x) -> show x
-    (ListObj x) -> show x
+    (ListObj x) -> show $ Array.fromFoldable x
     (ArrayObj x) -> show x
     (FnObj _) -> "function"
     (BuiltinFnObj _) -> "builtin-function"

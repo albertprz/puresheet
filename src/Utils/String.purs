@@ -7,7 +7,7 @@ import Data.Foldable (foldMap, intercalate)
 import Data.Maybe (Maybe)
 import Data.String (length)
 import Data.String (null) as String
-import Data.String.CodeUnits (charAt, drop, uncons)
+import Data.String.CodeUnits (charAt, dropRight, uncons)
 
 newline :: String
 newline = "\n"
@@ -52,7 +52,7 @@ last :: String -> Maybe Char
 last s = charAt (length s - 1) s
 
 init :: String -> String
-init = drop 1
+init = dropRight 1
 
 foreign import startsWith :: String -> String -> Boolean
 

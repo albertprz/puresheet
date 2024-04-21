@@ -10,7 +10,13 @@ formulaFontSize :: Measure Length
 formulaFontSize = px 21
 
 signatureFontSize :: Measure Length
-signatureFontSize = px 24
+signatureFontSize = px 28
+
+functionDescriptionFontSize :: Measure Length
+functionDescriptionFontSize = px 30
+
+termTypeFontSize :: Measure Length
+termTypeFontSize = px 24
 
 hex :: String -> Color
 hex = fromMaybe black <<< fromHexString

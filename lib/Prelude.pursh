@@ -59,27 +59,48 @@ op % = mod L11
 
 
 def id (x: A): A =
+    // Returns its argument
+    // >>> []
+    // >>> true
     x
 
 def const (x: A): B -> A =
+    // Returns its first argument
+    // >>> 2, 7
+    // >>> true, false
     y -> x
 
 def apply (f: A -> B, x: A): B =
+    // Applies a unary function to an argument
+    // >>> _ * 3, 6
+    // >>> head, ['a', 'b', 'c']
     f (x)
 
 def compose (f: A -> B, g: B -> C): A -> C =
+    // Composes two functions
+    // >>> _ * 3, _ + 1, 2
+    // >>> head, tail, [2, 4, 6]
     x -> f (g (x))
 
 def flip (f: A -> B -> C): B -> A -> C =
+    // Flips the arguments of the function
+    // >>> '-, 2, 1
+    // >>> '++, "hel", "lo"
     (x, y) -> f (y, x)
 
 def map (f: A -> B, xs: [A]): [B] =
+    // Maps a unary function over a collection
+    // >>> _ / 2, [1, 3, 5, 7]
+    // >>> _ ++ "x", ["a", "c", "c"]
     switch (xs) {
         | []            => []
         | [ x, xs @ ... ] => f (x) +: map (f, xs)
     }
 
 def filter (f: A -> Boolean, xs: [A]): [A] =
+    // Uses a predicate to filter a collection
+    // >>> x -> x % 2 == 0, [1, 2, 3, 4]
+    // >>> x -> length (x) > 2, ["abc", "de", "f"]
     switch (xs) {
         | []                        => []
         | [ x, xs @ ... ] ? f(x)    => x +: filter (f, xs)
@@ -87,18 +108,28 @@ def filter (f: A -> Boolean, xs: [A]): [A] =
     }
 
 def reduce (f: B -> A -> B, start: B, xs: [A]): B =
-        switch (xs) {
-        | []             => start
-        | [ x, xs @ ... ] => f (x, reduce (f, start, xs))
+    // Uses a reducer function and initial value to accumulate a value over a collection
+    // >>> '+, 7, [1, 2, 3, 4]
+    // >>> '++, "hello", ["abc", "de", "f"]
+      reduceRight (f, start, reverse (xs)) where {
+        | reduceRight (f, start, xs) = switch (xs) {
+            | []             => start
+            | [ x, xs @ ... ] => f (reduceRight (f, start, xs), x)
+        }
     }
 
 def fold (f: A -> A -> A, xs: [A]): A =
+    // Uses a reducer function to accumulate a value over a non-empty collection
+    // >>> '+, [1, 2, 3, 4]
+    // >>> '++, ["abc", "de", "f"]
     switch (xs) {
-        | []            => null
         | [ x, xs @ ... ] => reduce (f, x, xs)
     }
 
 def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
+    // Maps a binary function over two collections
+    // >>> '-, [1, 2, 3], [5, 6, 7]
+    // >>> '++, ["a", "b"], ["c", "d"]
     cond {
         ? isEmpty (xs) || isEmpty (ys) => []
         ? otherwise =>
@@ -106,12 +137,18 @@ def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
     }
 
 def iterate (f: A -> A, start: A, n: Int): [A] =
+    // Generates a collection by applying a unary function with an initial value n times
+    // >>> _ * 2, 1, 6
+    // >>> _ ++ "x", "a", 3
     cond {
         ? n == 0     => [start]
         ? otherwise => start +: iterate (f, f (start), n - 1)
     }
 
 def isEmpty (xs: [A]): Boolean =
+    // Checks if a collection is empty
+    // >>> "asd"
+    // >>> []
     switch (xs) {
         | [] => true
         | "" => true
@@ -119,20 +156,38 @@ def isEmpty (xs: [A]): Boolean =
     }
 
 def isNotEmpty (xs: [A]): Boolean =
+    // Checks if a collection is not empty
+    // >>> "asd"
+    // >>> []
     not (isEmpty (xs))
 
 def all (f: A -> Boolean, xs: [A]): Boolean =
+    // Checks if a predicate succeeds for all of the elements in a collection
+    // >>> _ > 7, []
+    // >>> _ > 7, [3, 6, 9]
     reduce (and, true, map (f, xs))
 
 def any (f: A -> Boolean, xs: [A]): Boolean =
+    // Checks if a predicate succeeds for at least some of the elements in a collection
+    // >>> _ > 7, []
+    // >>> _ > 7, [3, 6, 9]
     reduce (or, false, map (f, xs))
 
 
-def sum (xs: [Number]): Number  =
+def sum (xs: [Number]): Number =
+    // Calculates the sum of a collection of numbers
+    // >>> [1, 2, 3, 4]
+    // >>> [-1.5, 3.2, -5.8]
     reduce (add, 0, xs)
 
 def product (xs: [Number]): Number =
-    reduce (mult, 0, xs)
+    // Calculates the product of a collection of numbers
+    // >>> [1, 2, 3, 4]
+    // >>> [-1.5, 3.2, -5.8]
+    reduce (mult, 1, xs)
 
 def average (xs: [Number]): Number =
+    // Calculates the average of a collection of numbers
+    // >>> [1, 2, 3, 4]
+    // >>> [-1.5, 3.2, -5.8]
     sum (xs) / 2

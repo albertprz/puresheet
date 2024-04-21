@@ -5,7 +5,7 @@ import FatPrelude
 import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupBuiltinFn, lookupFn, lookupOperator, registerArg, registerBindings, resetFnScope, substituteFnArgs, varFn)
 import App.Evaluator.Errors (EvalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
-import App.SyntaxTree.Common (QVar(..), Var(..), preludeModule)
+import App.SyntaxTree.Common (QVar(..), Var(..))
 import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, CaseBinding(..), FnBody(..), FnDef(..), FnInfo(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), Object(..), OpInfo, PatternGuard(..))
 import App.SyntaxTree.Pattern (Pattern(..))
 import Data.Array as Array
@@ -27,7 +27,7 @@ evalExpr (LambdaFn params body) = do
   { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }
   let lambdaVar = Var $ lambdaId lambdaCount
   evalExpr $ WhereExpr (FnVar $ QVar Nothing lambdaVar)
-    [ FnDef lambdaVar ((_ /\ Nothing) <$> params) Nothing body ]
+    [ FnDef lambdaVar ((_ /\ Nothing) <$> params) Nothing mempty body ]
 
 evalExpr (InfixFnApply fnOps args) = do
   opInfos <- traverse (\x -> lookupOperator x) fnOps
@@ -108,12 +108,8 @@ evalExpr (Array' array) =
         (Object' $ ArrayObj [])
         array
 
-evalExpr (FnVar qVar@(QVar fnModule var))
-  | fnModule == Nothing || fnModule == Just preludeModule =
-      getBuiltinFnInfo var <|> getFnInfo qVar
-
-evalExpr (FnVar fn) =
-  getFnInfo fn
+evalExpr (FnVar qVar) =
+  getBuiltinFnInfo qVar <|> getFnInfo qVar
 
 evalExpr (FnOp fnOp) = do
   { fnName } <- lookupOperator fnOp
@@ -275,14 +271,14 @@ evalPatternBinding
   :: Pattern -> Object -> EvalM Boolean
 evalPatternBinding (VarPattern param) result = do
   { scope } <- get
-  registerArg scope (FnDef param [] Nothing $ Object' result) $> true
+  registerArg scope (FnDef param [] Nothing mempty $ Object' result) $> true
 
 evalPatternBinding (LitPattern cellValue) result =
   pure $ cellValueToObj cellValue == result
 
 evalPatternBinding (AliasedPattern param pattern) result = do
   { scope } <- get
-  registerArg scope (FnDef param [] Nothing $ Object' result) *>
+  registerArg scope (FnDef param [] Nothing mempty $ Object' result) *>
     evalPatternBinding pattern result
 
 evalPatternBinding (ArrayPattern patterns) result
@@ -339,6 +335,6 @@ getFnInfo fnName = do
       (Object' $ FnObj $ fnInfo)
     _ -> evalExpr (Object' $ FnObj $ fnInfo)
 
-getBuiltinFnInfo :: Var -> EvalM Object
-getBuiltinFnInfo fnName =
-  BuiltinFnObj <$> lookupBuiltinFn fnName
+getBuiltinFnInfo :: QVar -> EvalM Object
+getBuiltinFnInfo qVar =
+  BuiltinFnObj <$> lookupBuiltinFn qVar

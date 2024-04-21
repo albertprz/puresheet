@@ -29,6 +29,7 @@
   , "newtype"
   , "numbers"
   , "ordered-collections"
+  , "orders"
   , "partial"
   , "point-free"
   , "prelude"

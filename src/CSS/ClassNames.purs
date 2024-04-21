@@ -8,11 +8,11 @@ headerMenu = ClassName "header-menu"
 navButton :: ClassName
 navButton = ClassName "nav-button"
 
-sheet :: ClassName
-sheet = ClassName "sheet"
+spreadsheetTable :: ClassName
+spreadsheetTable = ClassName "spreadsheet-table"
 
-strippedSheet :: ClassName
-strippedSheet = ClassName "stripped-sheet"
+sheetCell :: ClassName
+sheetCell = ClassName "sheet-cell"
 
 selectedSheetCell :: ClassName
 selectedSheetCell = ClassName "selected-sheet-cell"
@@ -34,9 +34,6 @@ atLeftSelection = ClassName "at-left-selection"
 
 atRightSelection :: ClassName
 atRightSelection = ClassName "at-right-selection"
-
-sheetCell :: ClassName
-sheetCell = ClassName "sheet-cell"
 
 formulaBox :: ClassName
 formulaBox = ClassName "formula-box"
@@ -121,3 +118,24 @@ regularSyntax = ClassName "regular-syntax"
 
 materialIcons :: ClassName
 materialIcons = ClassName "material-icons"
+
+functionsList :: ClassName
+functionsList = ClassName "functions-list"
+
+functionRow :: ClassName
+functionRow = ClassName "function-row"
+
+functionDescription :: ClassName
+functionDescription = ClassName "function-description"
+
+termTypeLabel :: ClassName
+termTypeLabel = ClassName "term-type-label"
+
+functionName :: ClassName
+functionName = ClassName "function-name"
+
+functionDoc :: ClassName
+functionDoc = ClassName "function-doc"
+
+functionContainer :: ClassName
+functionContainer = ClassName "function-container"

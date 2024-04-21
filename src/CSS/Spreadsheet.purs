@@ -2,7 +2,6 @@ module App.CSS.Spreadsheet where
 
 import CSSPrelude
 
-import App.CSS.Common (formulaFontSize)
 import Tecton.Rule as Rule
 
 css :: CSS
@@ -55,7 +54,7 @@ formulaSectionCss = do
 tableCss :: CSS
 tableCss = do
 
-  table ? Rule.do
+  tbl ? Rule.do
     borderStyle := solid
     borderWidth := px 0
     borderColor := grey
@@ -63,16 +62,13 @@ tableCss = do
     marginRight := px 500
     display := inlineTable
 
-  table &. strippedSheet |> tbody |> tr &: nthChild odd |> td ? Rule.do
-    backgroundColor := lighterGrey
-
   universal &: focus ? Rule.do
     outlineWidth := px 0
 
 cellCss :: CSS
 cellCss = do
 
-  td /\ th ? Rule.do
+  (tbl |* td /\ tbl |* th) ? Rule.do
     borderStyle := solid
     borderColor := inherit
     borderWidth := px 0 ~ px 0 ~ px 1 ~ px 1
@@ -81,13 +77,13 @@ cellCss = do
     fontWeight := normal
     textAlign := center
 
-  td &: lastChild /\ th &: lastChild ? Rule.do
+  (tbl |* td &: lastChild /\ tbl |* th &: lastChild) ? Rule.do
     borderRightWidth := px 1
 
-  td ? Rule.do
+  tbl |* td ? Rule.do
     cursor := cell
 
-  td |> input ? Rule.do
+  tbl |* td |> input ? Rule.do
     backgroundColor := inherit
     borderWidth := px 0
     textAlign := center
@@ -95,39 +91,39 @@ cellCss = do
     fontFamily := "Arial" /\ sansSerif
     fontSize := px 15
 
-  td &. inSelection ? Rule.do
+  tbl |* td &. inSelection ? Rule.do
     backgroundColor := lighterGreen
 
-  td &. aboveSelection /\ td &. belowSelection ? Rule.do
+  tbl |* td &. aboveSelection /\ td &. belowSelection ? Rule.do
     borderBottomColor := green
 
-  td &. atLeftSelection /\ td &. atRightSelection ? Rule.do
+  tbl |* td &. atLeftSelection /\ td &. atRightSelection ? Rule.do
     borderLeftColor := green
 
-  table &. copySelection |* td &. aboveSelection
+  tbl &. copySelection |* td &. aboveSelection
     /\ (table &. copySelection |* td &. belowSelection)
     ? Rule.do
         borderBottomStyle := dashed
 
-  table &. copySelection |* td &. atLeftSelection
+  tbl &. copySelection |* td &. atLeftSelection
     /\ (table &. copySelection |* td &. atRightSelection)
     ? Rule.do
         borderLeftStyle := dashed
 
-  td &. selectedSheetCell ? Rule.do
+  tbl |* td &. selectedSheetCell ? Rule.do
     outlineStyle := solid
     outlineColor := green
     outlineWidth := px 3
     outlineOffset := px (-3)
 
-  th ? Rule.do
+  tbl |* th ? Rule.do
     backgroundColor := lighterGrey
 
-  th &. selectedHeader ? Rule.do
+  tbl |* th &. selectedHeader ? Rule.do
     backgroundColor := lightGreen
     fontWeight := bold
 
-  th &. cornerHeader ? Rule.do
+  tbl |* th &. cornerHeader ? Rule.do
     position := sticky
     top := px 0
     left := px 0
@@ -135,11 +131,14 @@ cellCss = do
     backgroundColor := lightGrey
     cursor := pointer
 
-  th &. columnHeader ? Rule.do
+  tbl |* th &. columnHeader ? Rule.do
     top := px 0
     cursor := grab
 
-  th &. rowHeader ? Rule.do
+  tbl |* th &. rowHeader ? Rule.do
     position := sticky
     left := px 0
     cursor := grab
+
+tbl :: Selector Extensible
+tbl = table &. spreadsheetTable

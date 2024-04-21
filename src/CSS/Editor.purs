@@ -2,8 +2,6 @@ module App.CSS.Editor where
 
 import CSSPrelude
 
-import App.CSS.ClassNames (formulaBoxContainer, functionSignature, functionSyntax, selectedSuggestionOption, suggestionOption, suggestionsDropdown)
-import App.CSS.Common (darkGreen, darkPink, formulaFontSize, lightBlue, signatureFontSize)
 import Tecton.Rule as Rule
 
 css :: CSS
@@ -21,12 +19,12 @@ css = do
     margin := px 20
     marginTop := px 40
     marginBottom := px 10
-    padding := px 20
+    padding := px 20 ~ px 25
     borderStyle := solid
     borderColor := grey2
     borderWidth := px 3
+    fontFamily := monospace
     fontSize := formulaFontSize
-    fontWeight := bold
     whiteSpace := breakSpaces
     overflow := auto
 
@@ -54,7 +52,6 @@ css = do
     marginTop := px 10
     padding := px 0 ~ px 50
     fontSize := signatureFontSize
-    fontWeight := bold
     textAlign := center
 
   universal &. unknownFormula ? Rule.do

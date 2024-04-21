@@ -14,7 +14,6 @@ import Data.Number.Format (fixed)
 import Data.Number.Format (toStringWith) as Number
 import Data.String.CodeUnits as String
 import Data.Unfoldable (class Unfoldable1)
-import Debug (spy)
 
 parseCellValue :: String -> CellValue
 parseCellValue input =

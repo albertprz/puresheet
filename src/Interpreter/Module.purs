@@ -100,10 +100,10 @@ registerModuleOps opModule opDefs =
         st.operatorsMap
     }
   where
-  toEntry (OpDef opName qVar associativity precedence) =
+  toEntry (OpDef opName (QVar fnModule fnName) associativity precedence) =
     QVarOp (Just opModule) opName /\
       { id: { opModule, opName }
-      , fnName: qVar
+      , fnName: QVar (fnModule <|> Just opModule) fnName
       , precedence
       , associativity
       }
@@ -121,7 +121,7 @@ registerModuleFns fnModule fnDefs =
         st.fnsMap
     }
   where
-  toEntry (FnDef fnName params returnType body) =
+  toEntry (FnDef fnName params returnType doc body) =
     QVar (Just fnModule) fnName /\
       FnInfo
         { id: Just { fnModule, fnName }
@@ -130,4 +130,5 @@ registerModuleFns fnModule fnDefs =
         , scope: zero
         , argsMap: HashMap.empty
         , returnType
+        , doc
         }

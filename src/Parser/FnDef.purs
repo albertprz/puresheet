@@ -8,12 +8,13 @@ import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
 import Bookhound.Parser (Parser, withError)
-import Bookhound.ParserCombinators (is, sepByOps, someSepBy, surroundedBy, (</\>), (|+), (|?))
+import Bookhound.ParserCombinators (is, isNot, maybeSurroundedBy, sepByOps, someSepBy, surroundedBy, (</\>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (comma, quote)
 import Bookhound.Parsers.Collections (listOf)
 import Bookhound.Parsers.Number (unsignedInt)
-import Bookhound.Parsers.String (betweenCurly, betweenParens, betweenSquare)
+import Bookhound.Parsers.String (betweenCurly, betweenParens, betweenSquare, spacesOrTabs)
 import Control.Lazy (defer)
+import Data.String as String
 
 opDef :: Parser OpDef
 opDef = defer \_ -> withError "Operator definition"
@@ -30,11 +31,14 @@ fnDef = defer \_ -> withError "Function definition"
   $ FnDef
   <$> var
   <*> (argListOf annotatedVar <|> pure [])
-  <*> annotation
-  <*> (isToken "=" *> fnBody)
+  <*> (annotation <* isToken "=")
+  <*> map (String.joinWith "\n") comments
+  <*> fnBody
   where
   annotatedVar = var </\> annotation
   annotation = (|?) (isToken ":" *> type')
+  comment = ((is "//" *> ((|?) spacesOrTabs) *> (||*) (isNot '\n')))
+  comments = (|*) (maybeSurroundedBy spacesOrTabs comment <* is '\n')
 
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> topLevelExpr

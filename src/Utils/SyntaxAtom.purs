@@ -68,7 +68,7 @@ syntaxAtomParser = (|+) atom
   varOp = notReservedSymbol nonTokenOperator
   module' = nonTokenIdent upper
 
-fnSigToSyntaxAtoms :: forall r. QVar -> FnSig r -> Array SyntaxAtom
+fnSigToSyntaxAtoms :: QVar -> FnSig -> Array SyntaxAtom
 fnSigToSyntaxAtoms (QVar _ fnName) { params, returnType } =
   fnName' <> params' <> returnType'
   where

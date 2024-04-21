@@ -55,6 +55,10 @@ isElement (ArrayObj _) = false
 isElement (ListObj _) = false
 isElement _ = true
 
+extractString :: Object -> Maybe String
+extractString (StringObj str) = Just str
+extractString _ = Nothing
+
 extractList :: Object -> Maybe (Array Object)
 extractList (ArrayObj xs) = Just xs
 extractList (ListObj xs) = Just $ Array.fromFoldable xs

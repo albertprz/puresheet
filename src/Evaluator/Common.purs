@@ -3,7 +3,7 @@ module App.Evaluator.Common where
 import FatPrelude
 
 import App.Components.Spreadsheet.Cell (Cell, CellValue(..))
-import App.Evaluator.Builtins as Builtins
+import App.Evaluator.Builtins (builtinFnsMap)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..))
 import App.Parser.Common (var)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
@@ -101,6 +101,14 @@ lookupModuleFn qVar@(QVar fnModule fnName) = do
     $ note (LexicalError' $ UnknownValue qVar)
     $ findMap (flip HashMap.lookup st.fnsMap) fns
 
+lookupBuiltinFn :: QVar -> EvalM BuiltinFnInfo
+lookupBuiltinFn qVar@(QVar fnModule fnName) = do
+  st <- get
+  let fns = getAvailableFns QVar (fnModule /\ fnName) st
+  except
+    $ note (LexicalError' $ UnknownValue qVar)
+    $ findMap (flip HashMap.lookup builtinFnsMap) fns
+
 lookupOperator :: QVarOp -> EvalM OpInfo
 lookupOperator (QVarOp opModule opName@(VarOp op))
   | Right (Var fnName) <- runParser (is "|" *> var <* is ">") op = pure
@@ -123,22 +131,23 @@ lookupOperator qVarOp@(QVarOp opModule opName) = do
     $ note (LexicalError' $ UnknownOperator qVarOp)
     $ findMap (flip HashMap.lookup st.operatorsMap) ops
 
-lookupBuiltinFn :: Var -> EvalM BuiltinFnInfo
-lookupBuiltinFn fnName =
-  except
-    $ note (LexicalError' $ UnknownValue $ QVar Nothing fnName)
-    $ HashMap.lookup fnName Builtins.builtinFnsMap
-
 insertFnDef
   :: Scope
   -> FnDef
   -> HashMap (Scope /\ Var) FnInfo
   -> HashMap (Scope /\ Var) FnInfo
-insertFnDef scope (FnDef fnName params returnType body) =
+insertFnDef scope (FnDef fnName params returnType doc body) =
   HashMap.insert (scope /\ fnName) fnInfo
   where
   fnInfo = FnInfo
-    { id: Nothing, params, body, scope, argsMap: HashMap.empty, returnType }
+    { id: Nothing
+    , params
+    , body
+    , scope
+    , argsMap: HashMap.empty
+    , returnType
+    , doc
+    }
 
 getNewFnState :: FnInfo -> Array FnBody -> EvalM LocalFormulaCtx
 getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
@@ -171,6 +180,7 @@ getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
               , params: []
               , argsMap: HashMap.empty
               , returnType: Nothing
+              , doc: mempty
               }
         )
     <$> Array.zip ((scope /\ _) <<< fst <$> params) args

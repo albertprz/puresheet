@@ -8,7 +8,7 @@ import App.Components.Editor.Models (EditorAction(..), EditorState)
 import App.Editor.Formula (SuggestionTerm, extractSuggestionFn, fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getWordAtIndex)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.SyntaxTree.Common (QVar)
-import App.SyntaxTree.FnDef (SimpleFnSig)
+import App.SyntaxTree.FnDef (FnSig)
 import App.Utils.Common (refEquals)
 import App.Utils.Dom (emptyContents, getAncestorNodes, justSelectElementById, setInnerHTML, setStyle)
 import App.Utils.Monoid (whenPlus)
@@ -128,7 +128,7 @@ getFnSuggestions ctx = liftEffect do
     $ whenMonoid (any (refEquals formulaBox) ancestors)
     $ map (getSuggestionsAtIndex ctx formulaText) idx
 
-setFnSig :: forall m. MonadEffect m => QVar -> SimpleFnSig -> m Unit
+setFnSig :: forall m. MonadEffect m => QVar -> FnSig -> m Unit
 setFnSig fn fnSig = liftEffect do
   formulaSignatureDisplay <- justSelectElementById functionSignatureId
   setInnerHTML (toElement formulaSignatureDisplay) (fnSigElements fn fnSig)

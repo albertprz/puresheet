@@ -20,7 +20,6 @@ import Web.HTML.HTMLElement (fromEventTarget, toNode)
 handleAction
   :: EditorAction
   -> HalogenM EditorState EditorAction () EditorOutput AppM Unit
-
 handleAction (KeyDown (Just _) keyCode ev)
   | keyCode `elem` [ ArrowUp, ArrowDown ] = withPrevent ev do
       let next = if keyCode == ArrowUp then dec else inc

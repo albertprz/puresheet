@@ -4,7 +4,7 @@ import FatPrelude hiding (div)
 import Prim hiding (Row)
 
 import App.AppM (AppM)
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, invisibleContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, spreadsheetContainer)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, invisibleContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, spreadsheetContainer, spreadsheetTable)
 import App.CSS.Ids (cellId, formulaCellInputId, selectedCellInputId)
 import App.Components.Editor (_editor)
 import App.Components.Editor as Editor
@@ -58,8 +58,9 @@ render
             ]
         ]
     , table
-        [ classes $ whenMonoid (selectionState == CopySelection)
-            [ copySelection ]
+        [ classes $ [ spreadsheetTable ]
+            <>? (selectionState == CopySelection)
+            /\ copySelection
         , style "border-spacing: 0"
         , onKeyDown $ mkKeyAction KeyDown
         , onKeyUp $ mkKeyAction KeyUp
