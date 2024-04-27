@@ -192,30 +192,46 @@ derive instance Generic FnInfo _
 instance Show FnInfo where
   show x = genericShow x
 
+derive instance Eq FnInfo
+
 derive instance Generic FnDef _
 instance Show FnDef where
   show x = genericShow x
+
+derive instance Eq FnDef
 
 derive instance Generic FnBody _
 instance Show FnBody where
   show x = genericShow x
 
+derive instance Eq FnBody
+
 derive instance Generic CaseBinding _
 instance Show CaseBinding where
   show x = genericShow x
+
+derive instance Eq CaseBinding
 
 derive instance Generic MaybeGuardedFnBody _
 instance Show MaybeGuardedFnBody where
   show x = genericShow x
 
+derive instance Eq MaybeGuardedFnBody
+
 derive instance Generic GuardedFnBody _
 instance Show GuardedFnBody where
   show x = genericShow x
+
+derive instance Eq GuardedFnBody
 
 derive instance Generic Guard _
 instance Show Guard where
   show x = genericShow x
 
+derive instance Eq Guard
+
 derive instance Generic PatternGuard _
 instance Show PatternGuard where
   show x = genericShow x
+
+derive instance Eq PatternGuard

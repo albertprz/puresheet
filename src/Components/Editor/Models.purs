@@ -3,7 +3,7 @@ module App.Components.Editor.Models where
 import FatPrelude
 
 import App.Components.Spreadsheet.Formula (FormulaState)
-import App.Editor.Formula (SuggestionId, SuggestionTerm)
+import App.Editor.Suggestion (SuggestionId, SuggestionTerm)
 import App.Utils.KeyCode (KeyCode)
 import Web.UIEvent.FocusEvent (FocusEvent)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)

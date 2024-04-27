@@ -10,59 +10,60 @@ css = do
   div &. formulaBoxContainer ? Rule.do
     display := flex
     flexDirection := column
-    position := sticky
-    left := pct 23
 
-  universal &. formulaBox ? Rule.do
+  div &. formulaBox ? Rule.do
     width := vw 50
     height := px 100
-    margin := px 20
-    marginTop := px 40
-    marginBottom := px 10
+    marginLeft := vw 6.5
+    marginRight := vw 6.5
+    marginTop := px 50
     padding := px 20 ~ px 25
     borderStyle := solid
-    borderColor := grey2
+    borderColor := darkGrey
     borderWidth := px 3
     fontFamily := monospace
     fontSize := formulaFontSize
     whiteSpace := breakSpaces
     overflow := auto
 
-  universal &. suggestionsDropdown ? Rule.do
+  div &. formulaBox &:: PseudoElement "-webkit-scrollbar" ? Rule.do
+    display := none
+
+  div &. suggestionsDropdown ? Rule.do
     position := fixed
     width := rem 10
     backgroundColor := white
 
-  universal &. suggestionOption ? Rule.do
+  div &. suggestionOption ? Rule.do
     display := flex
     padding := px 4 ~ px 0
     alignContent := center
     cursor := pointer
     borderWidth := px 1
     borderStyle := solid
-    borderColor := grey2
+    borderColor := darkGrey
     fontSize := formulaFontSize
 
-  universal &. selectedSuggestionOption ? Rule.do
+  div &. selectedSuggestionOption ? Rule.do
     backgroundColor := lightBlue
 
-  universal &. functionSignature ? Rule.do
+  div &. functionSignature ? Rule.do
     height := px 20
-    margin := px 20
-    marginTop := px 10
+    marginTop := px 15
+    marginBottom := px 25
     padding := px 0 ~ px 50
     fontSize := signatureFontSize
     textAlign := center
 
-  universal &. unknownFormula ? Rule.do
+  div &. unknownFormula ? Rule.do
     backgroundColor := lighterYellow
     borderColor := yellow
 
-  universal &. validFormula ? Rule.do
+  div &. validFormula ? Rule.do
     backgroundColor := lighterGreen
     borderColor := green
 
-  universal &. invalidFormula ? Rule.do
+  div &. invalidFormula ? Rule.do
     backgroundColor := lighterRed
     borderColor := red
 

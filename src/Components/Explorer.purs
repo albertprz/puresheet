@@ -19,7 +19,10 @@ component =
     { initialState
     , render
     , eval: mkEval defaultEval
-        { handleAction = handleAction, receive = Just <<< Receive }
+        { handleAction = handleAction
+        , initialize = Just Initialize
+        , receive = Just <<< Receive
+        }
     }
 
 initialState :: { context :: Store, input :: ExplorerInput } -> ExplorerState
@@ -27,8 +30,8 @@ initialState { context, input } =
   { route: input.route
   , store: context
   , module': Just preludeModule
-  , fnInput: mempty
-  , selectedRowNumber: zero
+  , fnFilter: Nothing
+  , selectedRow: zero
   }
 
 type ExplorerSlot = forall q. Slot q Unit Unit

@@ -4,9 +4,11 @@ import Prelude
 
 import App.Utils.Maybe (whenMaybe')
 import App.Utils.Number (inc)
+import Data.Array as Array
 import Data.Enum (class BoundedEnum, Cardinality, enumFromTo)
 import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.Profunctor (dimap)
 import Data.Unfoldable1 (class Unfoldable1)
 
 infixr 8 enumFromTo as ..
@@ -22,6 +24,9 @@ inBoundedRange = inRange bottom top
 
 clampBounded :: forall a. Ord a => Bounded a => a -> a
 clampBounded = clamp bottom top
+
+clampArrayIndex :: forall a. Array a -> Int -> Int
+clampArrayIndex xs = clamp 0 (Array.length xs - 1)
 
 inRange :: forall a. Ord a => a -> a -> a -> Boolean
 inRange lo hi value = between lo hi value ||

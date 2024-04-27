@@ -22,25 +22,18 @@ formulaSectionCss :: CSS
 formulaSectionCss = do
 
   div &. formulaSectionContainer ? Rule.do
+    position := sticky
+    left := px 0
+    top := px 0
+    width := vw 100
     display := flex
     flexDirection := row
     alignItems := center
+    justifyContent := center
 
-  input &. selectedCellInput ? Rule.do
-    left := pct 7.5
-    cellInputCommonCss
-
-  input &. formulaCellInput ? Rule.do
-    left := pct 85
-    cellInputCommonCss
-
-  where
-  cellInputCommonCss = do
-
-    position := sticky
-    height := vh 1.5
-    width := vw 3
-    margin := px 25
+  input &. selectedCellInput /\ input &. formulaCellInput ? Rule.do
+    height := em 0.7
+    width := em 3
     padding := px 15
     borderColor := green
     borderWidth := px 3
@@ -58,8 +51,8 @@ tableCss = do
     borderStyle := solid
     borderWidth := px 0
     borderColor := grey
-    color := darkGrey
-    marginRight := px 500
+    color := darkerGrey
+    marginRight := vw 50
     display := inlineTable
 
   universal &: focus ? Rule.do
@@ -68,7 +61,7 @@ tableCss = do
 cellCss :: CSS
 cellCss = do
 
-  (tbl |* td /\ tbl |* th) ? Rule.do
+  tbl |* td /\ tbl |* th ? Rule.do
     borderStyle := solid
     borderColor := inherit
     borderWidth := px 0 ~ px 0 ~ px 1 ~ px 1
@@ -77,7 +70,7 @@ cellCss = do
     fontWeight := normal
     textAlign := center
 
-  (tbl |* td &: lastChild /\ tbl |* th &: lastChild) ? Rule.do
+  tbl |* td &: lastChild /\ tbl |* th &: lastChild ? Rule.do
     borderRightWidth := px 1
 
   tbl |* td ? Rule.do

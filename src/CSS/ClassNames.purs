@@ -62,6 +62,9 @@ cornerHeader = ClassName "corner-header"
 invisibleContainer :: ClassName
 invisibleContainer = ClassName "invisible-container"
 
+hiddenContainer :: ClassName
+hiddenContainer = ClassName "hidden-container"
+
 spreadsheetContainer :: ClassName
 spreadsheetContainer = ClassName "spreadsheet-container"
 
@@ -139,3 +142,24 @@ functionDoc = ClassName "function-doc"
 
 functionContainer :: ClassName
 functionContainer = ClassName "function-container"
+
+typeahead :: ClassName
+typeahead = ClassName "typeahead"
+
+typeaheadOption :: ClassName
+typeaheadOption = ClassName "typeahead-option"
+
+selectedTypeaheadOption :: ClassName
+selectedTypeaheadOption = ClassName "selected-typeahead-option"
+
+typeaheadButton :: ClassName
+typeaheadButton = ClassName "typeahead-button"
+
+searchInput :: ClassName
+searchInput = ClassName "search-input"
+
+searchInputContainer :: ClassName
+searchInputContainer = ClassName "search-input-container"
+
+functionFiltersContainer :: ClassName
+functionFiltersContainer = ClassName "function-filters-container"

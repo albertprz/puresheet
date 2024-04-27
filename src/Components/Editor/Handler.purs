@@ -8,9 +8,10 @@ import App.Components.Editor.HandlerHelpers (displayFnSig, displayFnSuggestions,
 import App.Components.Editor.Models (EditorAction(..), EditorOutput(..), EditorQuery(..), EditorState)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
 import App.Utils.Dom (focusById, withPrevent)
-import App.Utils.Event (ctrlKey, toEvent)
+import App.Utils.Event (ctrlKey, shiftKey, toEvent)
 import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
 import App.Utils.Selection as Selection
+import Data.Array as Array
 import Halogen (HalogenM, raise)
 import Halogen.Store.Monad (getStore)
 import Web.Event.Event (target)
@@ -20,6 +21,19 @@ import Web.HTML.HTMLElement (fromEventTarget, toNode)
 handleAction
   :: EditorAction
   -> HalogenM EditorState EditorAction () EditorOutput AppM Unit
+
+handleAction (KeyDown (Just suggestion) Enter ev) = withPrevent ev do
+  performAutoComplete suggestion
+
+handleAction (KeyDown (Just suggestion) Tab ev) = withPrevent ev do
+  { suggestions } <- get
+  let
+    keyCode
+      | Array.length suggestions == one = Enter
+      | shiftKey ev = ArrowUp
+      | otherwise = ArrowDown
+  handleAction (KeyDown (Just suggestion) keyCode ev)
+
 handleAction (KeyDown (Just _) keyCode ev)
   | keyCode `elem` [ ArrowUp, ArrowDown ] = withPrevent ev do
       let next = if keyCode == ArrowUp then dec else inc
@@ -29,10 +43,6 @@ handleAction (KeyDown (Just _) keyCode ev)
               (wrap $ dec $ length st.suggestions)
               $ next st.selectedSuggestionId
         }
-
-handleAction (KeyDown (Just suggestion) keyCode ev)
-  | keyCode `elem` [ Enter, Tab ] =
-      withPrevent ev $ performAutoComplete suggestion
 
 handleAction (KeyDown _ Enter ev)
   | ctrlKey ev = withPrevent ev do

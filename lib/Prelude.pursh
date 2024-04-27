@@ -51,9 +51,11 @@ op ||*|| = Matrix.mult L10
 
 op / = div L11
 
-op |/| = Array.mult L11
+op |/| = Array.div L11
 
-op ||/|| = Matrix.mult L11
+op ||/|| = Matrix.div L11
+
+op // = intDiv L11
 
 op % = mod L11
 
@@ -100,7 +102,7 @@ def map (f: A -> B, xs: [A]): [B] =
 def filter (f: A -> Boolean, xs: [A]): [A] =
     // Uses a predicate to filter a collection
     // >>> x -> x % 2 == 0, [1, 2, 3, 4]
-    // >>> x -> length (x) > 2, ["abc", "de", "f"]
+    // >>> x -> length (x) > 2, ["abc", "f"]
     switch (xs) {
         | []                        => []
         | [ x, xs @ ... ] ? f(x)    => x +: filter (f, xs)
@@ -108,9 +110,9 @@ def filter (f: A -> Boolean, xs: [A]): [A] =
     }
 
 def reduce (f: B -> A -> B, start: B, xs: [A]): B =
-    // Uses a reducer function and initial value to accumulate a value over a collection
+    // Uses a function and an initial value to accumulate over a collection
     // >>> '+, 7, [1, 2, 3, 4]
-    // >>> '++, "hello", ["abc", "de", "f"]
+    // >>> '++, "hello", ["abc", "f"]
       reduceRight (f, start, reverse (xs)) where {
         | reduceRight (f, start, xs) = switch (xs) {
             | []             => start
@@ -137,7 +139,7 @@ def zipWith (f: A -> B -> C, xs: [A], ys: [B]): [C] =
     }
 
 def iterate (f: A -> A, start: A, n: Int): [A] =
-    // Generates a collection by applying a unary function with an initial value n times
+    // Generates a collection by applying a function n times with an initial value
     // >>> _ * 2, 1, 6
     // >>> _ ++ "x", "a", 3
     cond {
@@ -162,13 +164,13 @@ def isNotEmpty (xs: [A]): Boolean =
     not (isEmpty (xs))
 
 def all (f: A -> Boolean, xs: [A]): Boolean =
-    // Checks if a predicate succeeds for all of the elements in a collection
+    // Checks if a predicate succeeds for all the elements in a collection
     // >>> _ > 7, []
     // >>> _ > 7, [3, 6, 9]
     reduce (and, true, map (f, xs))
 
 def any (f: A -> Boolean, xs: [A]): Boolean =
-    // Checks if a predicate succeeds for at least some of the elements in a collection
+    // Checks if a predicate succeeds for at least one element in a collection
     // >>> _ > 7, []
     // >>> _ > 7, [3, 6, 9]
     reduce (or, false, map (f, xs))

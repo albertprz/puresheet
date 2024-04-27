@@ -1,8 +1,8 @@
-module App.Explorer.Formula where
+module App.Explorer.Suggestion where
 
 import FatPrelude
 
-import App.Editor.Formula (SuggestionTerm, extractSuggestionFn, getFnSig)
+import App.Editor.Suggestion (SuggestionTerm, extractSuggestionFn, getFnSig)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.SyntaxTree.Common (QVar)
 import App.SyntaxTree.FnDef (FnSig)

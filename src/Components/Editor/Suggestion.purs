@@ -1,4 +1,4 @@
-module App.Editor.Formula where
+module App.Editor.Suggestion where
 
 import FatPrelude hiding (div)
 
@@ -8,7 +8,7 @@ import App.Parser.Common (ident, module', operator, qTerm, qVar, qVarOp)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
 import App.SyntaxTree.FnDef (FnSig)
 import App.Utils.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
-import Bookhound.Parser (runParser)
+import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (lower)
 import Data.Array as Array
@@ -61,10 +61,14 @@ getSuggestionsAtIndex ctx formulaText idx =
       <|> ((_ `filterOps` ctx) <$> partialQVarOp)
       <|> ((_ `getAllAvailableFns` ctx) <<< Just <$> (module' <* is '.'))
       <|> ((_ `filterModules` ctx) <$> module')
-  partialQVar = uncurry QVar <$> qTerm (Var <$> ident lower)
-  partialQVarOp = uncurry QVarOp <$> qTerm (VarOp <$> operator)
   uniqueSuggestionPred x =
     String.endsWith (show x) currentWord && Set.size vars == 1
+
+partialQVar :: Parser QVar
+partialQVar = uncurry QVar <$> qTerm (Var <$> ident lower)
+
+partialQVarOp :: Parser QVarOp
+partialQVarOp = uncurry QVarOp <$> qTerm (VarOp <$> operator)
 
 getWordAtIndex
   :: Array String
@@ -178,6 +182,13 @@ extractSuggestionFn ctx = case _ of
     <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
   ModuleSuggestion _ -> Nothing
 
+moduleFromSuggestion :: SuggestionTerm -> Maybe Module
+moduleFromSuggestion = case _ of
+  FnSuggestion (QVar x _) -> x
+  OpSuggestion (QVarOp x _) -> x
+  BuiltinFnSuggestion (QVar x _) -> x
+  ModuleSuggestion x -> Just x
+
 data SuggestionTerm
   = FnSuggestion QVar
   | BuiltinFnSuggestion QVar
@@ -209,13 +220,6 @@ instance Show SuggestionTerm where
     OpSuggestion (QVarOp _ op) -> show op
     BuiltinFnSuggestion (QVar _ fn) -> show fn
     ModuleSuggestion module' -> show module'
-
-moduleFromSuggestion :: SuggestionTerm -> Maybe Module
-moduleFromSuggestion = case _ of
-  FnSuggestion (QVar x _) -> x
-  OpSuggestion (QVarOp x _) -> x
-  BuiltinFnSuggestion (QVar x _) -> x
-  ModuleSuggestion x -> Just x
 
 derive instance Newtype SuggestionId _
 derive newtype instance Eq SuggestionId

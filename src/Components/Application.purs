@@ -25,10 +25,9 @@ import Web.HTML.Window as Window
 component :: forall q. Component q Unit Unit AppM
 component = Hooks.component \_ _ -> Hooks.do
   route /\ { navigate } <- useRouter'
-  useLifecycleEffect (Nothing <$ navigate ExplorerView)
+  useLifecycleEffect (Nothing <$ navigate SpreadsheetView)
   Hooks.captures { route } useTickEffect do
     toogleOverflow route *> mempty
-
   Hooks.pure do
     div_
       [ styleSheet Application.css

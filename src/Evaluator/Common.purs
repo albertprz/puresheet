@@ -265,7 +265,7 @@ nonEmptyCellValue (StringVal "") = false
 nonEmptyCellValue _ = true
 
 varFn :: String -> FnBody
-varFn = FnVar <<< QVar Nothing <<< Var
+varFn = FnVar <<< QVar (Just preludeModule) <<< Var
 
 lambdaId :: Int -> String
 lambdaId n = "__lambda__" <> show n

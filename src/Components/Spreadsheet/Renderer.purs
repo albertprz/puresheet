@@ -4,8 +4,8 @@ import FatPrelude hiding (div)
 import Prim hiding (Row)
 
 import App.AppM (AppM)
-import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, inSelection, invisibleContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, spreadsheetContainer, spreadsheetTable)
-import App.CSS.Ids (cellId, formulaCellInputId, selectedCellInputId)
+import App.CSS.ClassNames (aboveSelection, atLeftSelection, atRightSelection, belowSelection, columnHeader, copySelection, cornerHeader, formulaCellInput, formulaSectionContainer, hiddenContainer, inSelection, invisibleContainer, rowHeader, selectedCellInput, selectedHeader, selectedSheetCell, sheetCell, spreadsheetContainer, spreadsheetTable)
+import App.CSS.Ids (cellId, formulaCellInputId, selectedCellInputId, spreadsheetTableId)
 import App.Components.Editor (_editor)
 import App.Components.Editor as Editor
 import App.Components.Spreadsheet.Cell (Cell, CellValue, Column, Header(..), Row, allColumns, cellParser, parseCellValue, showCell)
@@ -15,10 +15,10 @@ import App.Components.Spreadsheet.Selection (SelectionState(..), isCellAboveSele
 import App.Routes (Route(..))
 import App.Utils.KeyCode (mkKeyAction)
 import Bookhound.Parser (runParser)
-import CSSPrelude (ComponentHTML)
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap as HashMap
+import Halogen (ComponentHTML)
 import Halogen.HTML (ClassName, HTML, div, input, slot, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
@@ -50,15 +50,17 @@ render
             handleEditorOutput
         , input
             [ id $ show formulaCellInputId
-            , class_ formulaCellInput
-            , type_ $ if activeFormula then InputText else InputHidden
+            , classes $ [ formulaCellInput ]
+                <>? not activeFormula
+                /\ hiddenContainer
             , value $ showCell formulaCell
             , onValueChange $ WriteFormulaCellInput <<< parseCell
             , onKeyDown $ mkKeyAction FormulaCellInputKeyDown
             ]
         ]
     , table
-        [ classes $ [ spreadsheetTable ]
+        [ id $ show spreadsheetTableId
+        , classes $ [ spreadsheetTable ]
             <>? (selectionState == CopySelection)
             /\ copySelection
         , style "border-spacing: 0"
@@ -151,7 +153,7 @@ renderBodyCell
   -> HTML i SpreadsheetAction
 renderBodyCell st@{ selectedCell, activeInput } cell cellValue =
   td
-    [ id $ show cellId <> showCell cell
+    [ id $ show $ cellId cell
     , tabIndex zero
     , classes $ bodyCellSelectionClasses st cell
     , onClick $ ClickCell cell

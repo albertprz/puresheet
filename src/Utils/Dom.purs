@@ -2,21 +2,23 @@ module App.Utils.Dom where
 
 import FatPrelude
 
-import App.CSS.Ids (ElementId(..), ElementType, cellId)
-import App.Components.Spreadsheet.Cell (Cell, showCell)
+import App.CSS.Ids (ElementId)
 import App.Utils.Event (class IsEvent, toEvent)
 import Data.Array (filterA)
 import Data.Int as Int
+import Halogen (HalogenM, RefLabel, getHTMLElementRef)
 import Halogen.HTML (HTML)
+import Halogen.Hooks (HookM)
+import Halogen.Hooks as Hooks
 import Halogen.VDom.DOM.StringRenderer as StringRenderer
 import Web.Clipboard (Clipboard, clipboard)
 import Web.DOM (Element, Node, ParentNode)
 import Web.DOM.Document (documentElement)
-import Web.DOM.Element (getBoundingClientRect, id, scrollLeft, setAttribute, setScrollLeft)
+import Web.DOM.Element (getBoundingClientRect, id, setAttribute)
 import Web.DOM.Node (firstChild, nodeName, nodeValue, parentNode, setTextContent)
 import Web.DOM.NodeList as NodeList
 import Web.DOM.ParentNode (QuerySelector(..), querySelector, querySelectorAll)
-import Web.Event.Event (preventDefault)
+import Web.Event.Event as Event
 import Web.HTML (HTMLElement, window)
 import Web.HTML.HTMLDocument (HTMLDocument)
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -37,49 +39,23 @@ emptyContents :: forall m. ElementId -> MonadEffect m => m Unit
 emptyContents elementId = liftEffect
   (setTextContent mempty <<< toNode =<< justSelectElementById elementId)
 
-getVisibleCols :: forall m. MonadEffect m => m (Array Element)
-getVisibleCols = selectAllVisibleElements $ QuerySelector "th.column-header"
-
-getVisibleRows :: forall m. MonadEffect m => m (Array Element)
-getVisibleRows = selectAllVisibleElements $ QuerySelector "th.row-header"
-
-focusCellElem :: forall m. MonadEffect m => Cell -> Maybe ElementType -> m Unit
-focusCellElem cell subElem = actOnCellElem cell focus subElem
-
-focusCell :: forall m. MonadEffect m => Cell -> m Unit
-focusCell = flip focusCellElem Nothing
-
-scrollCellRight :: Element -> Effect Unit
-scrollCellRight = scrollCell (+)
-
-scrollCellLeft :: Element -> Effect Unit
-scrollCellLeft = scrollCell (-)
-
-scrollCell :: (Number -> Number -> Number) -> Element -> Effect Unit
-scrollCell f element = do
-  traverse_ go =<< getDocumentElement
-  where
-  go doc = do
-    scroll <- scrollLeft doc
-    width <- getElemWidth element
-    setScrollLeft (f scroll width) doc
-
 focusById :: forall m. MonadEffect m => ElementId -> m Unit
 focusById = flip actOnElementById focus
 
-actOnCellElem
-  :: forall m
+focusRef
+  :: forall s a slots o m
    . MonadEffect m
-  => Cell
-  -> (HTMLElement -> Effect Unit)
-  -> Maybe ElementType
-  -> m Unit
-actOnCellElem cell action subElem =
-  actOnElementById
-    ( ElementId
-        (show cellId <> showCell cell <> foldMap ((" " <> _) <<< show) subElem)
-    )
-    action
+  => RefLabel
+  -> HalogenM s a slots o m Unit
+focusRef ref = traverse_ (liftEffect <<< focus)
+  =<< getHTMLElementRef ref
+
+focusHooksRef :: forall m. MonadEffect m => RefLabel -> HookM m Unit
+focusHooksRef ref = traverse_ (liftEffect <<< focus)
+  =<< Hooks.getHTMLElementRef ref
+
+scrollById :: forall m. MonadEffect m => ElementId -> m Unit
+scrollById = flip actOnElementById (scrollIntoView <<< toElement)
 
 actOnElementById
   :: forall m
@@ -182,7 +158,10 @@ withPrevent :: forall m a b. MonadEffect m => IsEvent a => a -> m b -> m b
 withPrevent ev next = prevent ev *> next
 
 prevent :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
-prevent ev = liftEffect $ preventDefault $ toEvent ev
+prevent = liftEffect <<< Event.preventDefault <<< toEvent
+
+stopPropagation :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
+stopPropagation = liftEffect <<< Event.stopPropagation <<< toEvent
 
 setStyle :: Element -> Array (String /\ String) -> Effect Unit
 setStyle = flip (setAttribute "style" <<< foldMap (uncurry formatKeyValue))
@@ -197,6 +176,8 @@ setInnerHTML elem children = setInnerHTML_ elem
   <$> children
 
 foreign import setInnerHTML_ :: Element -> String -> Effect Unit
+
+foreign import scrollIntoView :: Element -> Effect Unit
 
 newtype Height = Height Number
 newtype Width = Width Number

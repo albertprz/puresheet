@@ -4,6 +4,7 @@ import FatPrelude
 import Prim hiding (Row)
 
 import App.AppStore (Store, StoreAction)
+import App.CSS.Ids (ElementType, cellId)
 import App.Components.Editor (EditorSlot, _editor)
 import App.Components.Editor.Models (EditorQuery(..))
 import App.Components.Spreadsheet.Cell (Cell, CellMove, Column, Row(..), columnParser, rowParser)
@@ -11,27 +12,32 @@ import App.Components.Spreadsheet.Formula (Formula, FormulaId, FormulaState(..),
 import App.Components.Spreadsheet.Models (SpreadsheetAction(..), SpreadsheetState)
 import App.Components.Spreadsheet.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
 import App.Interpreter.Formula (runFormula)
-import App.Utils.Dom (focusCell, getClipboard, getVisibleCols, getVisibleRows, parseElements, scrollCellLeft, scrollCellRight, withPrevent)
+import App.Utils.Dom (actOnElementById, getClipboard, getDocumentElement, getElemWidth, parseElements, selectAllVisibleElements, withPrevent)
 import App.Utils.Event (class IsEvent, shiftKey)
 import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
 import Bookhound.Parser (runParser)
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap (insert, keys, lookup, union, unionWith) as HashMap
+import Data.Newtype as Newtype
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.String.Utils (NormalizationForm(..))
 import Data.String.Utils as String
 import Data.Tree (Forest)
 import Effect.Class.Console as Logger
-import Halogen (HalogenM, subscribe, tell)
+import Halogen (HalogenM, subscribe)
+import Halogen.Query (tellAll)
 import Halogen.Query.Event (eventListener)
 import Halogen.Store.Monad (class MonadStore, getStore)
 import Promise.Aff as Promise
 import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
+import Web.DOM.Element (scrollLeft, setScrollLeft)
+import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (EventType(..))
-import Web.HTML (window)
+import Web.HTML (HTMLElement, window)
+import Web.HTML.HTMLElement (focus)
 import Web.HTML.Window as Window
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 
@@ -42,14 +48,15 @@ cellArrowMove
   => KeyboardEvent
   -> CellMove
   -> m Unit
-cellArrowMove ev move =
-  if (shiftKey ev) then
-    modify_ \st -> st
-      { multiSelection = computeNextSelection st.multiSelection st.selectedCell
-          move
-      }
-  else
-    cellMove ev move
+cellArrowMove ev move
+  | shiftKey ev =
+      modify_ \st -> st
+        { multiSelection = computeNextSelection st.multiSelection
+            st.selectedCell
+            move
+        }
+  | otherwise =
+      cellMove ev move
 
 cellMove
   :: forall m a
@@ -123,7 +130,7 @@ deleteCells = do
     , formulaState = UnknownFormula
     }
   refreshCells $ Set.fromFoldable cellsToDelete
-  tell _editor unit $ UpdateEditorContent mempty
+  tellAll _editor $ UpdateEditorContent mempty
 
 selectCell
   :: forall m
@@ -189,13 +196,13 @@ adjustRows rowRange currentRow maxRow minRow
 
   | inc currentRow > maxRow =
       modify_ _
-        { rows = clampBounded (currentRow - wrap (rowRange))
+        { rows = clampBounded (inc currentRow - wrap rowRange)
             .. clampBounded (inc currentRow)
         }
 
   | currentRow < minRow = modify_ _
-      { rows = clampBounded (currentRow)
-          .. clampBounded (currentRow + wrap (rowRange))
+      { rows = clampBounded currentRow
+          .. clampBounded (currentRow + wrap rowRange)
       }
 
   | otherwise = pure unit
@@ -309,3 +316,43 @@ subscribeWindowResize = do
     (EventType "resize")
     (Window.toEventTarget window')
     (const $ Just ResizeWindow)
+
+getVisibleCols :: forall m. MonadEffect m => m (Array Element)
+getVisibleCols = selectAllVisibleElements $ QuerySelector "th.column-header"
+
+getVisibleRows :: forall m. MonadEffect m => m (Array Element)
+getVisibleRows = selectAllVisibleElements $ QuerySelector "th.row-header"
+
+focusCellElem :: forall m. MonadEffect m => Cell -> Maybe ElementType -> m Unit
+focusCellElem cell subElem = actOnCellElem cell focus subElem
+
+focusCell :: forall m. MonadEffect m => Cell -> m Unit
+focusCell = flip focusCellElem Nothing
+
+scrollCellRight :: Element -> Effect Unit
+scrollCellRight = scrollCell (+)
+
+scrollCellLeft :: Element -> Effect Unit
+scrollCellLeft = scrollCell (-)
+
+scrollCell :: (Number -> Number -> Number) -> Element -> Effect Unit
+scrollCell f element = do
+  traverse_ go =<< getDocumentElement
+  where
+  go table = liftEffect do
+    scroll <- scrollLeft table
+    width <- getElemWidth element
+    setScrollLeft (f scroll width) table
+
+actOnCellElem
+  :: forall m
+   . MonadEffect m
+  => Cell
+  -> (HTMLElement -> Effect Unit)
+  -> Maybe ElementType
+  -> m Unit
+actOnCellElem cell action subElem =
+  actOnElementById selector action
+  where
+  selector = Newtype.modify (_ <> subElemSelector) $ cellId cell
+  subElemSelector = foldMap ((" " <> _) <<< show) subElem

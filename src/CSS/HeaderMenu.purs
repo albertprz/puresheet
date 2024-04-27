@@ -9,9 +9,9 @@ css = do
 
   universal &. headerMenu ? Rule.do
     display := flex
-    zIndex := -1
 
   button &. navButton ? Rule.do
+    zIndex := 1
     position := fixed
     marginTop := pct 2
     marginLeft := pct 3

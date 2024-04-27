@@ -31,3 +31,9 @@ instance Show TypeParam where
 derive instance Generic Type _
 instance Show Type where
   show x = genericShow x
+
+derive instance Eq TypeVar
+
+derive instance Eq TypeParam
+
+derive instance Eq Type

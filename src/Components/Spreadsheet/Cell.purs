@@ -9,6 +9,7 @@ import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (anyChar, upper)
 import Bookhound.Parsers.Number (double, int, unsignedInt)
+import Data.Array as Array
 import Data.HashMap (keys) as HashMap
 import Data.Number.Format (fixed)
 import Data.Number.Format (toStringWith) as Number
@@ -89,7 +90,8 @@ swapTableMapColumn origin target tableDict =
   where
   keysToSwap =
     map (\row -> { column: origin, row } /\ { column: target, row })
-      $ map (\cell -> cell.row)
+      $ Array.nub
+      $ map _.row
       $ filter
           (\cell -> cell.column == origin || cell.column == target)
           (HashMap.keys tableDict)
@@ -100,7 +102,8 @@ swapTableMapRow origin target tableDict =
   where
   keysToSwap =
     map (\column -> { column, row: origin } /\ { column, row: target })
-      $ map (\cell -> cell.column)
+      $ Array.nub
+      $ map _.column
       $ filter
           (\cell -> cell.row == origin || cell.row == target)
           (HashMap.keys tableDict)

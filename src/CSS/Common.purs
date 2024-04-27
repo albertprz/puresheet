@@ -27,11 +27,11 @@ black = Color.black
 white :: Color
 white = Color.white
 
-darkGrey :: Color
-darkGrey = hex "#526066"
+darkerGrey :: Color
+darkerGrey = hex "#526066"
 
-grey2 :: Color
-grey2 = hex "#bfbfbf"
+darkGrey :: Color
+darkGrey = hex "#bfbfbf"
 
 grey :: Color
 grey = hex "#cbcbcb"

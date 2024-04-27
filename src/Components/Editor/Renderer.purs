@@ -6,7 +6,7 @@ import App.CSS.ClassNames (formulaBox, formulaBoxContainer, functionSignature, i
 import App.CSS.Ids (formulaBoxId, functionSignatureId, suggestionsDropdownId)
 import App.Components.Editor.Models (EditorAction(..), EditorState)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
-import App.Editor.Formula (SuggestionTerm)
+import App.Editor.Suggestion (SuggestionTerm)
 import App.Utils.HTML (materialIcon)
 import App.Utils.KeyCode (mkKeyAction)
 import Data.Array ((!!))
@@ -36,7 +36,7 @@ render
         []
     , div
         [ id $ show functionSignatureId
-        , classes [ functionSignature ]
+        , class_ functionSignature
         ]
         []
     , div

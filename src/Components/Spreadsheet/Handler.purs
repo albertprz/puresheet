@@ -3,22 +3,23 @@ module App.Components.Spreadsheet.Handler where
 import FatPrelude
 
 import App.AppM (AppM)
-import App.CSS.Ids (formulaBoxId, inputElement, selectedCellInputId)
+import App.CSS.Ids (cellId, formulaBoxId, inputElementType, selectedCellInputId)
 import App.Components.Editor (_editor)
 import App.Components.Editor.Models (EditorOutput, EditorQuery(..))
 import App.Components.Editor.Models as EditorOutput
 import App.Components.Spreadsheet.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
-import App.Components.Spreadsheet.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, insertFormula, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeWindowResize)
+import App.Components.Spreadsheet.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, focusCell, focusCellElem, insertFormula, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeWindowResize)
 import App.Components.Spreadsheet.Models (EventTransition(..), Slots, SpreadsheetAction(..), SpreadsheetState)
 import App.Components.Spreadsheet.Selection (MultiSelection(..), SelectionState(..))
-import App.Utils.Dom (focusById, focusCell, focusCellElem, prevent, withPrevent)
+import App.Utils.Dom (focusById, prevent, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey, toMouseEvent)
 import App.Utils.HashMap (lookup2) as HashMap
 import App.Utils.KeyCode (KeyCode(..))
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
-import Halogen (HalogenM, tell)
+import Halogen (HalogenM)
+import Halogen.Query (tellAll)
 import Web.HTML (window)
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -27,6 +28,15 @@ handleAction
   :: forall o
    . SpreadsheetAction
   -> HalogenM SpreadsheetState SpreadsheetAction Slots o AppM Unit
+
+handleAction Initialize = do
+  handleAction ResizeWindow
+  subscribeWindowResize
+  applyFocus
+
+handleAction (Receive { route }) = do
+  modify_ _ { route = route }
+  applyFocus
 
 handleAction ResizeWindow = do
   { selectedCell } <- get
@@ -84,13 +94,13 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   selectCell (OtherCell cell)
   { selectedCell, activeInput } <- modify \st -> st
     { activeInput = not st.activeInput }
-  focusCellElem selectedCell $ whenMaybe activeInput inputElement
+  focusCellElem selectedCell $ whenMaybe activeInput inputElementType
 
 handleAction (FocusInCell cell _) = do
   formulaText <- _.formulaText <$$> lookupFormula cell
   { selectedCell } <- get
   when (cell /= selectedCell)
-    $ tell _editor unit
+    $ tellAll _editor
     $ UpdateEditorContent
     $ fromMaybe mempty formulaText
   modify_ _
@@ -101,16 +111,16 @@ handleAction (FocusInCell cell _) = do
     }
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
-  cellArrowMove ev PrevColumn
+  withPrevent ev $ cellArrowMove ev PrevColumn
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowRight, CharKeyCode 'L' ] =
-  cellArrowMove ev NextColumn
+  withPrevent ev $ cellArrowMove ev NextColumn
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowUp, CharKeyCode 'K' ] =
-  cellArrowMove ev PrevRow
+  withPrevent ev $ cellArrowMove ev PrevRow
 
 handleAction (KeyDown x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
-  cellArrowMove ev NextRow
+  withPrevent ev $ cellArrowMove ev NextRow
 
 handleAction (KeyDown Enter ev)
   | ctrlKey ev = withPrevent ev do
@@ -122,7 +132,7 @@ handleAction (KeyDown Enter ev)
   | otherwise = withPrevent ev do
       { selectedCell, activeInput } <- modify \st -> st
         { activeInput = not st.activeInput }
-      focusCellElem selectedCell $ whenMaybe activeInput inputElement
+      focusCellElem selectedCell $ whenMaybe activeInput inputElementType
 
 handleAction (KeyDown Tab ev) = withPrevent ev $ selectCell move
   where
@@ -132,7 +142,7 @@ handleAction (KeyDown Tab ev) = withPrevent ev $ selectCell move
 
 handleAction (KeyDown Space _) = do
   { selectedCell } <- modify _ { activeInput = true }
-  focusCellElem selectedCell $ Just inputElement
+  focusCellElem selectedCell $ Just inputElementType
 
 handleAction (KeyDown Delete _) =
   deleteCells
@@ -173,8 +183,9 @@ handleAction (WheelScroll ev)
   | pos $ deltaY ev = cellMove ev NextRow
   | otherwise = pure unit
 
-handleAction (ClickHeader CornerHeader ev) =
+handleAction (ClickHeader CornerHeader ev) = do
   selectAllCells ev
+  focusCell =<< gets _.selectedCell
 
 handleAction (ClickHeader (ColumnHeader col) _) = do
   selectCell (OtherColumn col)
@@ -270,15 +281,14 @@ handleAction (DragHeader Over _ ev) =
 handleAction (DragHeader _ _ _) =
   pure unit
 
-handleAction Initialize = do
-  handleAction ResizeWindow
-  subscribeWindowResize
-
-handleAction (Receive { route }) =
-  modify_ _ { route = route }
-
 handleEditorOutput :: EditorOutput -> SpreadsheetAction
 handleEditorOutput = case _ of
   EditorOutput.FocusInEditor -> FocusInEditor
   EditorOutput.FocusOutEditor -> FocusOutEditor
   EditorOutput.SubmitEditor x -> SubmitEditor x
+
+applyFocus
+  :: forall o s. HalogenM SpreadsheetState SpreadsheetAction s o AppM Unit
+applyFocus = do
+  cell <- gets _.selectedCell
+  focusById $ cellId cell

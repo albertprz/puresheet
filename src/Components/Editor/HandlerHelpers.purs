@@ -5,7 +5,7 @@ import FatPrelude
 import App.AppStore (Store, mkLocalContext)
 import App.CSS.Ids (formulaBoxId, functionSignatureId, suggestionsDropdownId)
 import App.Components.Editor.Models (EditorAction(..), EditorState)
-import App.Editor.Formula (SuggestionTerm, extractSuggestionFn, fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getWordAtIndex)
+import App.Editor.Suggestion (SuggestionTerm, extractSuggestionFn, fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getWordAtIndex)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.SyntaxTree.Common (QVar)
 import App.SyntaxTree.FnDef (FnSig)

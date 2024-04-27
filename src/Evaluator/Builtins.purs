@@ -373,7 +373,7 @@ consSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ arrayOf a
 
 consDoc :: String
 consDoc =
-  """Appends the first argument element to the start of the second argument collection
+  """Prepends an element to the start of the a collection
  >>> 1, [2, 3]
  >>> 'a', "bc"
 """
@@ -391,7 +391,7 @@ snocSig = [ Var "xs" /\ arrayOf a, Var "y" /\ a ] /\ arrayOf a
 
 snocDoc :: String
 snocDoc =
-  """Appends the second argument element to the end of the first argument collection
+  """Appends an element to the end of a collection
  >>> [1, 2], 3
  >>> "ab", 'c'
 """
@@ -449,7 +449,7 @@ elemSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ bool
 
 elemDoc :: String
 elemDoc =
-  """Checks if the first argument is an element on the collection
+  """Checks if the first argument is an element in the collection
  >>> [1, 2, 3], [[6], [1, 2, 3], 8]
  >>> 'i', "hello"
 """
@@ -465,7 +465,7 @@ containsSig = [ Var "x" /\ a, Var "ys" /\ arrayOf a ] /\ bool
 
 containsDoc :: String
 containsDoc =
-  """Checks if the first argument collection is contained within the second collection
+  """Checks if the first collection is included in the second one
  >>> [1, 2, 3], [1, 2, 3, 4, 5]
  >>> "i", "hello"
 """
