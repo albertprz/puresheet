@@ -7,6 +7,9 @@ import App.Evaluator.Errors (EvalError(..), MatchError(..))
 import App.SyntaxTree.FnDef (Object(..))
 import Data.Array as Array
 import Data.List as List
+import Data.String (codePointFromChar)
+import Data.String.CodePoints (singleton) as String
+import Data.String.Unsafe (char) as String
 import Matrix (Matrix)
 import Matrix as Matrix
 
@@ -15,7 +18,7 @@ cellValueToObj = case _ of
   BoolVal x -> BoolObj x
   IntVal x -> IntObj x
   FloatVal x -> FloatObj x
-  CharVal x -> CharObj x
+  CharVal x -> CharObj $ String.char $ String.singleton x
   StringVal x -> StringObj x
 
 objectToCellValues :: Partial => Object -> Maybe (Matrix CellValue)
@@ -36,7 +39,7 @@ objectToCellValue = case _ of
   BoolObj x -> BoolVal x
   IntObj x -> IntVal x
   FloatObj x -> FloatVal x
-  CharObj x -> CharVal x
+  CharObj x -> CharVal $ codePointFromChar x
   StringObj x -> StringVal x
   NullObj -> StringVal ""
 

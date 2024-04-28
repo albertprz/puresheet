@@ -4,9 +4,12 @@ import FatPrelude
 
 import App.AppM (AppM)
 import App.CSS.Ids (functionRowId)
+import App.Components.Explorer.FunctionFilter (FnFilter(..))
 import App.Components.Explorer.Models (ExplorerAction(..), ExplorerState, Slots, _moduleTypeahead, allModules, functionFilterInputRef)
 import App.Components.Typeahead (TypeaheadOutput(..), TypeaheadQuery(..))
-import App.SyntaxTree.Common (Module)
+import App.Editor.Suggestion (SuggestionTerm(..))
+import App.Routes (Route(..))
+import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), preludeModule)
 import App.Utils.Dom (focusById, focusRef, scrollById, selectElementById, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey)
 import App.Utils.KeyCode (KeyCode(..))
@@ -21,6 +24,7 @@ handleAction Initialize =
   refreshFocusAndScroll
 
 handleAction (Receive { input, context }) = do
+  handleNewRoute input.route
   modify_ _ { route = input.route, store = context }
   refreshFocusAndScroll
 
@@ -77,6 +81,22 @@ refreshFocusAndScroll = do
   n <- gets _.selectedRow
   focusById $ functionRowId n
   scrollById $ functionRowId n
+
+handleNewRoute
+  :: Route -> HalogenM ExplorerState ExplorerAction Slots Unit AppM Unit
+handleNewRoute (ExplorerView { selectedTerm: Just selectedTerm }) = do
+  tellAll _moduleTypeahead $ SelectOption $ fromMaybe preludeModule module'
+  modify_ _ { fnFilterText = foldMap show fnFilter }
+  handleAction $ UpdateFunctionFilter fnFilter
+  where
+  module' /\ fnFilter = case selectedTerm of
+    ModuleSuggestion x -> Just x /\ Nothing
+    FnSuggestion (QVar x y) -> x /\ Just (FnName $ QVar Nothing y)
+    BuiltinFnSuggestion (QVar x y) -> x /\ Just (FnName $ QVar Nothing y)
+    OpSuggestion (QVarOp x y) -> x /\ Just (OpName $ QVarOp Nothing y)
+
+handleNewRoute _ =
+  pure unit
 
 handleModuleTypeaheadOutput :: TypeaheadOutput Module -> ExplorerAction
 handleModuleTypeaheadOutput (SelectedOption module')

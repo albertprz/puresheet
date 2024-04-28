@@ -72,11 +72,16 @@ css = do
 
   span &. functionSyntax ? Rule.do
     color := blue
-
-  span &. symbolSyntax ? Rule.do
-    color := red
+    cursor := pointer
 
   span &. operatorSyntax ? Rule.do
+    color := red
+    cursor := pointer
+
+  span &. moduleSyntax ? Rule.do
+    cursor := pointer
+
+  span &. symbolSyntax ? Rule.do
     color := red
 
   span &. cellSyntax ? Rule.do

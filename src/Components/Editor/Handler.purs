@@ -4,15 +4,17 @@ import FatPrelude
 
 import App.AppM (AppM)
 import App.CSS.Ids (formulaCellInputId)
-import App.Components.Editor.HandlerHelpers (displayFnSig, displayFnSuggestions, getEditorContent, insertEditorNewLine, performAutoComplete, performSyntaxHighlight, subscribeSelectionChange, updateEditorContent)
+import App.Components.Editor.HandlerHelpers (displayFnSig, displayFnSuggestions, getEditorContent, getTermAtCaret, insertEditorNewLine, performAutoComplete, performSyntaxHighlight, subscribeSelectionChange, updateEditorContent)
 import App.Components.Editor.Models (EditorAction(..), EditorOutput(..), EditorQuery(..), EditorState)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
+import App.Routes (Route(..))
 import App.Utils.Dom (focusById, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey, toEvent)
 import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
 import App.Utils.Selection as Selection
 import Data.Array as Array
 import Halogen (HalogenM, raise)
+import Halogen.Router.Class (navigate)
 import Halogen.Store.Monad (getStore)
 import Web.Event.Event (target)
 import Web.HTML (window)
@@ -58,12 +60,21 @@ handleAction (KeyDown _ Tab ev) =
 handleAction (KeyDown _ (CharKeyCode 'G') ev)
   | ctrlKey ev = withPrevent ev $ focusById formulaCellInputId
 
+handleAction (KeyDown _ (CharKeyCode 'D') ev)
+  | ctrlKey ev = withPrevent ev do
+      traverse_ (navigate <<< ExplorerView <<< { selectedTerm: _ } <<< Just)
+        =<< getTermAtCaret
+
 handleAction (KeyDown _ _ _) =
   modify_ _ { formulaState = UnknownFormula }
 
 handleAction (KeyUp keyCode _) =
   unless (isModifierKeyCode keyCode)
     performSyntaxHighlight
+
+handleAction (MouseDown ev) = when (ctrlKey ev) do
+  traverse_ (navigate <<< ExplorerView <<< { selectedTerm: _ } <<< Just)
+    =<< getTermAtCaret
 
 handleAction (FocusIn ev) = do
   selection <- liftEffect $ Selection.getSelection =<< window
@@ -73,17 +84,17 @@ handleAction (FocusIn ev) = do
   formulaBox =
     toNode <$> (fromEventTarget =<< target (toEvent ev))
 
-handleAction SelectionChange = do
-  st <- get
-  store <- getStore
-  displayFnSuggestions
-  displayFnSig st store
-
 handleAction (ClickSuggestion suggestion ev) =
   withPrevent ev $ traverse_ performAutoComplete suggestion
 
 handleAction (HoverSuggestion suggestionId _) =
   modify_ _ { selectedSuggestionId = suggestionId }
+
+handleAction SelectionChange = do
+  st <- get
+  store <- getStore
+  displayFnSuggestions
+  displayFnSig st store
 
 handleAction Initialize =
   subscribeSelectionChange

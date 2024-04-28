@@ -1,6 +1,9 @@
 { name = "puresheet"
 , dependencies =
   [ "aff"
+  , "argonaut"
+  , "argonaut-codecs"
+  , "argonaut-generic"
   , "arrays"
   , "bifunctors"
   , "bookhound"
@@ -34,7 +37,6 @@
   , "partial"
   , "point-free"
   , "prelude"
-  , "profunctor"
   , "psci-support"
   , "record"
   , "record-extra"
@@ -55,6 +57,7 @@
   , "web-dom"
   , "web-events"
   , "web-html"
+  , "web-storage"
   , "web-uievents"
   ]
 , packages = ./packages.dhall

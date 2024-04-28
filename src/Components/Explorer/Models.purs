@@ -16,6 +16,7 @@ type ExplorerState =
   , store :: Store
   , module' :: Maybe Module
   , fnFilter :: Maybe FnFilter
+  , fnFilterText :: String
   , selectedRow :: Int
   }
 

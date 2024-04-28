@@ -29,7 +29,7 @@ import Effect.Class.Console as Logger
 import Halogen (HalogenM, subscribe)
 import Halogen.Query (tellAll)
 import Halogen.Query.Event (eventListener)
-import Halogen.Store.Monad (class MonadStore, getStore)
+import Halogen.Store.Monad (class MonadStore, getStore, updateStore)
 import Promise.Aff as Promise
 import Web.Clipboard (readText, writeText)
 import Web.DOM (Element)
@@ -88,9 +88,8 @@ copyCells
   => a
   -> m Unit
 copyCells ev = withPrevent ev do
-  cellContents <- gets \st -> serializeSelectionValues st.multiSelection
-    st.selectedCell
-    st.tableData
+  cellContents <- gets \st ->
+    serializeSelectionValues st.multiSelection st.selectedCell st.tableData
   modify_ _ { selectionState = CopySelection }
   liftAff $ Promise.toAffE $ writeText cellContents =<< getClipboard
 
@@ -103,15 +102,15 @@ pasteCells
   => a
   -> m Unit
 pasteCells ev = withPrevent ev do
-  st <- get
+  { selectedCell } <- get
   clipContents <- liftAff $ Promise.toAffE $ readText =<< getClipboard
   let
     newValues =
-      deserializeSelectionValues st.selectedCell clipContents
-  modify_ _
+      deserializeSelectionValues selectedCell clipContents
+  updateStore \store -> store
     { tableData = HashMap.union
         newValues
-        st.tableData
+        store.tableData
     }
   refreshCells (Set.fromFoldable $ HashMap.keys newValues)
 
@@ -120,15 +119,15 @@ deleteCells
    . MonadStore StoreAction Store m
   => HalogenM SpreadsheetState a (editor :: EditorSlot | r) o m Unit
 deleteCells = do
-  st <- get
+  { multiSelection, selectedCell } <- get
   let
     cellsToDelete =
-      join $ getTargetCells st.multiSelection st.selectedCell
-  modify_ _
-    { tableData = HashMap.bulkDelete cellsToDelete st.tableData
-    , tableFormulas = HashMap.bulkDelete cellsToDelete st.tableFormulas
-    , formulaState = UnknownFormula
+      join $ getTargetCells multiSelection selectedCell
+  updateStore \store -> store
+    { tableData = HashMap.bulkDelete cellsToDelete store.tableData
+    , tableFormulas = HashMap.bulkDelete cellsToDelete store.tableFormulas
     }
+  modify_ _ { formulaState = UnknownFormula }
   refreshCells $ Set.fromFoldable cellsToDelete
   tellAll _editor $ UpdateEditorContent mempty
 
@@ -238,28 +237,28 @@ insertFormula
   -> m Unit
 insertFormula editorText = do
   let formulaText = String.normalize' NFKD editorText
-  st <- get
+  { formulaCell, selectedCell } <- get
   store <- getStore
-  case runFormula st store st.formulaCell formulaText of
+  case runFormula store formulaCell formulaText of
     Right { result, affectedCells, formulaCells, cellDeps } -> do
-      let formulaId = newFormulaId $ HashMap.keys st.formulaCache
-      modify_ _
-        { tableData = HashMap.union result st.tableData
+      let formulaId = newFormulaId $ HashMap.keys store.formulaCache
+      updateStore _
+        { tableData = HashMap.union result store.tableData
         , tableFormulas = HashMap.union (formulaId <$ result)
-            st.tableFormulas
+            store.tableFormulas
         , tableDependencies = HashMap.unionWith (<>)
             (toDependenciesMap formulaId formulaCells)
-            st.tableDependencies
+            store.tableDependencies
         , formulaCache = HashMap.insert formulaId
             { formulaText
             , affectedCells
             , startingCell: minimum1 affectedCells
             }
-            st.formulaCache
-        , formulaState = ValidFormula
+            store.formulaCache
         }
+      modify_ _ { formulaState = ValidFormula }
       refreshCellsFromDeps cellDeps
-      focusCell st.selectedCell
+      focusCell selectedCell
     Left err ->
       Logger.error (show err) *>
         modify_ _ { formulaState = InvalidFormula }
@@ -276,11 +275,11 @@ applyFormula formulaId = do
   let
     { formulaText, startingCell } =
       unsafeFromJust $ HashMap.lookup formulaId st.formulaCache
-    eitherResult = runFormula st store startingCell formulaText
+    eitherResult = runFormula store startingCell formulaText
   case eitherResult of
     Right { result, affectedCells } ->
       modify_ _
-        { tableData = HashMap.union result st.tableData
+        { tableData = HashMap.union result store.tableData
         , formulaCache = HashMap.updateJust
             (_ { affectedCells = affectedCells })
             formulaId

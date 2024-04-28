@@ -3,10 +3,9 @@ module App.Components.Explorer.FunctionFilter where
 import FatPrelude
 import Prim hiding (Type)
 
-import App.Editor.Suggestion (SuggestionTerm(..), partialQVar, partialQVarOp)
+import App.Editor.Suggestion (SuggestionInfo(..), SuggestionTerm(..), partialQVar, partialQVarOp)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Formula (evalExprInCtx)
-import App.Explorer.Suggestion (SuggestionInfo(..))
 import App.Parser.Common (token)
 import App.Parser.FnDef (fnBody)
 import App.Parser.Type (type')
@@ -26,6 +25,12 @@ data FnFilter
   | FnSignature (Array Type) Type
 
 derive instance Eq FnFilter
+
+instance Show FnFilter where
+  show = case _ of
+    FnName x -> show x
+    OpName x -> show x
+    _ -> mempty
 
 parseFnFilter :: String -> Maybe FnFilter
 parseFnFilter str = hush $ runParser parser str

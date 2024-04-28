@@ -116,6 +116,9 @@ operatorSyntax = ClassName "operator-syntax"
 functionSyntax :: ClassName
 functionSyntax = ClassName "function-syntax"
 
+moduleSyntax :: ClassName
+moduleSyntax = ClassName "module-syntax"
+
 regularSyntax :: ClassName
 regularSyntax = ClassName "regular-syntax"
 

@@ -11,7 +11,7 @@ for use for enterprise, personal & educational purposes.
 
 - [✔️] Provide a no frills, minimalistic GUI supporting all basic spreadsheet functionality regarding navigation, cell management, formula evaluation & automatic cell updates.
 
-- [✔️] Develop a high level pure functional dynamic formula language interpreted at the browser, with expresiveness similar to the term level language in Haskell or Purescript, albeit with familiar syntax and idioms to popular spreadsheet applications and mainstream languages.
+- [✔️] Develop a high level pure functional dynamic formula language interpreted at the browser, that supports currying, patterns and guards with expresiveness similar to the term level language in Haskell or Purescript, albeit with familiar syntax and idioms to popular spreadsheet applications and mainstream languages.
 
 - [✔️] Implement a prelude library with commonly used functions and combinators, loaded at startup.
 
@@ -19,9 +19,13 @@ for use for enterprise, personal & educational purposes.
 
 - [✔️] Support IDE like autocomplete for imported and module aliased top-level functions and operators.
 
-- [✔️] Expose an Explorer view to query by function name, signature or a input / output example (in a similar fashion to Hoogle / Pursuit) and see global functions & operators along with their documentation on a per module basis
+- [✔️] Expose an Explorer view to query by function name, signature or a input / output example (in a similar fashion to Hoogle / Pursuit) and see global functions & operators along with their documentation on a per module basis.
 
-- Add the capability for a user to create, modify or delete global functions & operators through the Explorer view.
+- [✔️] Support Go to documentation on the formula editor for modules, functions & operators.
+
+- [✔️] Persist user defined formulas, spreadsheet data, functions & operators in the browser local storage.
+
+- Add the capability for a user to create, modify or delete global functions & operators through an auxiliary modal in the Explorer view.
 
 - Enable the use of formulas for filtering & sorting rows.
 

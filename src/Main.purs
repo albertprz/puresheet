@@ -2,7 +2,7 @@ module Main where
 
 import FatPrelude
 
-import App.AppStore (getInitialStore, reduce)
+import App.AppStore (getCachedStore, reduce)
 import App.Components.Application as MainPage
 import App.Routes (routeCodec)
 import Halogen (hoist)
@@ -15,9 +15,9 @@ import Safe.Coerce (coerce)
 main :: Effect Unit
 main = runHalogenAff do
   body <- awaitBody
-  initialStore <- getInitialStore
+  cachedStore <- getCachedStore
   router <- liftEffect $ mkRouter routeCodec
-  root <- runStoreT initialStore reduce
+  root <- runStoreT cachedStore reduce
     $ hoist (runRouterT router)
     $ coerce MainPage.component
   runUI root unit body

@@ -22,15 +22,21 @@ type SpreadsheetState =
   , activeFormula :: Boolean
   , activeInput :: Boolean
   , formulaState :: FormulaState
-  , tableData :: HashMap Cell CellValue
-  , tableFormulas :: HashMap Cell FormulaId
-  , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
-  , formulaCache :: HashMap FormulaId Formula
   , rows :: NonEmptyArray Row
   , multiSelection :: MultiSelection
   , selectionState :: SelectionState
   , draggedHeader :: Maybe Header
+  | TableDataStateRow
   }
+
+type TableDataStateRow =
+  ( tableData :: HashMap Cell CellValue
+  , tableFormulas :: HashMap Cell FormulaId
+  , tableDependencies :: HashMap Cell (NonEmptySet FormulaId)
+  , formulaCache :: HashMap FormulaId Formula
+  )
+
+type TableDataState = Record TableDataStateRow
 
 data SpreadsheetAction
   = WriteSelectedCellInput (Maybe Cell)
@@ -53,7 +59,7 @@ data SpreadsheetAction
   | DragHeader EventTransition Header DragEvent
   | ResizeWindow
   | Initialize
-  | Receive SpreadsheetInput
+  | Receive { context :: TableDataState, input :: SpreadsheetInput }
 
 type SpreadsheetInput = { route :: Route }
 

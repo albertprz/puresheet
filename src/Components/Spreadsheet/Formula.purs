@@ -98,11 +98,13 @@ derive instance Eq FormulaId
 derive instance Ord FormulaId
 derive newtype instance Semiring FormulaId
 derive instance Newtype FormulaId _
+
+derive newtype instance EncodeJson FormulaId
+derive newtype instance DecodeJson FormulaId
+derive newtype instance Hashable FormulaId
+
 instance Show FormulaId where
   show = show <<< unwrap
-
-instance Hashable FormulaId where
-  hash = unwrap
 
 data DependencyError =
   CycleDependency

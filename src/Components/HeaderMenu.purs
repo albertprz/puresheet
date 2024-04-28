@@ -21,7 +21,7 @@ component = Hooks.component \_ _ -> Hooks.do
     div [ class_ headerMenu ]
       ( Array.fromFoldable
           $ map (renderButton navigate)
-          $ find (_ /= current) (allRoutes @Array)
+          $ find (_ /= current) allRoutes
       )
 
 renderButton :: forall w i. (Route -> i) -> Route -> HTML w i
@@ -31,7 +31,7 @@ renderButton navigate route =
   where
   icon = case route of
     SpreadsheetView -> "grid_on"
-    ExplorerView -> "functions"
+    ExplorerView _ -> "functions"
 
 type HeaderMenuSlot = forall q. Slot q Unit Unit
 

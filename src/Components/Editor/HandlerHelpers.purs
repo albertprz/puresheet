@@ -5,12 +5,13 @@ import FatPrelude
 import App.AppStore (Store, mkLocalContext)
 import App.CSS.Ids (formulaBoxId, functionSignatureId, suggestionsDropdownId)
 import App.Components.Editor.Models (EditorAction(..), EditorState)
-import App.Editor.Suggestion (SuggestionTerm, extractSuggestionFn, fnSigElements, formulaElements, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getWordAtIndex)
+import App.Editor.Suggestion (SuggestionTerm, extractSuggestionFn, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getTermAtIndex, getWordAtIndex)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.SyntaxTree.Common (QVar)
 import App.SyntaxTree.FnDef (FnSig)
 import App.Utils.Common (refEquals)
 import App.Utils.Dom (emptyContents, getAncestorNodes, justSelectElementById, setInnerHTML, setStyle)
+import App.Utils.HTML (fnSigElements, formulaElements)
 import App.Utils.Monoid (whenPlus)
 import App.Utils.Range as Range
 import App.Utils.Selection (getCaretPosition, getSelection, innerText, setCaretPosition)
@@ -96,8 +97,8 @@ displayFnSuggestions = do
     =<< window
   suggestionsDropdown <- toElement
     <$> justSelectElementById suggestionsDropdownId
-  store <- getStore
-  suggestions <- getFnSuggestions $ mkLocalContext store
+  ctx <- mkLocalContext <$> getStore
+  suggestions <- getFnSuggestions ctx
   formulaText <- getEditorContent
   when
     ( String.null (trim formulaText) ||
@@ -127,6 +128,19 @@ getFnSuggestions ctx = liftEffect do
   pure
     $ whenMonoid (any (refEquals formulaBox) ancestors)
     $ map (getSuggestionsAtIndex ctx formulaText) idx
+
+getTermAtCaret
+  :: forall m a
+   . MonadEffect m
+  => MonadStore a Store m
+  => m (Maybe SuggestionTerm)
+getTermAtCaret = do
+  ctx <- mkLocalContext <$> getStore
+  formulaBox <- toNode <$> justSelectElementById formulaBoxId
+  formulaText <- getEditorContent
+  selection <- liftEffect $ getSelection =<< window
+  caretPosition <- getCaretPosition selection formulaBox
+  pure $ getTermAtIndex ctx formulaText =<< caretPosition
 
 setFnSig :: forall m. MonadEffect m => QVar -> FnSig -> m Unit
 setFnSig fn fnSig = liftEffect do

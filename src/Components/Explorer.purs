@@ -31,6 +31,7 @@ initialState { context, input } =
   , store: context
   , module': Just preludeModule
   , fnFilter: Nothing
+  , fnFilterText: mempty
   , selectedRow: zero
   }
 

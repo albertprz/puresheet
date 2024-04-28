@@ -8,7 +8,6 @@ import Data.Array as Array
 import Data.Enum (class BoundedEnum, Cardinality, enumFromTo)
 import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import Data.Profunctor (dimap)
 import Data.Unfoldable1 (class Unfoldable1)
 
 infixr 8 enumFromTo as ..

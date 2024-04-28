@@ -31,6 +31,7 @@ render
         , spellcheck false
         , onKeyDown $ mkKeyAction $ KeyDown selectedSuggestion
         , onKeyUp $ mkKeyAction KeyUp
+        , onMouseDown MouseDown
         , onFocusIn FocusIn
         ]
         []

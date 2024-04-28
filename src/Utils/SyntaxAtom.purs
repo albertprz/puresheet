@@ -3,7 +3,6 @@ module App.Utils.SyntaxAtom where
 import FatPrelude
 import Prim hiding (Type)
 
-import App.CSS.ClassNames (cellSyntax, functionSyntax, keywordSyntax, numberSyntax, operatorSyntax, regularSyntax, stringSyntax, symbolSyntax)
 import App.Components.Spreadsheet.Cell (cellParser, showCell)
 import App.Parser.Common (nonTokenIdent, nonTokenOperator, notReservedKeyword, notReservedSymbol, reservedKeywords, reservedSymbols)
 import App.SyntaxTree.Common (QVar(..))
@@ -19,19 +18,6 @@ import Bookhound.Parsers.String (betweenDoubleQuotes, betweenQuotes)
 import Data.Array as Array
 import Data.String.CodeUnits (singleton) as String
 import Data.String.Unsafe (char) as String
-import Web.HTML.Common (ClassName)
-
-syntaxAtomToClassName :: SyntaxAtom -> ClassName
-syntaxAtomToClassName = case _ of
-  Cell' _ -> cellSyntax
-  Number' _ -> numberSyntax
-  String' _ -> stringSyntax
-  Char' _ -> stringSyntax
-  Keyword _ -> keywordSyntax
-  Symbol _ -> symbolSyntax
-  Operator _ -> operatorSyntax
-  Function _ -> functionSyntax
-  OtherText _ -> regularSyntax
 
 condenseSyntaxAtoms :: Array SyntaxAtom -> Array SyntaxAtom
 condenseSyntaxAtoms = foldl go []
@@ -49,9 +35,9 @@ syntaxAtomParser = (|+) atom
       <|> (Char' <$> char)
       <|> (String' <$> string)
       <|> (Cell' <<< showCell <$> cellParser)
-      <|> (OtherText <$> module')
       <|> (Function <$> var)
       <|> (Operator <$> varOp)
+      <|> (Module <$> module')
       <|> (Keyword <$> oneOf reservedKeywords)
       <|> (Symbol <$> oneOf reservedSymbols)
       <|> (OtherText <<< String.singleton <$> Parsers.anyChar)
@@ -116,6 +102,7 @@ data SyntaxAtom
   | Symbol String
   | Operator String
   | Function String
+  | Module String
   | OtherText String
 
 instance Show SyntaxAtom where
@@ -127,4 +114,5 @@ instance Show SyntaxAtom where
   show (Symbol x) = x
   show (Operator x) = x
   show (Function x) = x
+  show (Module x) = x
   show (OtherText x) = x

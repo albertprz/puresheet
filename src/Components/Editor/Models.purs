@@ -18,6 +18,7 @@ type EditorState =
 data EditorAction
   = KeyDown (Maybe SuggestionTerm) KeyCode KeyboardEvent
   | KeyUp KeyCode KeyboardEvent
+  | MouseDown MouseEvent
   | FocusIn FocusEvent
   | SelectionChange
   | ClickSuggestion (Maybe SuggestionTerm) MouseEvent

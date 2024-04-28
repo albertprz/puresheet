@@ -3,45 +3,39 @@ module App.Editor.Suggestion where
 import FatPrelude hiding (div)
 
 import App.Evaluator.Builtins as Builtins
-import App.Evaluator.Common (LocalFormulaCtx, getAvailableAliases, getAvailableModules, lookupBuiltinFn, lookupModuleFn, lookupOperator)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, getAvailableAliases, getAvailableModules, lookupBuiltinFn, lookupModuleFn, lookupOperator)
 import App.Parser.Common (ident, module', operator, qTerm, qVar, qVarOp)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
-import App.SyntaxTree.FnDef (FnSig)
-import App.Utils.SyntaxAtom (SyntaxAtom, condenseSyntaxAtoms, fnSigToSyntaxAtoms, syntaxAtomParser, syntaxAtomToClassName)
+import App.SyntaxTree.FnDef (BuiltinFnInfo, FnInfo, FnSig, OpInfo)
 import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (lower)
 import Data.Array as Array
+import Data.Generic.Rep (class Generic)
 import Data.HashMap as HashMap
 import Data.Set as Set
 import Data.String.CodeUnits (indexOf', lastIndexOf')
 import Data.String.CodeUnits (length, slice) as String
 import Data.String.Pattern (Pattern(..))
 import Data.String.Utils (endsWith, startsWith) as String
-import Halogen.HTML (HTML, span, text)
-import Halogen.HTML.Properties (class_)
 import Record.Extra (pick)
-
-formulaElements :: forall a b. String -> Array (HTML a b)
-formulaElements =
-  syntaxAtomsToElements <<< fold <<< runParser syntaxAtomParser
-
-fnSigElements :: forall a b. QVar -> FnSig -> Array (HTML a b)
-fnSigElements =
-  syntaxAtomsToElements <.. fnSigToSyntaxAtoms
-
-syntaxAtomsToElements :: forall a b. Array SyntaxAtom -> Array (HTML a b)
-syntaxAtomsToElements = map toElement <<< condenseSyntaxAtoms
-  where
-  toElement atom = span
-    [ class_ $ syntaxAtomToClassName atom ]
-    [ text $ show atom ]
 
 getFnAtIndex :: String -> Int -> Maybe SuggestionTerm
 getFnAtIndex formulaText idx =
   hush $ runParser fnParser currentWord
   where
   fnParser = OpSuggestion <$> qVarOp <|> FnSuggestion <$> qVar
+  { currentWord } = getWordAtIndex [] formulaText idx
+
+getTermAtIndex :: LocalFormulaCtx -> String -> Int -> Maybe SuggestionTerm
+getTermAtIndex ctx formulaText idx =
+  filterMap (lookupTerm ctx)
+    $ hush
+    $ runParser fnParser currentWord
+  where
+  fnParser = OpSuggestion <$> qVarOp
+    <|> (FnSuggestion <$> qVar)
+    <|> (ModuleSuggestion <$> module')
   { currentWord } = getWordAtIndex [] formulaText idx
 
 getSuggestionsAtIndex
@@ -189,6 +183,36 @@ moduleFromSuggestion = case _ of
   BuiltinFnSuggestion (QVar x _) -> x
   ModuleSuggestion x -> Just x
 
+getSuggestionInfo :: LocalFormulaCtx -> SuggestionTerm -> Maybe SuggestionInfo
+getSuggestionInfo ctx term = do
+  fn <- extractSuggestionFn ctx term
+  fnSig <- getFnSig fn ctx
+  pure $ SuggestionInfo { term, fn, fnSig }
+
+lookupTerm :: LocalFormulaCtx -> SuggestionTerm -> Maybe SuggestionTerm
+lookupTerm ctx = case _ of
+  FnSuggestion fn -> FnSuggestion <<< fnIdToQVar
+    <$> ((_.id <<< unwrap =<< go @FnInfo (lookupModuleFn fn)))
+    <|> (const (FnSuggestion fn) <$> go @BuiltinFnInfo (lookupBuiltinFn fn))
+  OpSuggestion op -> OpSuggestion <<< fnIdToQVarOp <<< _.id
+    <$> (go @OpInfo (lookupOperator op))
+  ModuleSuggestion module' -> map ModuleSuggestion $ Array.head
+    $ Array.fromFoldable
+    $ getAvailableModules (Just module') ctx
+  _ -> Nothing
+  where
+  go :: forall @a. EvalM a -> Maybe a
+  go x = hush $ flip evalState ctx $ runExceptT x
+  fnIdToQVar { fnModule, fnName } = QVar (Just fnModule) fnName
+  fnIdToQVarOp { opModule, opName } = QVarOp (Just opModule) opName
+
+showFullTerm :: SuggestionTerm -> String
+showFullTerm = case _ of
+  FnSuggestion x -> show x
+  OpSuggestion x -> show x
+  BuiltinFnSuggestion x -> show x
+  ModuleSuggestion x -> show x
+
 data SuggestionTerm
   = FnSuggestion QVar
   | BuiltinFnSuggestion QVar
@@ -196,6 +220,11 @@ data SuggestionTerm
   | ModuleSuggestion Module
 
 newtype SuggestionId = SuggestionId Int
+
+newtype SuggestionInfo = SuggestionInfo
+  { term :: SuggestionTerm, fn :: QVar, fnSig :: FnSig }
+
+derive instance Generic SuggestionTerm _
 
 derive instance Eq SuggestionTerm
 
@@ -230,3 +259,14 @@ derive newtype instance Ring SuggestionId
 instance Bounded SuggestionId where
   bottom = wrap 0
   top = wrap 9
+
+derive instance Newtype SuggestionInfo _
+
+instance Eq SuggestionInfo where
+  eq = eq `on` (_.term <<< unwrap)
+
+instance Ord SuggestionInfo where
+  compare = compare `on` (_.term <<< unwrap)
+
+instance Show SuggestionInfo where
+  show = show <<< _.term <<< unwrap

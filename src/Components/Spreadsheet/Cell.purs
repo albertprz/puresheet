@@ -13,6 +13,9 @@ import Data.Array as Array
 import Data.HashMap (keys) as HashMap
 import Data.Number.Format (fixed)
 import Data.Number.Format (toStringWith) as Number
+import Data.String (CodePoint)
+import Data.String.CodePoints (codePointFromChar)
+import Data.String.CodePoints as CodePointsString
 import Data.String.CodeUnits as String
 import Data.Unfoldable (class Unfoldable1)
 
@@ -40,7 +43,7 @@ cellValueParser =
     <$> int
     <|> BoolVal
     <$> (true <$ is "true" <|> false <$ is "false")
-    <|> CharVal
+    <|> (CharVal <<< codePointFromChar)
     <$> anyChar
 
 showCell :: Cell -> String
@@ -130,7 +133,7 @@ data CellValue
   = BoolVal Boolean
   | IntVal Int
   | FloatVal Number
-  | CharVal Char
+  | CharVal CodePoint
   | StringVal String
 
 data CellMove
@@ -155,6 +158,8 @@ derive newtype instance Semiring Column
 derive newtype instance Ring Column
 derive newtype instance Enum Column
 derive instance Newtype Column _
+derive newtype instance EncodeJson Column
+derive newtype instance DecodeJson Column
 
 instance Show Column where
   show = String.singleton <<< toUpper <<< unwrap
@@ -177,6 +182,8 @@ derive newtype instance Semiring Row
 derive newtype instance Ring Row
 derive newtype instance Enum Row
 derive instance Newtype Row _
+derive newtype instance EncodeJson Row
+derive newtype instance DecodeJson Row
 
 instance Show Row where
   show (Row x) = show x
@@ -194,10 +201,17 @@ instance BoundedEnum Row where
   toEnum = newtypeToEnum
 
 derive instance Eq CellValue
+derive instance Generic CellValue _
+
+instance EncodeJson CellValue where
+  encodeJson = genericEncodeJson
+
+instance DecodeJson CellValue where
+  decodeJson = genericDecodeJson
 
 instance Show CellValue where
   show (BoolVal x) = show x
   show (IntVal x) = show x
   show (FloatVal x) = Number.toStringWith (fixed 2) x
-  show (CharVal x) = String.singleton x
+  show (CharVal x) = CodePointsString.singleton x
   show (StringVal x) = x

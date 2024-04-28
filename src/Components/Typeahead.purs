@@ -25,7 +25,7 @@ import Web.UIEvent.FocusEvent (relatedTarget)
 component
   :: forall a
    . Show a
-  => Component TypeaheadQuery (TypeaheadInput a) (TypeaheadOutput a) AppM
+  => Component (TypeaheadQuery a) (TypeaheadInput a) (TypeaheadOutput a) AppM
 component = Hooks.component
   \({ outputToken, queryToken })
    { allOptions, initialOption, maxOptions, placeholderText } -> Hooks.do
@@ -118,6 +118,7 @@ component = Hooks.component
 
     useQuery queryToken case _ of
       ActivateTypeahead next -> toggleActive *> pure (Just next)
+      SelectOption option next -> putOption (Just option) *> pure (Just next)
 
     Hooks.pure typeaheadElem
 
@@ -131,8 +132,8 @@ type TypeaheadInput a =
   , placeholderText :: String
   }
 
-data TypeaheadQuery a = ActivateTypeahead a
+data TypeaheadQuery a b = ActivateTypeahead b | SelectOption a b
 
 data TypeaheadOutput a = SelectedOption (Maybe a)
 
-type TypeaheadSlot a = Slot TypeaheadQuery (TypeaheadOutput a) Unit
+type TypeaheadSlot a = Slot (TypeaheadQuery a) (TypeaheadOutput a) Unit

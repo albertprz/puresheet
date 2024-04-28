@@ -20,6 +20,8 @@ import Data.HashMap (insert) as HashMap
 import Data.Set as Set
 import Halogen (HalogenM)
 import Halogen.Query (tellAll)
+import Halogen.Store.Monad (updateStore)
+import Record (merge)
 import Web.HTML (window)
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -34,8 +36,8 @@ handleAction Initialize = do
   subscribeWindowResize
   applyFocus
 
-handleAction (Receive { route }) = do
-  modify_ _ { route = route }
+handleAction (Receive { context, input }) = do
+  modify_ (merge context <<< merge input)
   applyFocus
 
 handleAction ResizeWindow = do
@@ -64,10 +66,9 @@ handleAction (FormulaCellInputKeyDown _ _) =
   pure unit
 
 handleAction (WriteCell cell value) = do
-  modify_ \st -> st
-    { tableData = HashMap.insert cell value st.tableData
-    , activeInput = false
-    }
+  updateStore \store -> store
+    { tableData = HashMap.insert cell value store.tableData }
+  modify_ _ { activeInput = false }
   refreshCells $ Set.singleton cell
 
 handleAction FocusInEditor = do
@@ -110,17 +111,21 @@ handleAction (FocusInCell cell _) = do
         else UnknownFormula
     }
 
-handleAction (KeyDown x ev) | x `elem` [ ArrowLeft, CharKeyCode 'H' ] =
-  withPrevent ev $ cellArrowMove ev PrevColumn
+handleAction (KeyDown x ev)
+  | x `elem` [ ArrowLeft, CharKeyCode 'H' ] && not (ctrlKey ev) =
+      withPrevent ev $ cellArrowMove ev PrevColumn
 
-handleAction (KeyDown x ev) | x `elem` [ ArrowRight, CharKeyCode 'L' ] =
-  withPrevent ev $ cellArrowMove ev NextColumn
+handleAction (KeyDown x ev)
+  | x `elem` [ ArrowRight, CharKeyCode 'L' ] && not (ctrlKey ev) =
+      withPrevent ev $ cellArrowMove ev NextColumn
 
-handleAction (KeyDown x ev) | x `elem` [ ArrowUp, CharKeyCode 'K' ] =
-  withPrevent ev $ cellArrowMove ev PrevRow
+handleAction (KeyDown x ev)
+  | x `elem` [ ArrowUp, CharKeyCode 'K' ] && not (ctrlKey ev) =
+      withPrevent ev $ cellArrowMove ev PrevRow
 
-handleAction (KeyDown x ev) | x `elem` [ ArrowDown, CharKeyCode 'J' ] =
-  withPrevent ev $ cellArrowMove ev NextRow
+handleAction (KeyDown x ev)
+  | x `elem` [ ArrowDown, CharKeyCode 'J' ] && not (ctrlKey ev) =
+      withPrevent ev $ cellArrowMove ev NextRow
 
 handleAction (KeyDown Enter ev)
   | ctrlKey ev = withPrevent ev do
@@ -129,10 +134,11 @@ handleAction (KeyDown Enter ev)
         , selectionState = NotStartedSelection
         }
       focusById formulaBoxId
-  | otherwise = withPrevent ev do
-      { selectedCell, activeInput } <- modify \st -> st
-        { activeInput = not st.activeInput }
-      focusCellElem selectedCell $ whenMaybe activeInput inputElementType
+
+handleAction (KeyDown Enter ev) = withPrevent ev do
+  { selectedCell, activeInput } <-
+    modify \st -> st { activeInput = not st.activeInput }
+  focusCellElem selectedCell $ whenMaybe activeInput inputElementType
 
 handleAction (KeyDown Tab ev) = withPrevent ev $ selectCell move
   where
@@ -256,23 +262,23 @@ handleAction (DragHeader Start header ev) = do
   handleAction $ ClickHeader header (toMouseEvent ev)
 
 handleAction (DragHeader End header@(ColumnHeader newColumn) ev) = do
-  modify_ \st ->
-    st
-      { tableData = maybe st.tableData
-          (\col -> swapTableMapColumn col newColumn st.tableData)
-          (st.draggedHeader >>= getColumnHeader)
-      , draggedHeader = Nothing
-      }
+  { draggedHeader } <- get
+  updateStore \store -> store
+    { tableData = maybe store.tableData
+        (\col -> swapTableMapColumn col newColumn store.tableData)
+        (draggedHeader >>= getColumnHeader)
+    }
+  modify_ _ { draggedHeader = Nothing }
   handleAction $ ClickHeader header (toMouseEvent ev)
 
 handleAction (DragHeader End header@(RowHeader newRow) ev) = do
-  modify_ \st ->
-    st
-      { tableData = maybe st.tableData
-          (\row -> swapTableMapRow row newRow st.tableData)
-          (st.draggedHeader >>= getRowHeader)
-      , draggedHeader = Nothing
-      }
+  { draggedHeader } <- get
+  updateStore \store -> store
+    { tableData = maybe store.tableData
+        (\row -> swapTableMapRow row newRow store.tableData)
+        (draggedHeader >>= getRowHeader)
+    }
+  modify_ _ { draggedHeader = Nothing }
   handleAction $ ClickHeader header (toMouseEvent ev)
 
 handleAction (DragHeader Over _ ev) =

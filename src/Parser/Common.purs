@@ -9,6 +9,7 @@ import Bookhound.ParserCombinators (class IsMatch, is, noneOf, oneOf, someSepBy,
 import Bookhound.Parsers.Char (alpha, alphaNum, anyChar, comma, dot, lower, upper)
 import Bookhound.Parsers.Number (double, int)
 import Bookhound.Parsers.String (betweenDoubleQuotes, betweenParens, betweenQuotes, maybeBetweenSpacing)
+import Data.String (codePointFromChar)
 import Data.String.Unsafe (char) as String
 
 cellValue :: Parser CellValue
@@ -16,7 +17,10 @@ cellValue = token
   $ (FloatVal <$> double)
   <|> (IntVal <$> int)
   <|> (BoolVal <$> (true <$ isToken "true" <|> false <$ isToken "false"))
-  <|> (CharVal <$> betweenQuotes (charLit <|> charLitEscaped))
+  <|>
+    ( CharVal <<< codePointFromChar <$> betweenQuotes
+        (charLit <|> charLitEscaped)
+    )
   <|>
     ( StringVal <$> betweenDoubleQuotes
         ((||*) (stringLit <|> charLitEscaped))

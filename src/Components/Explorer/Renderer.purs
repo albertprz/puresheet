@@ -4,19 +4,18 @@ import FatPrelude hiding (div)
 
 import App.AppM (AppM)
 import App.AppStore (mkLocalContext)
-import App.CSS.ClassNames (explorerContainer, formulaBox, functionContainer, functionDescription, functionDoc, functionFiltersContainer, functionRow, functionsList, invisibleContainer, termTypeLabel, unknownFormula)
+import App.CSS.ClassNames (explorerContainer, formulaBox, functionContainer, functionDescription, functionDoc, functionFiltersContainer, functionRow, functionsList, invisibleContainer, termTypeLabel, validFormula)
 import App.CSS.Ids (functionRowId)
 import App.Components.Explorer.FunctionFilter (evalExample, parseFnFilter, termPredicate)
 import App.Components.Explorer.Handler (handleModuleTypeaheadOutput)
 import App.Components.Explorer.Models (ExplorerAction(..), ExplorerState, Slots, _moduleTypeahead, allModules, functionFilterInputRef)
 import App.Components.Typeahead as Typeahead
-import App.Editor.Suggestion (SuggestionTerm(..), fnSigElements, formulaElements, getAllAvailableFns, syntaxAtomsToElements)
+import App.Editor.Suggestion (SuggestionInfo(..), SuggestionTerm(..), getAllAvailableFns, getSuggestionInfo)
 import App.Evaluator.Common (LocalFormulaCtx)
-import App.Explorer.Suggestion (SuggestionInfo(..), getSuggestionInfo)
 import App.Parser.FnDef (fnBody)
 import App.Routes (Route(..))
 import App.SyntaxTree.Common (QVar(..), preludeModule)
-import App.Utils.HTML (searchInput)
+import App.Utils.HTML (fnSigElements, formulaElements, searchInput, syntaxAtomsToElements)
 import App.Utils.KeyCode (mkKeyAction)
 import App.Utils.SyntaxAtom (SyntaxAtom(..))
 import Bookhound.Parser (runParser)
@@ -33,20 +32,22 @@ import Data.String.Utils (lines)
 import Data.String.Utils (unsafeRepeat) as String
 import Halogen.HTML (HTML, br_, div, slot, span, table, td, text, tr)
 import Halogen.HTML.Events (onClick, onKeyDown, onValueInput)
-import Halogen.HTML.Properties (class_, classes, id, placeholder, ref, style, tabIndex)
+import Halogen.HTML.Properties (class_, classes, id, placeholder, ref, style, tabIndex, value)
 
 render :: ExplorerState -> ComponentHTML ExplorerAction Slots AppM
-render { route, store, module', fnFilter, selectedRow } =
+render { route, store, module', fnFilter, fnFilterText, selectedRow } =
   div
     [ class_
-        if route == ExplorerView then explorerContainer
-        else invisibleContainer
+        case route of
+          ExplorerView _ -> explorerContainer
+          _ -> invisibleContainer
     , onKeyDown $ mkKeyAction KeyDown
+
     ]
     [ div
         [ class_ functionContainer ]
         [ div
-            [ classes [ formulaBox, unknownFormula ] ]
+            [ classes [ formulaBox, validFormula ] ]
             ( case fn of
                 Just qVar -> foldMap (renderDocLine qVar maxExampleLen ctx)
                   (lines doc)
@@ -61,7 +62,8 @@ render { route, store, module', fnFilter, selectedRow } =
                 }
                 handleModuleTypeaheadOutput
             , searchInput
-                [ ref functionFilterInputRef
+                [ value fnFilterText
+                , ref functionFilterInputRef
                 , onValueInput $ UpdateFunctionFilter <<< parseFnFilter
                 , onKeyDown $ mkKeyAction FunctionFilterKeyDown
                 , placeholder "Function name, signature or example"

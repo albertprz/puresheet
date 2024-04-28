@@ -17,6 +17,10 @@ import Control.Monad.Maybe.Trans (MaybeT(..), mapMaybeT, runMaybeT) as X
 import Control.Monad.State (class MonadState, StateT(..), evalState, evalStateT, execState, execStateT, get, gets, mapState, mapStateT, modify, modify_, put, runState, runStateT, state, withState, withStateT) as X
 import Control.Monad.Trans.Class (class MonadTrans, lift) as X
 import Control.MonadPlus (class Alt, class Alternative, class MonadPlus, class Plus, alt, empty, guard, (<|>)) as X
+import Data.Argonaut.Decode.Class (class DecodeJson) as X
+import Data.Argonaut.Decode.Generic (genericDecodeJson) as X
+import Data.Argonaut.Encode.Class (class EncodeJson) as X
+import Data.Argonaut.Encode.Generic (genericEncodeJson) as X
 import Data.Array (length) as X
 import Data.Array.NonEmpty (NonEmptyArray) as X
 import Data.Bifunctor (class Bifunctor, bimap, lmap, rmap) as X
@@ -28,6 +32,7 @@ import Data.Filterable (class Compactable, class Filterable, cleared, compact, e
 import Data.Foldable (class Foldable, all, and, any, elem, find, findMap, fold, foldM, foldMap, foldl, foldr, for_, indexl, indexr, intercalate, lookup, maximum, maximumBy, minimum, minimumBy, notElem, null, or, product, sum, surround, surroundMap) as X
 import Data.Function (applyN, on) as X
 import Data.FunctorWithIndex (class FunctorWithIndex, mapWithIndex) as X
+import Data.Generic.Rep (class Generic) as X
 import Data.HashMap (HashMap) as X
 import Data.HashSet (HashSet) as X
 import Data.Hashable (class Hashable, class HashableRecord, hash, hashRecord) as X

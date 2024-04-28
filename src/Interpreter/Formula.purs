@@ -5,7 +5,6 @@ import FatPrelude
 import App.AppStore (Store, mkLocalContext)
 import App.Components.Spreadsheet.Cell (Cell, CellValue)
 import App.Components.Spreadsheet.Formula (FormulaId, getDependencies)
-import App.Components.Spreadsheet.Models (SpreadsheetState)
 import App.Evaluator.Formula (evalFormula)
 import App.Interpreter.Expression (RunError(..), run)
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
@@ -22,18 +21,17 @@ type FormulaResult =
   }
 
 runFormula
-  :: SpreadsheetState
-  -> Store
+  :: Store
   -> Cell
   -> String
   -> Either RunError FormulaResult
-runFormula tableState store cell =
+runFormula store cell =
   (lmap DependencyError' <<< depsFn) <=< (run evalFn)
   where
-  ctx = (mkLocalContext store) { tableData = tableState.tableData }
+  ctx = mkLocalContext store
   depsFn { result, affectedCells, formulaCells } =
     { result, affectedCells, formulaCells, cellDeps: _ }
-      <$> getDependencies tableState affectedCells formulaCells
+      <$> getDependencies store affectedCells formulaCells
   evalFn body = evalFnHelper body
     <$> evalFormula ctx cell body
   evalFnHelper body { result, affectedCells } =
