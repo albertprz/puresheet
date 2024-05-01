@@ -25,15 +25,13 @@ for use for enterprise, personal & educational purposes.
 
 - [✔️] Persist user defined formulas, spreadsheet data, functions & operators in the browser local storage.
 
+- Format automatically formulas when evaluated.
+
 - Add the capability for a user to create, modify or delete global functions & operators through an auxiliary modal in the Explorer view.
 
 - Enable the use of formulas for filtering & sorting rows.
 
-- Include Opt-in automatic formatting for formulas when evaluated.
-
 - Support Import & Export of spreadsheets from and to Excel and Google Sheets with the proper mapping of cell values & formulas.
-
-- Expose customization options for navigation, keybindings, spreadsheet behaviour as well as display and themes configuration.
 
 - Support authenticated persistence & retrieval from a catalog of private spreadsheets via a future backend.
 
@@ -67,23 +65,69 @@ $ npm run serve
     
 ## Keybindings
 
+#### General
+
+<center>
+
+| Key Combination | Action |
+| --------------- | ------ |
+| `Control` + `J` | Next view |
+| `Control` + `K` | Previous view |
+
+</center>
+
+
+#### Spreadsheet table
+
 <center>
 
 | Key Combination | Action |
 | --------------- | ------ |
 | &uarr; &darr; &larr; &rarr; | Cell navigation |
 | `h` `j` `k` `l` | Cell navigation (Vim like) |
+| `Shift` + &uarr; &darr; &larr; &rarr; | Cell selection |
+| `Shift` + `Hover` | Cell selection |
 | `Tab` | Go to next cell |
 | `Shift` + `Tab` | Go to previous cell |
 | `Enter` | Edit cell value |
 | `Control` + `Enter` | Edit formula |
-| `Shift` + `Navigation` | Cell selection |
 | `Backspace` | Delete cell/s |
 | `Control` + `G` | Go to cell |
 | `Control` + `A` | Select all cells |
-| `Control` + `C` | Copy cells/s |
-| `Control` + `V` | Paste cells/s |
-| `Control` + `X` | Cut cells/s |
+| `Control` + `C` | Copy cell/s |
+| `Control` + `V` | Paste cell/s |
+| `Control` + `X` | Cut cell/s |
+
+</center>
+
+#### Formula Editor
+
+<center>
+
+| Key Combination | Action |
+| --------------- | ------ |
+| `Tab` | Switch out of editor |
+| `Control` + `Enter` | Submit formula |
+| `Enter` | Autocomplete with current suggestion
+| &uarr; | Previous autocomplete suggestion |
+| &darr; | Next autocomplete suggestion |
+| `Shift` + `Tab` | Previous autocomplete suggestion |
+| `Tab`  | Next autocomplete suggestion |
+| `Control` + `Click`  | Go to function / module documentation |
+| `Control` + `D`  | Go to function / module documentation |
+
+</center>
+
+#### Function Explorer
+
+<center>
+
+| Key Combination | Action |
+| --------------- | ------ |
+| `Control` + `M` | Switch module |
+| `Control` + `F` | Search for function |
+| &uarr; &darr; | Previous / next function |
+| `Shift` + `Tab` `Tab`  | Previous / next function |
 
 </center>
 

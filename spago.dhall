@@ -44,6 +44,7 @@
   , "safe-coerce"
   , "strings"
   , "stringutils"
+  , "tailrec"
   , "tecton"
   , "tecton-halogen"
   , "transformers"

@@ -29,4 +29,3 @@ abs x
 
 coalesce :: forall a. Semiring a => Maybe a -> a
 coalesce = fromMaybe zero
-

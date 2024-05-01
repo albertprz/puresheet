@@ -11,7 +11,6 @@ import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (lower)
 import Data.Array as Array
-import Data.Generic.Rep (class Generic)
 import Data.HashMap as HashMap
 import Data.Set as Set
 import Data.String.CodeUnits (indexOf', lastIndexOf')

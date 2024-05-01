@@ -153,9 +153,7 @@ handleAction (KeyDown Space _) = do
 handleAction (KeyDown Delete _) =
   deleteCells
 
-handleAction (KeyDown Shift ev) = prevent ev
-
-handleAction (KeyDown Control ev) = withPrevent ev $
+handleAction (KeyDown Shift ev) = withPrevent ev $
   modify_ _ { selectionState = InProgressSelection }
 
 handleAction (KeyDown (CharKeyCode 'A') ev)
@@ -176,7 +174,7 @@ handleAction (KeyDown (CharKeyCode 'G') ev)
 handleAction (KeyDown _ _) =
   pure unit
 
-handleAction (KeyUp Control ev) = withPrevent ev $
+handleAction (KeyUp Shift ev) = withPrevent ev $
   modify_ _ { selectionState = NotStartedSelection }
 
 handleAction (KeyUp _ _) =

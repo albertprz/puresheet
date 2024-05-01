@@ -2,7 +2,7 @@ module App.Evaluator.Expression where
 
 import FatPrelude
 
-import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupBuiltinFn, lookupFn, lookupOperator, registerArg, registerBindings, resetFnScope, substituteFnArgs, varFn)
+import App.Evaluator.Common (EvalM, LocalFormulaCtx, extractAlias, getNewFnState, isSpread, lambdaId, lookupBuiltinFn, lookupFn, lookupOperator, registerArg, registerBindings, resetFnScope, substituteFnArgs, tailCallWrapper, varFn)
 import App.Evaluator.Errors (EvalError(..), MatchError(..), TypeError(..), raiseError)
 import App.Evaluator.Object (cellValueToObj, extractBool, extractNList)
 import App.SyntaxTree.Common (QVar(..), Var(..))
@@ -22,6 +22,10 @@ evalExpr (FnApply fnExpr args) = do
     FnObj fnInfo -> evalFn fnInfo (Object' <$> argObjs)
     BuiltinFnObj fnInfo -> evalBuiltinFn fnInfo argObjs
     _ -> raiseError $ TypeError' $ NotAFunction fnObj
+
+evalExpr (Recur args) = do
+  argObjs <- traverse (\x -> evalExpr x) args
+  pure $ LoopObj argObjs
 
 evalExpr (LambdaFn params body) = do
   { lambdaCount } <- modify \st -> st { lambdaCount = inc st.lambdaCount }
@@ -49,20 +53,10 @@ evalExpr (RightOpSection body fnOp) = do
 evalExpr (WhereExpr fnBody bindings) =
   registerBindings bindings *> evalExpr fnBody
 
-evalExpr (CondExpr conds) = do
-  st <- get
-  let
-    newScope = inc $ fromMaybe st.scope $ maximum $ toTree st.scopeLoc
-    newSt = st
-      { scopeLoc = insertChild (mkLeaf newScope) st.scopeLoc
-      , scope = newScope
-      }
-  except $
-    findMapEither (MatchError' NonExhaustiveGuard)
-      (evalGuardedFnBody newSt)
-      conds
+evalExpr (CondExpr conds) =
+  tailCallWrapper $ evalMaybeGuardedFnBody $ Guarded conds
 
-evalExpr (SwitchExpr matchee cases) = do
+evalExpr (SwitchExpr matchee cases) = tailCallWrapper do
   result <- evalExpr matchee
   st <- get
   let
@@ -237,8 +231,18 @@ evalCaseBinding st matchee (CaseBinding pattern body) =
 evalMaybeGuardedFnBody
   :: MaybeGuardedFnBody
   -> EvalM Object
-evalMaybeGuardedFnBody (Guarded conds) =
-  evalExpr $ CondExpr conds
+evalMaybeGuardedFnBody (Guarded conds) = do
+  st <- get
+  let
+    newScope = inc $ fromMaybe st.scope $ maximum $ toTree st.scopeLoc
+    newSt = st
+      { scopeLoc = insertChild (mkLeaf newScope) st.scopeLoc
+      , scope = newScope
+      }
+  except $
+    findMapEither (MatchError' NonExhaustiveGuard)
+      (evalGuardedFnBody newSt)
+      conds
 
 evalMaybeGuardedFnBody (Standard body) =
   evalExpr body

@@ -3,11 +3,6 @@ module App.SyntaxTree.Common where
 import FatPrelude
 import Prim hiding (Row)
 
-import Data.Argonaut (class DecodeJson, class EncodeJson)
-import Data.Argonaut.Decode.Generic (genericDecodeJson)
-import Data.Argonaut.Encode.Generic (genericEncodeJson)
-import Data.Generic.Rep (class Generic)
-
 newtype Var = Var String
 
 derive newtype instance Eq Var

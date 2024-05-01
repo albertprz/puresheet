@@ -15,7 +15,6 @@ import Data.HashMap as HashMap
 import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree.Zipper (fromTree)
-import Effect.Console (log)
 import Effect.Console as Logger
 import Foreign (readArray, readString, unsafeToForeign)
 import Foreign.Index ((!))
@@ -63,6 +62,7 @@ mkLocalContext store =
     { module': preludeModule
     , localFnsMap: HashMap.empty
     , argsMap: HashMap.empty
+    , fnInfo: Nothing
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero
     , lambdaCount: zero

@@ -25,7 +25,7 @@ spec = describe "Interpreter.Expression" do
 
     describe "works for recursive functions" do
 
-      it "Fibonacci" $
+      it "Non tail calls (can stack overflow)" $
         runExpr
           """
           fib (10) where {
@@ -38,17 +38,17 @@ spec = describe "Interpreter.Expression" do
           """ `shouldEqual` pure
           (IntObj 55)
 
-      it "Map" $
+      it "Tail calls (cannot stack overflow)" $
         runExpr
           """
-          myMap (x -> x * x, [1 .. 4]) where {
-              | myMap (f, xs) = switch (xs) {
-                  | [] => []
-                  | [ xs @ ... , x ] => myMap (f, xs) :+ f (x)
+          last (myMap (x -> x * x, [1 .. 5000], [])) where {
+              | myMap (f, xs, ys) = switch (xs) {
+                  | [] => ys
+                  | [ xs @ ... , x ] => recur (f, xs, f (x) +: ys)
               }
           }
           """ `shouldEqual` pure
-          (ArrayObj (IntObj <$> [ 1, 4, 9, 16 ]))
+          (IntObj 25000000)
 
     describe "works for partially applied functions" do
 
@@ -294,6 +294,7 @@ formulaCtx = unsafePerformEffect $
     , localFnsMap: HashMap.empty
     , argsMap: HashMap.empty
     , modules: Set.empty
+    , fnInfo: Nothing
     , module': preludeModule
     , scope: zero
     , scopeLoc: fromTree $ mkLeaf zero

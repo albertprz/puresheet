@@ -28,6 +28,7 @@ data FnDef = FnDef Var (Array (Var /\ Maybe Type)) (Maybe Type) String
 
 data FnBody
   = FnApply FnBody (Array FnBody)
+  | Recur (Array FnBody)
   | LambdaFn (Array Var) FnBody
   | InfixFnApply (Array QVarOp) (Array FnBody)
   | LeftOpSection QVarOp FnBody
@@ -72,6 +73,7 @@ data Object
   | FnObj FnInfo
   | BuiltinFnObj BuiltinFnInfo
   | NullObj
+  | LoopObj (Array Object)
 
 newtype FnInfo = FnInfo
   { id :: Maybe FnId
@@ -149,6 +151,7 @@ instance Show Object where
     FnObj _ -> "function"
     BuiltinFnObj _ -> "builtin-function"
     NullObj -> "null"
+    LoopObj _ -> "loop"
 
 instance Eq Object where
   eq (BoolObj x) (BoolObj y) = x == y
@@ -212,6 +215,7 @@ objectToSerialObject = case _ of
   FnObj _ -> SerialNullObj
   BuiltinFnObj _ -> SerialNullObj
   NullObj -> SerialNullObj
+  LoopObj _ -> SerialNullObj
 
 derive newtype instance Eq Scope
 derive newtype instance Ord Scope

@@ -11,6 +11,9 @@ import App.SyntaxTree.FnDef (Associativity(..), BuiltinFnInfo, FnBody(..), FnDef
 import App.SyntaxTree.Pattern (Pattern(..))
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is)
+import Bookhound.Utils.Array (hasSome)
+import Control.Monad.Rec.Class (Step(..), tailRecM)
+import Control.Monad.State (State)
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap as HashMap
@@ -30,12 +33,13 @@ type LocalFormulaCtx =
   , localFnsMap :: HashMap (Scope /\ Var) FnInfo
   , argsMap :: HashMap (Scope /\ Var) FnInfo
   , module' :: Module
+  , fnInfo :: Maybe FnInfo
   , scope :: Scope
   , scopeLoc :: Loc Scope
   , lambdaCount :: Int
   }
 
-type EvalM a = forall m. MonadState LocalFormulaCtx m => ExceptT EvalError m a
+type EvalM a = ExceptT EvalError (State LocalFormulaCtx) a
 
 registerBindings :: Array FnDef -> EvalM Unit
 registerBindings bindings = do
@@ -48,6 +52,18 @@ registerBindings bindings = do
     { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)
         st.scopeLoc
     }
+
+tailCallWrapper :: EvalM Object -> EvalM Object
+tailCallWrapper action = untilLoopEnd \argObjs -> do
+  when (hasSome argObjs) do
+    { fnInfo } <- get
+    (put =<< getNewFnState (unsafeFromJust fnInfo) (Object' <$> argObjs))
+  action
+
+untilLoopEnd :: (Array Object -> EvalM Object) -> EvalM Object
+untilLoopEnd action = [] # tailRecM \args -> action args <#> case _ of
+  LoopObj x -> Loop x
+  x -> Done x
 
 registerLocalFn :: Scope -> FnDef -> EvalM Unit
 registerLocalFn scope fnDef =
@@ -150,23 +166,28 @@ insertFnDef scope (FnDef fnName params returnType doc body) =
     }
 
 getNewFnState :: FnInfo -> Array FnBody -> EvalM LocalFormulaCtx
-getNewFnState (FnInfo { id: maybeFnId, scope, params, argsMap }) fnArgs =
+getNewFnState
+  fnInfo@(FnInfo { id: maybeFnId, scope, params, argsMap })
+  fnArgs =
   do
     st <- get
     let
-      newArgsMap = HashMap.union argsMap $ HashMap.union argBindings st.argsMap
+      newArgsMap = HashMap.union argsMap
+        $ HashMap.union argBindings st.argsMap
     pure $ case maybeFnId of
       Just { fnModule } ->
         st
           { argsMap = newArgsMap
           , localFnsMap = HashMap.empty
           , module' = fnModule
+          , fnInfo = Just fnInfo
           , scope = zero
           , scopeLoc = fromTree $ mkLeaf zero
           }
       Nothing -> st
         { argsMap = newArgsMap
         , scope = scope
+        , fnInfo = Just fnInfo
         , scopeLoc = goToNode scope st.scopeLoc
         }
   where

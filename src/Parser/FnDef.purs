@@ -48,6 +48,9 @@ fnBody = whereExpr <|> topLevelExpr
     <$> token fnForm
     <*> argListOf openForm
 
+  recur = defer \_ -> Recur
+    <$> (isToken "recur" *> argListOf openForm)
+
   lambdaFn = defer \_ -> LambdaFn
     <$> (argListOf var <|> pure <$> var)
     <*> (isToken "->" *> fnBody)
@@ -99,6 +102,7 @@ fnBody = whereExpr <|> topLevelExpr
       <|> arrayRange
       <|> (CellValue' <$> cellValue)
       <|> (Cell' <$> cell)
+      <|> recur
       <|> fnOp
       <|> fnApply
       <|> fnVar
