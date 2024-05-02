@@ -37359,7 +37359,7 @@ def average (xs: [Number]): Number =
   var component8 = /* @__PURE__ */ component(function(v) {
     return function(v1) {
       return bind21(useRouter$prime3)(function(v2) {
-        return discard15(useLifecycleEffect(discard27(v2.value1.navigate(SpreadsheetView.value))(function() {
+        return discard15(useLifecycleEffect(discard27(v2.value1.navigate(v2.value0))(function() {
           return bind115(subscribeWindowUnload1)(function(subscriptionId) {
             return pure39(new Just(unsubscribe3(subscriptionId)));
           });
