@@ -18,7 +18,6 @@
   , "fast-vect"
   , "filterable"
   , "foldable-traversable"
-  , "foreign"
   , "halogen"
   , "halogen-hooks"
   , "halogen-hooks-extra"

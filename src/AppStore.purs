@@ -7,6 +7,9 @@ import App.Components.Spreadsheet.Cell (Cell, CellValue)
 import App.Components.Spreadsheet.Formula (Formula, FormulaId)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Interpreter.Module (reloadModule)
+import App.Lib.Array (array)
+import App.Lib.Matrix (matrix)
+import App.Lib.Prelude (prelude)
 import App.SyntaxTree.Common (Module, QVar, QVarOp, preludeModule)
 import App.SyntaxTree.FnDef (FnInfo, OpInfo)
 import Data.Argonaut.Decode (fromJsonString)
@@ -16,8 +19,6 @@ import Data.Set as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree.Zipper (fromTree)
 import Effect.Console as Logger
-import Foreign (readArray, readString, unsafeToForeign)
-import Foreign.Index ((!))
 import Record (merge)
 import Record.Extra (pick)
 import Web.HTML (window)
@@ -75,24 +76,16 @@ getCachedStore = do
 
 getInitialStore :: forall m. MonadEffect m => m Store
 getInitialStore = liftEffect do
-  loadedModules <- getLoadedModules
   (errors /\ newStore) <- runStateT (traverse reloadModule loadedModules)
     emptyStore
   traverse_ logError (foldMap blush errors)
   pure newStore
   where
+  loadedModules = [ prelude, matrix, array ]
   logError err = do
     Logger.error
       ("Module load error \n" <> "Parse Error: " <> show err)
     pure emptyStore
-  getLoadedModules =
-    map (fromRight mempty)
-      $ runExceptT
-      $ traverse readString
-      =<< readArray
-      =<< (_ ! "loadedModules")
-      =<< unsafeToForeign
-      <$> liftEffect window
 
 getFromLocalStorage :: forall m. MonadEffect m => m (Maybe Store)
 getFromLocalStorage = liftEffect do

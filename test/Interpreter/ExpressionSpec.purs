@@ -2,20 +2,16 @@ module Interpreter.ExpressionSpec where
 
 import TestPrelude
 
+import App.AppStore (emptyStore, mkLocalContext)
 import App.Components.Spreadsheet.Cell (Column(..), Row(..))
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.Evaluator.Errors (EvalError(..), LexicalError(..), MatchError(..), TypeError(..))
 import App.Interpreter.Expression (RunError(..))
 import App.Interpreter.Expression as Interpreter
 import App.Interpreter.Module (reloadModule)
-import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
+import App.Lib.Prelude (prelude)
+import App.SyntaxTree.Common (QVar(..), QVarOp(..), Var(..), VarOp(..))
 import App.SyntaxTree.FnDef (Object(..))
-import Data.HashMap as HashMap
-import Data.Set as Set
-import Data.Tree.Zipper (fromTree)
-import Effect.Unsafe (unsafePerformEffect)
-import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile, realpath)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
@@ -275,28 +271,8 @@ evalError :: forall a. EvalError -> Either RunError a
 evalError = Left <<< EvalError'
 
 formulaCtx :: LocalFormulaCtx
-formulaCtx = unsafePerformEffect $
-  execStateT loadModuleFile emptyFormulaCtx
+formulaCtx =
+  execState loadPrelude $ mkLocalContext emptyStore
   where
-  loadModuleFile = do
-    fp <- liftEffect $ realpath "lib/Prelude.pursh"
-    contents <- liftEffect $ readTextFile UTF8 fp
-    resultOrErr <- reloadModule contents
-    liftEffect $
-      either (throw <<< ("Parser Error: " <> _) <<< show) pure resultOrErr
-
-  emptyFormulaCtx =
-    { tableData: HashMap.empty
-    , fnsMap: HashMap.empty
-    , operatorsMap: HashMap.empty
-    , aliasedModulesMap: HashMap.empty
-    , importedModulesMap: HashMap.empty
-    , localFnsMap: HashMap.empty
-    , argsMap: HashMap.empty
-    , modules: Set.empty
-    , fnInfo: Nothing
-    , module': preludeModule
-    , scope: zero
-    , scopeLoc: fromTree $ mkLeaf zero
-    , lambdaCount: zero
-    }
+  loadPrelude =
+    unsafeFromJust <<< hush <$> reloadModule prelude

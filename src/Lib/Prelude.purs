@@ -1,5 +1,8 @@
-module Prelude
+module App.Lib.Prelude where
 
+prelude :: String
+prelude =
+  """module Prelude
 
 op <| = apply R0
 
@@ -201,3 +204,4 @@ def average (xs: [Number]): Number =
     // >>> [1, 2, 3, 4]
     // >>> [-1.5, 3.2, -5.8]
     sum (xs) / 2
+"""

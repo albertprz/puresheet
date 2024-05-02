@@ -40,29 +40,6 @@ for use for enterprise, personal & educational purposes.
 
 ![](assets/screenshot.png)
 
-## Local Deployment
-
-First, clone the repository:
-
-```console
-$ git clone https://github.com/albertprz/puresheet
-$ cd puresheet
-```
-
-Then, install the following dependencies via `npm`:
-
-```console
-$ npm install -g purescript spago parcel
-```
-
-Finally build the project and launch it in localhost:
-
-
-```console
-$ npm run build
-$ npm run serve
-```
-    
 ## Keybindings
 
 #### General
@@ -134,6 +111,26 @@ $ npm run serve
 Note: `Control` bindings also match the `Command` key on Mac OS.
 
 
-## Available functions
+## Local Deployment
 
-Please see the [Prelude module](lib/Prelude.pursh) loaded at startup.
+First, clone the repository:
+
+```console
+$ git clone https://github.com/albertprz/puresheet
+$ cd puresheet
+```
+
+Then, install the necessary dependencies via `npm`:
+
+```console
+$ npm install
+```
+
+Finally build the project and launch it in localhost:
+
+
+```console
+$ npm run build
+$ npm run serve
+```
+    

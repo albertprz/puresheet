@@ -1,4 +1,8 @@
-module Matrix
+module App.Lib.Matrix where
+
+matrix :: String
+matrix =
+  """module Matrix
 
 
 def add (xss: [[Number]], yss: [[Number]]): [[Number]] =
@@ -72,3 +76,4 @@ def average (xss: [[Number]]): Number =
     // >>> [[1, 2], [3, 4]]
     // >>> [[-1.5, 3.2], [-5.8]]
     Prelude.div (sum (xss), 2)
+"""

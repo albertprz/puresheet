@@ -10,8 +10,6 @@ in      conf
               , "aff"
               , "quickcheck"
               , "gen"
-              , "node-fs"
-              , "node-buffer"
               , "effect"
               ]
         }

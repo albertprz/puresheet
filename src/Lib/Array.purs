@@ -1,4 +1,8 @@
-module Array
+module App.Lib.Array where
+
+array :: String
+array =
+  """module Array
 
 
 def add (xs: [Number], ys: [Number]): [Number] =
@@ -24,3 +28,4 @@ def div (xs: [Number], ys: [Number]): [Number] =
     // >>> [1, 2, 3], [4, 5, 6]
     // >>> [1, 2, 3], [-1, -2, -3]
     Prelude.zipWith (Prelude.div, xs, ys)
+"""

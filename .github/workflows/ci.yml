@@ -46,3 +46,13 @@ jobs:
 
       - name: Run the tests
         run: npm run test
+
+      - name: Bundle the app
+        run: npm run bundle
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./prod
