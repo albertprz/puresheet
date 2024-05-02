@@ -37,7 +37,6 @@ component = Hooks.component \_ _ -> Hooks.do
   route /\ { navigate } <- useRouter'
 
   useLifecycleEffect do
-    navigate route
     subscriptionId <- subscribeWindowUnload
     pure $ Just $ Hooks.unsubscribe subscriptionId
 
