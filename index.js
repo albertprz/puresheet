@@ -37297,7 +37297,6 @@ def average (xs: [Number]): Number =
   var bind115 = /* @__PURE__ */ bind(bindHookM);
   var bindFlipped113 = /* @__PURE__ */ bindFlipped(bindHookM);
   var useRouter$prime3 = /* @__PURE__ */ useRouter$prime(monadRouterRouteAppM);
-  var discard27 = /* @__PURE__ */ discard(discardUnit)(bindHookM);
   var pure39 = /* @__PURE__ */ pure(applicativeHookM);
   var captures3 = /* @__PURE__ */ captures(/* @__PURE__ */ eqRec()(/* @__PURE__ */ eqRowCons(eqRowNil)()({
     reflectSymbol: function() {
@@ -37330,8 +37329,8 @@ def average (xs: [Number]): Number =
     var liftEffect14 = liftEffect(dictMonadEffect);
     return function(route) {
       var overflow2 = function() {
-        var $57 = eq51(route)(SpreadsheetView.value);
-        if ($57) {
+        var $55 = eq51(route)(SpreadsheetView.value);
+        if ($55) {
           return "hidden";
         }
         ;
@@ -37359,10 +37358,8 @@ def average (xs: [Number]): Number =
   var component8 = /* @__PURE__ */ component(function(v) {
     return function(v1) {
       return bind21(useRouter$prime3)(function(v2) {
-        return discard15(useLifecycleEffect(discard27(v2.value1.navigate(v2.value0))(function() {
-          return bind115(subscribeWindowUnload1)(function(subscriptionId) {
-            return pure39(new Just(unsubscribe3(subscriptionId)));
-          });
+        return discard15(useLifecycleEffect(bind115(subscribeWindowUnload1)(function(subscriptionId) {
+          return pure39(new Just(unsubscribe3(subscriptionId)));
         })))(function() {
           return discard15(captures3({
             route: v2.value0
@@ -37381,7 +37378,7 @@ def average (xs: [Number]): Number =
                   return pure39(unit);
                 }
                 ;
-                throw new Error("Failed pattern match at App.Components.Application (line 47, column 5 - line 52, column 30): " + [keyCode.constructor.name, ev.constructor.name]);
+                throw new Error("Failed pattern match at App.Components.Application (line 46, column 5 - line 51, column 30): " + [keyCode.constructor.name, ev.constructor.name]);
               };
             };
             return pure26(div6([onKeyDown(mkKeyAction(handleKeyDown))])([styleSheet(css6), slot_1(_headerMenu)(unit)(component5)(unit), slot_22(_spreadsheet)(unit)(component7)({
@@ -37404,7 +37401,7 @@ def average (xs: [Number]): Number =
   var bindFlipped114 = /* @__PURE__ */ bindFlipped(bindMaybe);
   var pure117 = /* @__PURE__ */ pure(applicativeEffect);
   var map92 = /* @__PURE__ */ map(functorEffect);
-  var discard28 = /* @__PURE__ */ discard(discardUnit);
+  var discard27 = /* @__PURE__ */ discard(discardUnit);
   var throwError2 = /* @__PURE__ */ throwError(monadThrowAff);
   var selectElement2 = function(query4) {
     return bind37(liftEffect9(bindFlipped26(composeKleisliFlipped6(function() {
@@ -37433,7 +37430,7 @@ def average (xs: [Number]): Number =
       return nonCanceler;
     };
   });
-  var awaitBody = /* @__PURE__ */ discard28(bindAff)(awaitLoad)(function() {
+  var awaitBody = /* @__PURE__ */ discard27(bindAff)(awaitLoad)(function() {
     return bind37(selectElement2("body"))(function(body4) {
       return maybe(throwError2(error("Could not find body")))(pure40)(body4);
     });
@@ -37511,8 +37508,8 @@ def average (xs: [Number]): Number =
   var lookup18 = /* @__PURE__ */ lookup3(ordSubscriptionId);
   var bind116 = /* @__PURE__ */ bind(bindAff);
   var liftEffect10 = /* @__PURE__ */ liftEffect(monadEffectAff);
-  var discard29 = /* @__PURE__ */ discard(discardUnit);
-  var discard111 = /* @__PURE__ */ discard29(bindAff);
+  var discard28 = /* @__PURE__ */ discard(discardUnit);
+  var discard111 = /* @__PURE__ */ discard28(bindAff);
   var traverse_16 = /* @__PURE__ */ traverse_(applicativeAff);
   var traverse_23 = /* @__PURE__ */ traverse_16(foldableList);
   var fork4 = /* @__PURE__ */ fork2(monadForkAff);
@@ -37790,7 +37787,7 @@ def average (xs: [Number]): Number =
 
   // output/Halogen.Aff.Driver/index.js
   var bind38 = /* @__PURE__ */ bind(bindEffect);
-  var discard30 = /* @__PURE__ */ discard(discardUnit);
+  var discard29 = /* @__PURE__ */ discard(discardUnit);
   var for_2 = /* @__PURE__ */ for_(applicativeEffect)(foldableMaybe);
   var traverse_17 = /* @__PURE__ */ traverse_(applicativeAff)(foldableList);
   var fork5 = /* @__PURE__ */ fork2(monadForkAff);
@@ -37798,7 +37795,7 @@ def average (xs: [Number]): Number =
   var traverse_18 = /* @__PURE__ */ traverse_(applicativeEffect);
   var traverse_24 = /* @__PURE__ */ traverse_18(foldableMaybe);
   var traverse_33 = /* @__PURE__ */ traverse_18(foldableMap);
-  var discard210 = /* @__PURE__ */ discard30(bindAff);
+  var discard210 = /* @__PURE__ */ discard29(bindAff);
   var parSequence_4 = /* @__PURE__ */ parSequence_(parallelAff)(applicativeParAff)(foldableList);
   var liftEffect11 = /* @__PURE__ */ liftEffect(monadEffectAff);
   var pure42 = /* @__PURE__ */ pure(applicativeEffect);
