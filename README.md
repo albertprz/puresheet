@@ -40,6 +40,12 @@ for use for enterprise, personal & educational purposes.
 
 ![](assets/screenshot.png)
 
+
+## Available functions
+
+See the [Function explorer](https://albertprz.github.io/puresheet/#/explorer).
+
+
 ## Keybindings
 
 #### General
