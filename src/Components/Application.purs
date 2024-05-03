@@ -41,7 +41,7 @@ component = Hooks.component \_ _ -> Hooks.do
     pure $ Just $ Hooks.unsubscribe subscriptionId
 
   Hooks.captures { route } useTickEffect do
-    toogleOverflow route *> mempty
+    toggleOverflow route *> mempty
   let
     handleKeyDown keyCode ev
       | ctrlKey ev && keyCode == CharKeyCode 'J' =
@@ -52,7 +52,6 @@ component = Hooks.component \_ _ -> Hooks.do
   Hooks.pure do
     div
       [ onKeyDown $ mkKeyAction handleKeyDown ]
-
       [ styleSheet Application.css
       , slot_ _headerMenu unit HeaderMenu.component unit
       , slot_ _spreadsheet unit Spreadsheet.component { route }
@@ -69,8 +68,8 @@ subscribeWindowUnload = do
       (Window.toEventTarget window)
       (const $ Just (persistInLocalStorage =<< getStore))
 
-toogleOverflow :: forall m. MonadEffect m => Route -> m Unit
-toogleOverflow route = liftEffect do
+toggleOverflow :: forall m. MonadEffect m => Route -> m Unit
+toggleOverflow route = liftEffect do
   body <- Document.body =<< Window.document =<< window
   traverse_ (setAttribute "style" ("overflow: " <> overflow))
     (toElement <$> body)

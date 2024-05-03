@@ -120,7 +120,7 @@ def reduce (f: B -> A -> B, start: B, xs: [A]): B =
     // Uses a function and an initial value to accumulate over a collection
     // >>> '+, 7, [1, 2, 3, 4]
     // >>> '++, "hello", ["abc", "f"]
-      go (f, start, reverse (xs), start) where {
+      go (f, start, xs, start) where {
         | go (f, start, xs, acc) = switch (xs) {
             | []             => acc
             | [ x, xs @ ... ] => recur (f, start, xs, f(acc, x))

@@ -16,10 +16,10 @@ typeParam :: Parser TypeParam
 typeParam = TypeParam <$> upper
 
 typeVar :: Parser TypeVar
-typeVar = TypeVar <$> satisfy (not <<< String.null) (ident upper)
+typeVar = TypeVar <$> satisfy ((_ > 1) <<< String.length) (ident upper)
 
 type' :: Parser Type
-type' = defer \_ -> arrow <|> union <|> atom
+type' = defer \_ -> complexType <|> atom
   where
 
   typeApply = defer \_ ->
@@ -27,14 +27,15 @@ type' = defer \_ -> arrow <|> union <|> atom
       <|> (ParamTypeApply <$> typeParam <*> argListOf type')
 
   arrow = defer \_ -> ArrowTypeApply <$> multipleSepBy (isToken "->")
-    (atom <|> union <|> betweenParens arrow)
+    (atom <|> betweenParens complexType)
 
   union = defer \_ -> UnionTypeApply <$> multipleSepBy (isToken "|")
-    (atom <|> arrow <|> betweenParens union)
+    (atom <|> betweenParens complexType)
 
   array = defer \_ -> ArrayTypeApply <$> betweenSquare type'
 
   typeVar' = TypeVar' <$> typeVar
   typeParam' = TypeParam' <$> typeParam
 
+  complexType = defer \_ -> arrow <|> union
   atom = defer \_ -> typeApply <|> typeVar' <|> typeParam' <|> array
