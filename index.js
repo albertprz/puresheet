@@ -12982,12 +12982,11 @@
   var alt11 = /* @__PURE__ */ alt(altParser);
   var apply8 = /* @__PURE__ */ apply(applyParser);
   var isToken3 = /* @__PURE__ */ isToken(isMatchString);
-  var typeVar = /* @__PURE__ */ map35(TypeVar)(/* @__PURE__ */ satisfy(/* @__PURE__ */ function() {
-    var $13 = not(heytingAlgebraBoolean);
-    return function($14) {
-      return $13($$null3($14));
-    };
-  }())(/* @__PURE__ */ ident(upper2)));
+  var typeVar = /* @__PURE__ */ map35(TypeVar)(/* @__PURE__ */ satisfy(function($15) {
+    return function(v) {
+      return v > 1;
+    }(length4($15));
+  })(/* @__PURE__ */ ident(upper2)));
   var typeParam = /* @__PURE__ */ map35(TypeParam)(upper2);
   var $lazy_type$prime = /* @__PURE__ */ $runtime_lazy7("type'", "App.Parser.Type", function() {
     var typeVar$prime = map35(TypeVar$prime.create)(typeVar);
@@ -13003,18 +13002,24 @@
     });
     var $lazy_arrow = $runtime_lazy7("arrow", "App.Parser.Type", function() {
       return defer4(function(v) {
-        return map35(ArrowTypeApply.create)(multipleSepBy2(isToken3("->"))(alt11(atom)(alt11($lazy_union(30))(betweenParens($lazy_arrow(30))))));
+        return map35(ArrowTypeApply.create)(multipleSepBy2(isToken3("->"))(alt11(atom)(betweenParens($lazy_complexType(30)))));
+      });
+    });
+    var $lazy_complexType = $runtime_lazy7("complexType", "App.Parser.Type", function() {
+      return defer4(function(v) {
+        return alt11($lazy_arrow(40))($lazy_union(40));
       });
     });
     var $lazy_union = $runtime_lazy7("union", "App.Parser.Type", function() {
       return defer4(function(v) {
-        return map35(UnionTypeApply.create)(multipleSepBy2(isToken3("|"))(alt11(atom)(alt11($lazy_arrow(33))(betweenParens($lazy_union(33))))));
+        return map35(UnionTypeApply.create)(multipleSepBy2(isToken3("|"))(alt11(atom)(betweenParens($lazy_complexType(33)))));
       });
     });
     var arrow = $lazy_arrow(29);
+    var complexType = $lazy_complexType(40);
     var union8 = $lazy_union(32);
     return defer4(function(v) {
-      return alt11(arrow)(alt11(union8)(atom));
+      return alt11(complexType)(atom);
     });
   });
   var type$prime = /* @__PURE__ */ $lazy_type$prime(21);
@@ -16178,7 +16183,7 @@ def reduce (f: B -> A -> B, start: B, xs: [A]): B =
     // Uses a function and an initial value to accumulate over a collection
     // >>> '+, 7, [1, 2, 3, 4]
     // >>> '++, "hello", ["abc", "f"]
-      go (f, start, reverse (xs), start) where {
+      go (f, start, xs, start) where {
         | go (f, start, xs, acc) = switch (xs) {
             | []             => acc
             | [ x, xs @ ... ] => recur (f, start, xs, f(acc, x))
@@ -37325,7 +37330,7 @@ def average (xs: [Number]): Number =
       return "explorer";
     }
   })(ordUnit);
-  var toogleOverflow = function(dictMonadEffect) {
+  var toggleOverflow = function(dictMonadEffect) {
     var liftEffect14 = liftEffect(dictMonadEffect);
     return function(route) {
       var overflow2 = function() {
@@ -37342,7 +37347,7 @@ def average (xs: [Number]): Number =
       });
     };
   };
-  var toogleOverflow1 = /* @__PURE__ */ toogleOverflow(monadEffectHookM3);
+  var toggleOverflow1 = /* @__PURE__ */ toggleOverflow(monadEffectHookM3);
   var subscribeWindowUnload = function(dictMonadEffect) {
     var monadEffectHookM1 = monadEffectHookM(dictMonadEffect);
     var liftEffect14 = liftEffect(monadEffectHookM1);
@@ -37363,7 +37368,7 @@ def average (xs: [Number]): Number =
         })))(function() {
           return discard15(captures3({
             route: v2.value0
-          })(useTickEffect)(applySecond15(toogleOverflow1(v2.value0))(mempty24)))(function() {
+          })(useTickEffect)(applySecond15(toggleOverflow1(v2.value0))(mempty24)))(function() {
             var handleKeyDown = function(keyCode) {
               return function(ev) {
                 if (ctrlKey7(ev) && eq120(keyCode)(new CharKeyCode("J"))) {
