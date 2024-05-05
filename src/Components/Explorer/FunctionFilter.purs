@@ -10,12 +10,14 @@ import App.Parser.Common (token)
 import App.Parser.FnDef (fnBody)
 import App.Parser.Type (type')
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp)
-import App.SyntaxTree.FnDef (FnBody(..), Object)
-import App.SyntaxTree.Type (Type)
+import App.SyntaxTree.FnDef (FnBody(..), FnSig, Object)
+import App.SyntaxTree.Type (Type(..), TypeParam)
 import Bookhound.Parser (runParser)
 import Bookhound.ParserCombinators (is, someSepBy)
 import Bookhound.Parsers.Char (comma)
 import Bookhound.Parsers.String (betweenParens)
+import Data.Array as Array
+import Data.Map as Map
 import Data.String.Utils as String
 
 data FnFilter
@@ -69,8 +71,10 @@ termPredicate ctx fnFilter module' (SuggestionInfo info) =
     evalExample info.fn args ctx == evalResult info.fn result ctx
 
   isSignatureOf paramTypes returnType =
-    filterMap snd info.fnSig.params == paramTypes
-      && (info.fnSig.returnType == Just returnType)
+    any (_ `matchesType` targetType) sourceType
+    where
+    sourceType = buildFnSigType info.fnSig
+    targetType = buildFunctionType paramTypes returnType
 
   isNameLike :: forall a. Show a => a -> a -> Boolean
   isNameLike x y =
@@ -89,3 +93,59 @@ evalResult (QVar module' _) result ctx =
   hush $ evalExprInCtx ctx' result
   where
   ctx' = ctx { module' = unsafeFromJust module' }
+
+buildFnSigType :: FnSig -> Maybe Type
+buildFnSigType { params, returnType } =
+  buildFunctionType <$> traverse snd params <*> returnType
+
+buildFunctionType :: Array Type -> Type -> Type
+buildFunctionType paramTypes returnType =
+  ArrowTypeApply $ Array.snoc paramTypes returnType
+
+countFnSigParams :: FnSig -> Int
+countFnSigParams fnSig =
+  maybe zero countParams $ buildFnSigType fnSig
+
+countParams :: Type -> Int
+countParams = case _ of
+  TypeApply x xs -> sum $ map countParams (Array.cons x xs)
+  ArrowTypeApply xs -> sum $ map countParams xs
+  UnionTypeApply xs -> sum $ map countParams xs
+  ArrayTypeApply x -> countParams x
+  TypeParam' _ -> one
+  _ -> zero
+
+matchesType :: Type -> Type -> Boolean
+matchesType sourceType targetType =
+  replacedType == targetType
+  where
+  replacedType = replaceParams replacements sourceType
+  replacements = findParamReplacements (sourceType /\ targetType)
+
+findParamReplacements :: (Type /\ Type) -> Map TypeParam Type
+findParamReplacements = case _ of
+  TypeApply x xs /\ TypeApply y ys ->
+    Map.unions $ map findParamReplacements
+      $ Array.zip (Array.cons x xs) (Array.cons y ys)
+  ArrowTypeApply xs /\ ArrowTypeApply ys ->
+    Map.unions $ map findParamReplacements $ Array.zip xs ys
+  UnionTypeApply xs /\ ArrowTypeApply ys ->
+    Map.unions $ map findParamReplacements $ Array.zip xs ys
+  ArrayTypeApply x /\ ArrayTypeApply y ->
+    findParamReplacements (x /\ y)
+  TypeParam' param /\ targetType ->
+    Map.singleton param targetType
+  _ /\ _ -> Map.empty
+
+replaceParams :: Map TypeParam Type -> Type -> Type
+replaceParams replacements = case _ of
+  TypeApply x xs -> TypeApply (replace x) (map replace xs)
+  ArrowTypeApply xs -> ArrowTypeApply $ map replace xs
+  UnionTypeApply xs -> UnionTypeApply $ map replace xs
+  ArrayTypeApply x -> ArrayTypeApply $ replace x
+  TypeParam' param
+    | Just targetType <- Map.lookup param replacements -> targetType
+    | otherwise -> TypeParam' param
+  x -> x
+  where
+  replace x = replaceParams replacements x

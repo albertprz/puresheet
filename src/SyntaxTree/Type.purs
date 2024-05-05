@@ -12,8 +12,7 @@ newtype TypeParam = TypeParam Char
 newtype TypeVar = TypeVar String
 
 data Type
-  = VarTypeApply TypeVar (Array Type)
-  | ParamTypeApply TypeParam (Array Type)
+  = TypeApply Type (Array Type)
   | ArrowTypeApply (Array Type)
   | UnionTypeApply (Array Type)
   | ArrayTypeApply Type
@@ -28,6 +27,8 @@ instance Show TypeVar where
   show = unwrap
 
 derive instance Newtype TypeParam _
+
+derive newtype instance Ord TypeParam
 
 derive newtype instance EncodeJson TypeParam
 

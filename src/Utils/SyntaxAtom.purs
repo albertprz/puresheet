@@ -66,8 +66,7 @@ fnSigToSyntaxAtoms (QVar _ fnName) { params, returnType } =
 
 typeToSyntaxAtoms :: Type -> Array SyntaxAtom
 typeToSyntaxAtoms = case _ of
-  VarTypeApply x ys -> typeApply x ys
-  ParamTypeApply x ys -> typeApply x ys
+  TypeApply x ys -> typeApply x ys
   ArrowTypeApply xs -> infixTypeApply "➾" xs
   UnionTypeApply xs -> infixTypeApply "|" xs
   ArrayTypeApply x -> wrapSquare $ typeToSyntaxAtoms x
@@ -80,8 +79,9 @@ typeToSyntaxAtoms = case _ of
   var :: forall a. Show a => a -> SyntaxAtom
   var = Cell' <<< show
 
-  typeApply :: forall a. Show a => a -> Array Type -> Array SyntaxAtom
-  typeApply x ys = [ var x, OtherText " " ]
+  typeApply :: Type -> Array Type -> Array SyntaxAtom
+  typeApply x ys = typeToSyntaxAtoms x
+    <> [ OtherText " " ]
     <> wrapArgList (map typeToSyntaxAtoms ys)
 
   infixTypeApply op =

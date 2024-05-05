@@ -23,8 +23,7 @@ type' = defer \_ -> complexType <|> atom
   where
 
   typeApply = defer \_ ->
-    VarTypeApply <$> typeVar <*> argListOf type'
-      <|> (ParamTypeApply <$> typeParam <*> argListOf type')
+    TypeApply <$> (typeVar' <|> typeParam') <*> argListOf type'
 
   arrow = defer \_ -> ArrowTypeApply <$> multipleSepBy (isToken "->")
     (atom <|> betweenParens complexType)

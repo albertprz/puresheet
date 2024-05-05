@@ -6,7 +6,7 @@ import App.AppM (AppM)
 import App.AppStore (mkLocalContext)
 import App.CSS.ClassNames (explorerContainer, formulaBox, functionContainer, functionDescription, functionDoc, functionFiltersContainer, functionRow, functionsList, invisibleContainer, termTypeLabel, validFormula)
 import App.CSS.Ids (functionRowId)
-import App.Components.Explorer.FunctionFilter (evalExample, parseFnFilter, termPredicate)
+import App.Components.Explorer.FunctionFilter (FnFilter(..), countFnSigParams, evalExample, parseFnFilter, termPredicate)
 import App.Components.Explorer.Handler (handleModuleTypeaheadOutput)
 import App.Components.Explorer.Models (ExplorerAction(..), ExplorerState, Slots, _moduleTypeahead, allModules, functionFilterInputRef)
 import App.Components.Typeahead as Typeahead
@@ -75,12 +75,17 @@ render { route, store, module', fnFilter, fnFilterText, selectedRow } =
         , style "border-collapse: collapse"
         , onKeyDown $ mkKeyAction TableKeyDown
         ]
-        (mapWithIndex renderFunctionRow infos)
+        (mapWithIndex renderFunctionRow sortedInfos)
     ]
   where
   maxExampleLen = alaF Max foldMap findExampleLength $ lines doc
   doc = foldMap _.fnSig.doc selectedSuggestion
   fn = map _.fn selectedSuggestion
+  sortedInfos
+    | Just (FnSignature _ _) <- fnFilter = Array.sortWith
+        (countFnSigParams <<< _.fnSig <<< unwrap)
+        infos
+    | otherwise = infos
   infos = filter (termPredicate ctx fnFilter module')
     $ filterMap (getSuggestionInfo ctx)
     $ Array.fromFoldable
