@@ -103,10 +103,10 @@
     return dict.map;
   };
   var mapFlipped = function(dictFunctor) {
-    var map137 = map(dictFunctor);
+    var map138 = map(dictFunctor);
     return function(fa) {
       return function(f) {
-        return map137(f)(fa);
+        return map138(f)(fa);
       };
     };
   };
@@ -114,17 +114,17 @@
     return map(dictFunctor)($$const(unit));
   };
   var voidLeft = function(dictFunctor) {
-    var map137 = map(dictFunctor);
+    var map138 = map(dictFunctor);
     return function(f) {
       return function(x) {
-        return map137($$const(x))(f);
+        return map138($$const(x))(f);
       };
     };
   };
   var voidRight = function(dictFunctor) {
-    var map137 = map(dictFunctor);
+    var map138 = map(dictFunctor);
     return function(x) {
-      return map137($$const(x));
+      return map138($$const(x));
     };
   };
   var functorFn = {
@@ -158,30 +158,30 @@
     return dict.apply;
   };
   var applyFirst = function(dictApply) {
-    var apply15 = apply(dictApply);
+    var apply16 = apply(dictApply);
     var map96 = map(dictApply.Functor0());
     return function(a3) {
       return function(b2) {
-        return apply15(map96($$const)(a3))(b2);
+        return apply16(map96($$const)(a3))(b2);
       };
     };
   };
   var applySecond = function(dictApply) {
-    var apply15 = apply(dictApply);
+    var apply16 = apply(dictApply);
     var map96 = map(dictApply.Functor0());
     return function(a3) {
       return function(b2) {
-        return apply15(map96($$const(identity2))(a3))(b2);
+        return apply16(map96($$const(identity2))(a3))(b2);
       };
     };
   };
   var lift2 = function(dictApply) {
-    var apply15 = apply(dictApply);
+    var apply16 = apply(dictApply);
     var map96 = map(dictApply.Functor0());
     return function(f) {
       return function(a3) {
         return function(b2) {
-          return apply15(map96(f)(a3))(b2);
+          return apply16(map96(f)(a3))(b2);
         };
       };
     };
@@ -224,11 +224,11 @@
     };
   };
   var liftA1 = function(dictApplicative) {
-    var apply15 = apply(dictApplicative.Apply0());
+    var apply16 = apply(dictApplicative.Apply0());
     var pure119 = pure(dictApplicative);
     return function(f) {
       return function(a3) {
-        return apply15(pure119(f))(a3);
+        return apply16(pure119(f))(a3);
       };
     };
   };
@@ -1218,11 +1218,11 @@
   };
   var optional = function(dictAlt) {
     var alt29 = alt(dictAlt);
-    var map137 = map(dictAlt.Functor0());
+    var map138 = map(dictAlt.Functor0());
     return function(dictApplicative) {
       var pure44 = pure(dictApplicative);
       return function(a3) {
-        return alt29(map137(Just.create)(a3))(pure44(Nothing.value));
+        return alt29(map138(Just.create)(a3))(pure44(Nothing.value));
       };
     };
   };
@@ -2979,6 +2979,12 @@
       return minimumBy(dictFoldable)(compare9);
     };
   };
+  var sum = function(dictFoldable) {
+    var foldl22 = foldl(dictFoldable);
+    return function(dictSemiring) {
+      return foldl22(add(dictSemiring))(zero(dictSemiring));
+    };
+  };
   var foldableMaybe = {
     foldr: function(v) {
       return function(v1) {
@@ -3281,7 +3287,7 @@
         return xs.concat(ys);
       };
     }
-    return function(apply15) {
+    return function(apply16) {
       return function(map96) {
         return function(pure44) {
           return function(f) {
@@ -3293,12 +3299,12 @@
                   case 1:
                     return map96(array1)(f(array4[bot]));
                   case 2:
-                    return apply15(map96(array2)(f(array4[bot])))(f(array4[bot + 1]));
+                    return apply16(map96(array2)(f(array4[bot])))(f(array4[bot + 1]));
                   case 3:
-                    return apply15(apply15(map96(array3)(f(array4[bot])))(f(array4[bot + 1])))(f(array4[bot + 2]));
+                    return apply16(apply16(map96(array3)(f(array4[bot])))(f(array4[bot + 1])))(f(array4[bot + 2]));
                   default:
                     var pivot = bot + Math.floor((top9 - bot) / 4) * 2;
-                    return apply15(map96(concat22)(go2(bot, pivot)))(go2(pivot, top9));
+                    return apply16(map96(concat22)(go2(bot, pivot)))(go2(pivot, top9));
                 }
               }
               return go2(0, array4.length);
@@ -3892,7 +3898,7 @@
     }());
   };
   var filterA = function(dictApplicative) {
-    var traverse16 = traverse2(dictApplicative);
+    var traverse17 = traverse2(dictApplicative);
     var map314 = map(dictApplicative.Apply0().Functor0());
     return function(p2) {
       var $191 = map314(mapMaybe(function(v) {
@@ -3902,7 +3908,7 @@
         ;
         return Nothing.value;
       }));
-      var $192 = traverse16(function(x) {
+      var $192 = traverse17(function(x) {
         return map314(Tuple.create(x))(p2(x));
       });
       return function($193) {
@@ -5085,11 +5091,11 @@
   var traversableList = {
     traverse: function(dictApplicative) {
       var Apply0 = dictApplicative.Apply0();
-      var map137 = map(Apply0.Functor0());
+      var map138 = map(Apply0.Functor0());
       var lift23 = lift2(Apply0);
       var pure119 = pure(dictApplicative);
       return function(f) {
-        var $301 = map137(foldl3(flip(Cons.create))(Nil.value));
+        var $301 = map138(foldl3(flip(Cons.create))(Nil.value));
         var $302 = foldl3(function(acc) {
           var $304 = lift23(flip(Cons.create))(acc);
           return function($305) {
@@ -6430,8 +6436,8 @@
     traverse: function(dictApplicative) {
       var pure44 = pure(dictApplicative);
       var Apply0 = dictApplicative.Apply0();
-      var apply15 = apply(Apply0);
-      var map137 = map(Apply0.Functor0());
+      var apply16 = apply(Apply0);
+      var map138 = map(Apply0.Functor0());
       return function(f) {
         var go2 = function(v) {
           if (v instanceof Leaf) {
@@ -6439,7 +6445,7 @@
           }
           ;
           if (v instanceof Node) {
-            return apply15(apply15(map137(function(l$prime) {
+            return apply16(apply16(map138(function(l$prime) {
               return function(v$prime) {
                 return function(r$prime) {
                   return new Node(v.value0, v.value1, v.value2, v$prime, l$prime, r$prime);
@@ -6623,6 +6629,12 @@
   var empty3 = /* @__PURE__ */ function() {
     return Leaf.value;
   }();
+  var unions = function(dictOrd) {
+    var union13 = union2(dictOrd);
+    return function(dictFoldable) {
+      return foldl(dictFoldable)(union13)(empty3);
+    };
+  };
   var difference2 = function(dictOrd) {
     var compare9 = compare(dictOrd);
     return function(m1) {
@@ -8104,15 +8116,15 @@
       m = this.content[i2].ifoldMap(m, mappend, f);
     return m;
   };
-  MapNode.prototype.itraverse = function(pure44, apply15, f) {
+  MapNode.prototype.itraverse = function(pure44, apply16, f) {
     var m = pure44(this.travHelper());
     for (var i2 = 0; i2 < popCount(this.datamap) * 2; ) {
       var k = this.content[i2++];
       var v = this.content[i2++];
-      m = apply15(m)(f(k)(v));
+      m = apply16(m)(f(k)(v));
     }
     for (; i2 < this.content.length; i2++)
-      m = apply15(m)(this.content[i2].itraverse(pure44, apply15, f));
+      m = apply16(m)(this.content[i2].itraverse(pure44, apply16, f));
     return m;
   };
   function Collision(keys5, values2) {
@@ -8227,10 +8239,10 @@
       return new Collision(self.keys, self.values.slice());
     });
   };
-  Collision.prototype.itraverse = function(pure44, apply15, f) {
+  Collision.prototype.itraverse = function(pure44, apply16, f) {
     var m = pure44(this.travHelper());
     for (var i2 = 0; i2 < this.keys.length; i2++)
-      m = apply15(m)(f(this.keys[i2])(this.values[i2]));
+      m = apply16(m)(f(this.keys[i2])(this.values[i2]));
     return m;
   };
   Collision.prototype.unionWith = function(eq56, hash6, f, that, shift) {
@@ -8674,13 +8686,13 @@
     };
   };
   var alter2 = function(dictHashable) {
-    var lookup110 = lookup5(dictHashable);
+    var lookup111 = lookup5(dictHashable);
     var delete1 = $$delete3(dictHashable);
     var insert110 = insert7(dictHashable);
     return function(f) {
       return function(k) {
         return function(m) {
-          var v = f(lookup110(k)(m));
+          var v = f(lookup111(k)(m));
           if (v instanceof Nothing) {
             return delete1(k)(m);
           }
@@ -8734,11 +8746,11 @@
   var lookup22 = function(dictHashable) {
     var lookup20 = lookup5(dictHashable);
     return function(dictHashable1) {
-      var lookup110 = lookup5(dictHashable1);
+      var lookup111 = lookup5(dictHashable1);
       return function(k) {
         return function(dict1) {
           return function(dict2) {
-            return bindFlipped5(flip(lookup110)(dict2))(lookup20(k)(dict1));
+            return bindFlipped5(flip(lookup111)(dict2))(lookup20(k)(dict1));
           };
         };
       };
@@ -9290,11 +9302,11 @@
     };
   };
   var charTraverse = function(dictApplicative) {
-    var map137 = map(dictApplicative.Apply0().Functor0());
-    var traverse16 = traverse4(dictApplicative);
+    var map138 = map(dictApplicative.Apply0().Functor0());
+    var traverse17 = traverse4(dictApplicative);
     return function(f) {
-      var $28 = map137(fromCharArray);
-      var $29 = traverse16(f);
+      var $28 = map138(fromCharArray);
+      var $29 = traverse17(f);
       return function($30) {
         return $28($29(toCharArray($30)));
       };
@@ -11195,18 +11207,18 @@
   };
   var foldFree = function(dictMonadRec) {
     var Monad0 = dictMonadRec.Monad0();
-    var map137 = map(Monad0.Bind1().Apply0().Functor0());
+    var map138 = map(Monad0.Bind1().Apply0().Functor0());
     var pure119 = pure(Monad0.Applicative0());
     var tailRecM5 = tailRecM(dictMonadRec);
     return function(k) {
       var go2 = function(f) {
         var v = toView(f);
         if (v instanceof Return) {
-          return map137(Done.create)(pure119(v.value0));
+          return map138(Done.create)(pure119(v.value0));
         }
         ;
         if (v instanceof Bind) {
-          return map137(function($199) {
+          return map138(function($199) {
             return Loop.create(v.value1($199));
           })(k(v.value0));
         }
@@ -12680,14 +12692,9 @@
 
   // output/App.SyntaxTree.Type/index.js
   var unwrap6 = /* @__PURE__ */ unwrap();
-  var VarTypeApplyIsSymbol = {
+  var TypeApplyIsSymbol = {
     reflectSymbol: function() {
-      return "VarTypeApply";
-    }
-  };
-  var ParamTypeApplyIsSymbol = {
-    reflectSymbol: function() {
-      return "ParamTypeApply";
+      return "TypeApply";
     }
   };
   var ArrowTypeApplyIsSymbol = {
@@ -12715,13 +12722,11 @@
       return "TypeParam'";
     }
   };
-  var encodeRepConstructor3 = /* @__PURE__ */ encodeRepConstructor(VarTypeApplyIsSymbol);
-  var encodeRepConstructor12 = /* @__PURE__ */ encodeRepConstructor(ParamTypeApplyIsSymbol);
-  var encodeRepConstructor22 = /* @__PURE__ */ encodeRepConstructor(ArrowTypeApplyIsSymbol);
-  var encodeRepConstructor32 = /* @__PURE__ */ encodeRepConstructor(UnionTypeApplyIsSymbol);
-  var encodeRepConstructor4 = /* @__PURE__ */ encodeRepConstructor(ArrayTypeApplyIsSymbol);
-  var decodeRepConstructor3 = /* @__PURE__ */ decodeRepConstructor(VarTypeApplyIsSymbol);
-  var decodeRepConstructor1 = /* @__PURE__ */ decodeRepConstructor(ParamTypeApplyIsSymbol);
+  var encodeRepConstructor3 = /* @__PURE__ */ encodeRepConstructor(TypeApplyIsSymbol);
+  var encodeRepConstructor12 = /* @__PURE__ */ encodeRepConstructor(ArrowTypeApplyIsSymbol);
+  var encodeRepConstructor22 = /* @__PURE__ */ encodeRepConstructor(UnionTypeApplyIsSymbol);
+  var encodeRepConstructor32 = /* @__PURE__ */ encodeRepConstructor(ArrayTypeApplyIsSymbol);
+  var decodeRepConstructor3 = /* @__PURE__ */ decodeRepConstructor(TypeApplyIsSymbol);
   var decodeRepConstructorArg3 = /* @__PURE__ */ decodeRepConstructorArg(ArrowTypeApplyIsSymbol);
   var decodeRepConstructorArg1 = /* @__PURE__ */ decodeRepConstructorArg(UnionTypeApplyIsSymbol);
   var decodeRepConstructorArg22 = /* @__PURE__ */ decodeRepConstructorArg(ArrayTypeApplyIsSymbol);
@@ -12731,31 +12736,18 @@
   var TypeParam = function(x) {
     return x;
   };
-  var VarTypeApply = /* @__PURE__ */ function() {
-    function VarTypeApply2(value0, value1) {
+  var TypeApply = /* @__PURE__ */ function() {
+    function TypeApply2(value0, value1) {
       this.value0 = value0;
       this.value1 = value1;
     }
     ;
-    VarTypeApply2.create = function(value0) {
+    TypeApply2.create = function(value0) {
       return function(value1) {
-        return new VarTypeApply2(value0, value1);
+        return new TypeApply2(value0, value1);
       };
     };
-    return VarTypeApply2;
-  }();
-  var ParamTypeApply = /* @__PURE__ */ function() {
-    function ParamTypeApply2(value0, value1) {
-      this.value0 = value0;
-      this.value1 = value1;
-    }
-    ;
-    ParamTypeApply2.create = function(value0) {
-      return function(value1) {
-        return new ParamTypeApply2(value0, value1);
-      };
-    };
-    return ParamTypeApply2;
+    return TypeApply2;
   }();
   var ArrowTypeApply = /* @__PURE__ */ function() {
     function ArrowTypeApply2(value0) {
@@ -12807,76 +12799,69 @@
     };
     return TypeParam$prime2;
   }();
+  var ordTypeParam = ordChar;
   var showTypeVar = {
     show: unwrap6
   };
   var showTypeParam = {
-    show: function($178) {
-      return singleton9(unwrap6($178));
+    show: function($147) {
+      return singleton9(unwrap6($147));
     }
   };
   var genericType_ = {
     to: function(x) {
       if (x instanceof Inl) {
-        return new VarTypeApply(x.value0.value0, x.value0.value1);
+        return new TypeApply(x.value0.value0, x.value0.value1);
       }
       ;
       if (x instanceof Inr && x.value0 instanceof Inl) {
-        return new ParamTypeApply(x.value0.value0.value0, x.value0.value0.value1);
+        return new ArrowTypeApply(x.value0.value0);
       }
       ;
       if (x instanceof Inr && (x.value0 instanceof Inr && x.value0.value0 instanceof Inl)) {
-        return new ArrowTypeApply(x.value0.value0.value0);
+        return new UnionTypeApply(x.value0.value0.value0);
       }
       ;
       if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && x.value0.value0.value0 instanceof Inl))) {
-        return new UnionTypeApply(x.value0.value0.value0.value0);
+        return new ArrayTypeApply(x.value0.value0.value0.value0);
       }
       ;
       if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && (x.value0.value0.value0 instanceof Inr && x.value0.value0.value0.value0 instanceof Inl)))) {
-        return new ArrayTypeApply(x.value0.value0.value0.value0.value0);
+        return new TypeVar$prime(x.value0.value0.value0.value0.value0);
       }
       ;
-      if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && (x.value0.value0.value0 instanceof Inr && (x.value0.value0.value0.value0 instanceof Inr && x.value0.value0.value0.value0.value0 instanceof Inl))))) {
-        return new TypeVar$prime(x.value0.value0.value0.value0.value0.value0);
+      if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && (x.value0.value0.value0 instanceof Inr && x.value0.value0.value0.value0 instanceof Inr)))) {
+        return new TypeParam$prime(x.value0.value0.value0.value0.value0);
       }
       ;
-      if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && (x.value0.value0.value0 instanceof Inr && (x.value0.value0.value0.value0 instanceof Inr && x.value0.value0.value0.value0.value0 instanceof Inr))))) {
-        return new TypeParam$prime(x.value0.value0.value0.value0.value0.value0);
-      }
-      ;
-      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 40, column 1 - line 40, column 31): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 41, column 1 - line 41, column 31): " + [x.constructor.name]);
     },
     from: function(x) {
-      if (x instanceof VarTypeApply) {
+      if (x instanceof TypeApply) {
         return new Inl(new Product(x.value0, x.value1));
       }
       ;
-      if (x instanceof ParamTypeApply) {
-        return new Inr(new Inl(new Product(x.value0, x.value1)));
-      }
-      ;
       if (x instanceof ArrowTypeApply) {
-        return new Inr(new Inr(new Inl(x.value0)));
+        return new Inr(new Inl(x.value0));
       }
       ;
       if (x instanceof UnionTypeApply) {
-        return new Inr(new Inr(new Inr(new Inl(x.value0))));
+        return new Inr(new Inr(new Inl(x.value0)));
       }
       ;
       if (x instanceof ArrayTypeApply) {
-        return new Inr(new Inr(new Inr(new Inr(new Inl(x.value0)))));
+        return new Inr(new Inr(new Inr(new Inl(x.value0))));
       }
       ;
       if (x instanceof TypeVar$prime) {
-        return new Inr(new Inr(new Inr(new Inr(new Inr(new Inl(x.value0))))));
+        return new Inr(new Inr(new Inr(new Inr(new Inl(x.value0)))));
       }
       ;
       if (x instanceof TypeParam$prime) {
-        return new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(x.value0))))));
+        return new Inr(new Inr(new Inr(new Inr(new Inr(x.value0)))));
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 40, column 1 - line 40, column 31): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 41, column 1 - line 41, column 31): " + [x.constructor.name]);
     }
   };
   var genericEncodeJson3 = /* @__PURE__ */ genericEncodeJson(genericType_);
@@ -12900,12 +12885,8 @@
   var eqType = {
     eq: function(x) {
       return function(y) {
-        if (x instanceof VarTypeApply && y instanceof VarTypeApply) {
-          return eq23(x.value0)(y.value0) && eq(eqArray(eqType))(x.value1)(y.value1);
-        }
-        ;
-        if (x instanceof ParamTypeApply && y instanceof ParamTypeApply) {
-          return eq33(x.value0)(y.value0) && eq(eqArray(eqType))(x.value1)(y.value1);
+        if (x instanceof TypeApply && y instanceof TypeApply) {
+          return eq(eqType)(x.value0)(y.value0) && eq(eqArray(eqType))(x.value1)(y.value1);
         }
         ;
         if (x instanceof ArrowTypeApply && y instanceof ArrowTypeApply) {
@@ -12933,32 +12914,26 @@
     }
   };
   var encodeJsonTypeVar = encodeJsonJString;
-  var encodeRepArgsArgument3 = /* @__PURE__ */ encodeRepArgsArgument(encodeJsonTypeVar);
-  var encodeRepArgsProduct4 = /* @__PURE__ */ encodeRepArgsProduct(encodeRepArgsArgument3);
   var encodeJsonTypeParam = encodeJsonChar;
-  var encodeRepArgsArgument1 = /* @__PURE__ */ encodeRepArgsArgument(encodeJsonTypeParam);
-  var encodeRepArgsProduct1 = /* @__PURE__ */ encodeRepArgsProduct(encodeRepArgsArgument1);
-  var encodeRepSum3 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(TypeVar$primeIsSymbol)(encodeRepArgsArgument3))(/* @__PURE__ */ encodeRepConstructor(TypeParam$primeIsSymbol)(encodeRepArgsArgument1));
+  var encodeRepSum3 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(TypeVar$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonTypeVar)))(/* @__PURE__ */ encodeRepConstructor(TypeParam$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonTypeParam)));
   var encodeJsonType = {
     encodeJson: function(x) {
-      return genericEncodeJson3(encodeRepSum(encodeRepConstructor3(encodeRepArgsProduct4(encodeRepArgsArgument(encodeJsonArray(encodeJsonType)))))(encodeRepSum(encodeRepConstructor12(encodeRepArgsProduct1(encodeRepArgsArgument(encodeJsonArray(encodeJsonType)))))(encodeRepSum(encodeRepConstructor22(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor32(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor4(encodeRepArgsArgument(encodeJsonType)))(encodeRepSum3))))))(x);
+      return genericEncodeJson3(encodeRepSum(encodeRepConstructor3(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonType))(encodeRepArgsArgument(encodeJsonArray(encodeJsonType)))))(encodeRepSum(encodeRepConstructor12(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor22(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor32(encodeRepArgsArgument(encodeJsonType)))(encodeRepSum3)))))(x);
     }
   };
   var decodeJsonTypeVar = decodeJsonString;
-  var decodeRepArgsProduct4 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonTypeVar));
   var decodeJsonTypeParam = {
     decodeJson: /* @__PURE__ */ function() {
-      var $179 = map(functorEither)(wrap());
-      return function($180) {
-        return $179(decodeChar($180));
+      var $148 = map(functorEither)(wrap());
+      return function($149) {
+        return $148(decodeChar($149));
       };
     }()
   };
-  var decodeRepArgsProduct1 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonTypeParam));
   var decodeRepSum3 = /* @__PURE__ */ decodeRepSum(/* @__PURE__ */ decodeRepConstructorArg(TypeVar$primeIsSymbol)(decodeJsonTypeVar))(/* @__PURE__ */ decodeRepConstructorArg(TypeParam$primeIsSymbol)(decodeJsonTypeParam));
   var decodeJsonType = {
     decodeJson: function(x) {
-      return genericDecodeJson3(decodeRepSum(decodeRepConstructor3(decodeRepArgsProduct4(decodeRepArgsArgument(decodeArray2(decodeJsonType)))))(decodeRepSum(decodeRepConstructor1(decodeRepArgsProduct1(decodeRepArgsArgument(decodeArray2(decodeJsonType)))))(decodeRepSum(decodeRepConstructorArg3(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg1(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg22(decodeJsonType))(decodeRepSum3))))))(x);
+      return genericDecodeJson3(decodeRepSum(decodeRepConstructor3(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonType))(decodeRepArgsArgument(decodeArray2(decodeJsonType)))))(decodeRepSum(decodeRepConstructorArg3(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg1(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg22(decodeJsonType))(decodeRepSum3)))))(x);
     }
   };
 
@@ -12979,8 +12954,8 @@
   };
   var map35 = /* @__PURE__ */ map(functorParser);
   var defer4 = /* @__PURE__ */ defer(lazyParser);
-  var alt11 = /* @__PURE__ */ alt(altParser);
   var apply8 = /* @__PURE__ */ apply(applyParser);
+  var alt11 = /* @__PURE__ */ alt(altParser);
   var isToken3 = /* @__PURE__ */ isToken(isMatchString);
   var typeVar = /* @__PURE__ */ map35(TypeVar)(/* @__PURE__ */ satisfy(function($15) {
     return function(v) {
@@ -12992,32 +12967,32 @@
     var typeVar$prime = map35(TypeVar$prime.create)(typeVar);
     var typeParam$prime = map35(TypeParam$prime.create)(typeParam);
     var typeApply = defer4(function(v) {
-      return alt11(apply8(map35(VarTypeApply.create)(typeVar))(argListOf($lazy_type$prime(26))))(apply8(map35(ParamTypeApply.create)(typeParam))(argListOf($lazy_type$prime(27))));
+      return apply8(map35(TypeApply.create)(alt11(typeVar$prime)(typeParam$prime)))(argListOf($lazy_type$prime(26)));
     });
     var array2 = defer4(function(v) {
-      return map35(ArrayTypeApply.create)(betweenSquare($lazy_type$prime(35)));
+      return map35(ArrayTypeApply.create)(betweenSquare($lazy_type$prime(34)));
     });
     var atom = defer4(function(v) {
       return alt11(typeApply)(alt11(typeVar$prime)(alt11(typeParam$prime)(array2)));
     });
     var $lazy_arrow = $runtime_lazy7("arrow", "App.Parser.Type", function() {
       return defer4(function(v) {
-        return map35(ArrowTypeApply.create)(multipleSepBy2(isToken3("->"))(alt11(atom)(betweenParens($lazy_complexType(30)))));
+        return map35(ArrowTypeApply.create)(multipleSepBy2(isToken3("->"))(alt11(atom)(betweenParens($lazy_complexType(29)))));
       });
     });
     var $lazy_complexType = $runtime_lazy7("complexType", "App.Parser.Type", function() {
       return defer4(function(v) {
-        return alt11($lazy_arrow(40))($lazy_union(40));
+        return alt11($lazy_arrow(39))($lazy_union(39));
       });
     });
     var $lazy_union = $runtime_lazy7("union", "App.Parser.Type", function() {
       return defer4(function(v) {
-        return map35(UnionTypeApply.create)(multipleSepBy2(isToken3("|"))(alt11(atom)(betweenParens($lazy_complexType(33)))));
+        return map35(UnionTypeApply.create)(multipleSepBy2(isToken3("|"))(alt11(atom)(betweenParens($lazy_complexType(32)))));
       });
     });
-    var arrow = $lazy_arrow(29);
-    var complexType = $lazy_complexType(40);
-    var union8 = $lazy_union(32);
+    var arrow = $lazy_arrow(28);
+    var complexType = $lazy_complexType(39);
+    var union8 = $lazy_union(31);
     return defer4(function(v) {
       return alt11(complexType)(atom);
     });
@@ -13641,18 +13616,18 @@
   };
   var decodeRepConstructorNoArgs2 = /* @__PURE__ */ decodeRepConstructorNoArgs(SerialNullObjIsSymbol);
   var decodeRepConstructor4 = /* @__PURE__ */ decodeRepConstructor(FnDefIsSymbol);
-  var decodeRepArgsProduct5 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonVar));
+  var decodeRepArgsProduct4 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonVar));
   var decodeJsonMaybe2 = /* @__PURE__ */ decodeJsonMaybe(decodeJsonType);
   var decodeArray3 = /* @__PURE__ */ decodeArray2(/* @__PURE__ */ decodeJsonTuple(decodeJsonVar)(decodeJsonMaybe2));
-  var decodeRepArgsProduct12 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeArray3));
+  var decodeRepArgsProduct1 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeArray3));
   var decodeRepArgsProduct22 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonMaybe2));
   var decodeRepArgsProduct32 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonString));
-  var decodeRepConstructor12 = /* @__PURE__ */ decodeRepConstructor(FnApplyIsSymbol);
+  var decodeRepConstructor1 = /* @__PURE__ */ decodeRepConstructor(FnApplyIsSymbol);
   var decodeRepConstructorArg23 = /* @__PURE__ */ decodeRepConstructorArg(RecurIsSymbol);
   var decodeRepConstructor22 = /* @__PURE__ */ decodeRepConstructor(LambdaFnIsSymbol);
   var decodeRepArgsProduct42 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(/* @__PURE__ */ decodeArray2(decodeJsonVar)));
   var decodeRepConstructor32 = /* @__PURE__ */ decodeRepConstructor(InfixFnApplyIsSymbol);
-  var decodeRepArgsProduct52 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(/* @__PURE__ */ decodeArray2(decodeJsonQVarOp)));
+  var decodeRepArgsProduct5 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(/* @__PURE__ */ decodeArray2(decodeJsonQVarOp)));
   var decodeRepConstructor42 = /* @__PURE__ */ decodeRepConstructor(LeftOpSectionIsSymbol);
   var decodeRepArgsArgument2 = /* @__PURE__ */ decodeRepArgsArgument(decodeJsonQVarOp);
   var decodeRepArgsProduct6 = /* @__PURE__ */ decodeRepArgsProduct(decodeRepArgsArgument2);
@@ -13674,27 +13649,27 @@
   var encodeRepSum12 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(SerialIntObjIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonInt)));
   var encodeRepSum23 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(SerialFloatObjIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonJNumber)));
   var encodeRepSum32 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(SerialCharObjIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonCodePoint)));
-  var encodeRepArgsArgument4 = /* @__PURE__ */ encodeRepArgsArgument(encodeJsonJString);
-  var encodeRepSum42 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(SerialStringObjIsSymbol)(encodeRepArgsArgument4));
-  var encodeRepConstructor5 = /* @__PURE__ */ encodeRepConstructor(SerialListObjIsSymbol);
+  var encodeRepArgsArgument3 = /* @__PURE__ */ encodeRepArgsArgument(encodeJsonJString);
+  var encodeRepSum42 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(SerialStringObjIsSymbol)(encodeRepArgsArgument3));
+  var encodeRepConstructor4 = /* @__PURE__ */ encodeRepConstructor(SerialListObjIsSymbol);
   var encodeRepConstructor13 = /* @__PURE__ */ encodeRepConstructor(SerialArrayObjIsSymbol);
   var encodeRepConstructor23 = /* @__PURE__ */ encodeRepConstructor(SerialNullObjIsSymbol)(encodeRepArgsNoArguments);
   var encodeRepConstructor33 = /* @__PURE__ */ encodeRepConstructor(FnDefIsSymbol);
-  var encodeRepArgsProduct5 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonVar));
+  var encodeRepArgsProduct4 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonVar));
   var encodeJsonMaybe2 = /* @__PURE__ */ encodeJsonMaybe(encodeJsonType);
   var encodeJsonArray2 = /* @__PURE__ */ encodeJsonArray(/* @__PURE__ */ encodeJsonTuple(encodeJsonVar)(encodeJsonMaybe2));
-  var encodeRepArgsProduct12 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonArray2));
+  var encodeRepArgsProduct1 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonArray2));
   var encodeRepArgsProduct22 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonMaybe2));
-  var encodeRepArgsProduct32 = /* @__PURE__ */ encodeRepArgsProduct(encodeRepArgsArgument4);
+  var encodeRepArgsProduct32 = /* @__PURE__ */ encodeRepArgsProduct(encodeRepArgsArgument3);
   var encodeRepConstructor42 = /* @__PURE__ */ encodeRepConstructor(FnApplyIsSymbol);
-  var encodeRepConstructor52 = /* @__PURE__ */ encodeRepConstructor(RecurIsSymbol);
+  var encodeRepConstructor5 = /* @__PURE__ */ encodeRepConstructor(RecurIsSymbol);
   var encodeRepConstructor6 = /* @__PURE__ */ encodeRepConstructor(LambdaFnIsSymbol);
   var encodeRepArgsProduct42 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(/* @__PURE__ */ encodeJsonArray(encodeJsonVar)));
   var encodeRepConstructor7 = /* @__PURE__ */ encodeRepConstructor(InfixFnApplyIsSymbol);
-  var encodeRepArgsProduct52 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(/* @__PURE__ */ encodeJsonArray(encodeJsonQVarOp)));
+  var encodeRepArgsProduct5 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(/* @__PURE__ */ encodeJsonArray(encodeJsonQVarOp)));
   var encodeRepConstructor8 = /* @__PURE__ */ encodeRepConstructor(LeftOpSectionIsSymbol);
-  var encodeRepArgsArgument12 = /* @__PURE__ */ encodeRepArgsArgument(encodeJsonQVarOp);
-  var encodeRepArgsProduct6 = /* @__PURE__ */ encodeRepArgsProduct(encodeRepArgsArgument12);
+  var encodeRepArgsArgument1 = /* @__PURE__ */ encodeRepArgsArgument(encodeJsonQVarOp);
+  var encodeRepArgsProduct6 = /* @__PURE__ */ encodeRepArgsProduct(encodeRepArgsArgument1);
   var encodeRepConstructor9 = /* @__PURE__ */ encodeRepConstructor(RightOpSectionIsSymbol);
   var encodeRepConstructor10 = /* @__PURE__ */ encodeRepConstructor(WhereExprIsSymbol);
   var encodeRepConstructor11 = /* @__PURE__ */ encodeRepConstructor(CondExprIsSymbol);
@@ -15407,12 +15382,12 @@
   var decodeRepSum7 = /* @__PURE__ */ decodeRepSum(/* @__PURE__ */ decodeRepConstructorArg(FnVarIsSymbol)(decodeJsonQVar))(/* @__PURE__ */ decodeRepSum(/* @__PURE__ */ decodeRepConstructorArg(FnOpIsSymbol)(decodeJsonQVarOp))(/* @__PURE__ */ decodeRepSum(/* @__PURE__ */ decodeRepConstructorArg(Cell$primeIsSymbol)(decodeRecord2))(/* @__PURE__ */ decodeRepSum(/* @__PURE__ */ decodeRepConstructorArg(CellValue$primeIsSymbol)(decodeJsonCellValue))(/* @__PURE__ */ decodeRepConstructorArg(Object$primeIsSymbol)(decodeJsonObject)))));
   var decodeJsonFnDef = {
     decodeJson: function(x) {
-      return genericDecodeJson1(decodeRepConstructor4(decodeRepArgsProduct5(decodeRepArgsProduct12(decodeRepArgsProduct22(decodeRepArgsProduct32(decodeRepArgsArgument(decodeJsonFnBody)))))))(x);
+      return genericDecodeJson1(decodeRepConstructor4(decodeRepArgsProduct4(decodeRepArgsProduct1(decodeRepArgsProduct22(decodeRepArgsProduct32(decodeRepArgsArgument(decodeJsonFnBody)))))))(x);
     }
   };
   var decodeJsonFnBody = {
     decodeJson: function(x) {
-      return genericDecodeJson22(decodeRepSum(decodeRepConstructor12(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructorArg23(decodeArray2(decodeJsonFnBody)))(decodeRepSum(decodeRepConstructor22(decodeRepArgsProduct42(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor32(decodeRepArgsProduct52(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructor42(decodeRepArgsProduct6(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor5(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument2)))(decodeRepSum(decodeRepConstructor6(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnDef)))))(decodeRepSum(decodeRepConstructorArg32(decodeArray2($lazy_decodeJsonGuardedFnBody(0))))(decodeRepSum(decodeRepConstructor7(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2($lazy_decodeJsonCaseBinding(0))))))(decodeRepSum5(decodeRepSum6(decodeRepSum(decodeRepConstructor8(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructorArg42(decodeArray2(decodeJsonFnBody)))(decodeRepSum7))))))))))))))(x);
+      return genericDecodeJson22(decodeRepSum(decodeRepConstructor1(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructorArg23(decodeArray2(decodeJsonFnBody)))(decodeRepSum(decodeRepConstructor22(decodeRepArgsProduct42(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor32(decodeRepArgsProduct5(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructor42(decodeRepArgsProduct6(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor5(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument2)))(decodeRepSum(decodeRepConstructor6(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnDef)))))(decodeRepSum(decodeRepConstructorArg32(decodeArray2($lazy_decodeJsonGuardedFnBody(0))))(decodeRepSum(decodeRepConstructor7(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2($lazy_decodeJsonCaseBinding(0))))))(decodeRepSum5(decodeRepSum6(decodeRepSum(decodeRepConstructor8(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructorArg42(decodeArray2(decodeJsonFnBody)))(decodeRepSum7))))))))))))))(x);
     }
   };
   var $lazy_decodeJsonCaseBinding = /* @__PURE__ */ $runtime_lazy8("decodeJsonCaseBinding", "App.SyntaxTree.FnDef", function() {
@@ -15500,18 +15475,18 @@
   };
   var encodeJsonObject = {
     encodeJson: function(x) {
-      return genericEncodeJson4(encodeRepSum4(encodeRepSum12(encodeRepSum23(encodeRepSum32(encodeRepSum42(encodeRepSum(encodeRepConstructor5(encodeRepArgsArgument(encodeJsonList(encodeJsonObject))))(encodeRepSum(encodeRepConstructor13(encodeRepArgsArgument(encodeJsonArray(encodeJsonObject))))(encodeRepConstructor23))))))))(objectToSerialObject(x));
+      return genericEncodeJson4(encodeRepSum4(encodeRepSum12(encodeRepSum23(encodeRepSum32(encodeRepSum42(encodeRepSum(encodeRepConstructor4(encodeRepArgsArgument(encodeJsonList(encodeJsonObject))))(encodeRepSum(encodeRepConstructor13(encodeRepArgsArgument(encodeJsonArray(encodeJsonObject))))(encodeRepConstructor23))))))))(objectToSerialObject(x));
     }
   };
-  var encodeRepSum7 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(FnVarIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonQVar)))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(FnOpIsSymbol)(encodeRepArgsArgument12))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(Cell$primeIsSymbol)(encodeRepArgsArgument22))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(CellValue$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonCellValue)))(/* @__PURE__ */ encodeRepConstructor(Object$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonObject))))));
+  var encodeRepSum7 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(FnVarIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonQVar)))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(FnOpIsSymbol)(encodeRepArgsArgument1))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(Cell$primeIsSymbol)(encodeRepArgsArgument22))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(CellValue$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonCellValue)))(/* @__PURE__ */ encodeRepConstructor(Object$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonObject))))));
   var encodeJsonFnDef = {
     encodeJson: function(x) {
-      return genericEncodeJson1(encodeRepConstructor33(encodeRepArgsProduct5(encodeRepArgsProduct12(encodeRepArgsProduct22(encodeRepArgsProduct32(encodeRepArgsArgument(encodeJsonFnBody)))))))(x);
+      return genericEncodeJson1(encodeRepConstructor33(encodeRepArgsProduct4(encodeRepArgsProduct1(encodeRepArgsProduct22(encodeRepArgsProduct32(encodeRepArgsArgument(encodeJsonFnBody)))))))(x);
     }
   };
   var encodeJsonFnBody = {
     encodeJson: function(x) {
-      return genericEncodeJson22(encodeRepSum(encodeRepConstructor42(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody)))))(encodeRepSum(encodeRepConstructor52(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor6(encodeRepArgsProduct42(encodeRepArgsArgument(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor7(encodeRepArgsProduct52(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody)))))(encodeRepSum(encodeRepConstructor8(encodeRepArgsProduct6(encodeRepArgsArgument(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor9(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument12)))(encodeRepSum(encodeRepConstructor10(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnDef)))))(encodeRepSum(encodeRepConstructor11(encodeRepArgsArgument(encodeJsonArray($lazy_encodeJsonGuardedFnBody(0)))))(encodeRepSum(encodeRepConstructor122(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonArray($lazy_encodeJsonCaseBinding(0))))))(encodeRepSum5(encodeRepSum6(encodeRepSum(encodeRepConstructor132(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor14(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody))))(encodeRepSum7))))))))))))))(x);
+      return genericEncodeJson22(encodeRepSum(encodeRepConstructor42(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody)))))(encodeRepSum(encodeRepConstructor5(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor6(encodeRepArgsProduct42(encodeRepArgsArgument(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor7(encodeRepArgsProduct5(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody)))))(encodeRepSum(encodeRepConstructor8(encodeRepArgsProduct6(encodeRepArgsArgument(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor9(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument1)))(encodeRepSum(encodeRepConstructor10(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnDef)))))(encodeRepSum(encodeRepConstructor11(encodeRepArgsArgument(encodeJsonArray($lazy_encodeJsonGuardedFnBody(0)))))(encodeRepSum(encodeRepConstructor122(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonArray($lazy_encodeJsonCaseBinding(0))))))(encodeRepSum5(encodeRepSum6(encodeRepSum(encodeRepConstructor132(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonFnBody))(encodeRepArgsArgument(encodeJsonFnBody))))(encodeRepSum(encodeRepConstructor14(encodeRepArgsArgument(encodeJsonArray(encodeJsonFnBody))))(encodeRepSum7))))))))))))))(x);
     }
   };
   var $lazy_encodeJsonCaseBinding = /* @__PURE__ */ $runtime_lazy8("encodeJsonCaseBinding", "App.SyntaxTree.FnDef", function() {
@@ -15973,12 +15948,12 @@
   };
   var reloadModule = function(dictMonadState) {
     var Monad0 = dictMonadState.Monad0();
-    var traverse16 = traverse6(Monad0.Applicative0());
+    var traverse17 = traverse6(Monad0.Applicative0());
     var applySecond16 = applySecond(Monad0.Bind1().Apply0());
     var unRegisterModuleDef1 = unRegisterModuleDef(dictMonadState);
     var registerModuleDef1 = registerModuleDef(dictMonadState);
     return function(moduleText) {
-      return traverse16(function(x) {
+      return traverse17(function(x) {
         return applySecond16(unRegisterModuleDef1(x))(registerModuleDef1(x));
       })(runParser(moduleDef)(moduleText));
     };
@@ -16873,10 +16848,10 @@ def average (xs: [Number]): Number =
   };
   var getCachedStore = function(dictMonadEffect) {
     var Bind1 = dictMonadEffect.Monad0().Bind1();
-    var map220 = map(Bind1.Apply0().Functor0());
+    var map221 = map(Bind1.Apply0().Functor0());
     var getInitialStore1 = getInitialStore(dictMonadEffect);
     return bind(Bind1)(getFromLocalStorage(dictMonadEffect))(function(store) {
-      return map220(flip(fromMaybe)(store))(getInitialStore1);
+      return map221(flip(fromMaybe)(store))(getInitialStore1);
     });
   };
 
@@ -17782,10 +17757,10 @@ def average (xs: [Number]): Number =
     };
   };
   var functorExceptT = function(dictFunctor) {
-    var map137 = map(dictFunctor);
+    var map138 = map(dictFunctor);
     return {
       map: function(f) {
-        return mapExceptT(map137(map44(f)));
+        return mapExceptT(map138(map44(f)));
       }
     };
   };
@@ -17960,11 +17935,11 @@ def average (xs: [Number]): Number =
     return v;
   };
   var functorMaybeT = function(dictFunctor) {
-    var map137 = map(dictFunctor);
+    var map138 = map(dictFunctor);
     return {
       map: function(f) {
         return function(v) {
-          return map137(map45(f))(v);
+          return map138(map45(f))(v);
         };
       }
     };
@@ -18060,13 +18035,13 @@ def average (xs: [Number]): Number =
     };
   };
   var applyReaderT = function(dictApply) {
-    var apply15 = apply(dictApply);
+    var apply16 = apply(dictApply);
     var functorReaderT1 = functorReaderT(dictApply.Functor0());
     return {
       apply: function(v) {
         return function(v1) {
           return function(r) {
-            return apply15(v(r))(v1(r));
+            return apply16(v(r))(v1(r));
           };
         };
       },
@@ -18171,7 +18146,7 @@ def average (xs: [Number]): Number =
   var applyWriterT = function(dictSemigroup) {
     var append26 = append(dictSemigroup);
     return function(dictApply) {
-      var apply15 = apply(dictApply);
+      var apply16 = apply(dictApply);
       var Functor0 = dictApply.Functor0();
       var map96 = map(Functor0);
       var functorWriterT1 = functorWriterT(Functor0);
@@ -18183,7 +18158,7 @@ def average (xs: [Number]): Number =
                 return new Tuple(v3.value0(v4.value0), append26(v3.value1)(v4.value1));
               };
             };
-            return apply15(map96(k)(v))(v1);
+            return apply16(map96(k)(v))(v1);
           };
         },
         Functor0: function() {
@@ -18671,7 +18646,7 @@ def average (xs: [Number]): Number =
     };
   };
   var goApply = function(dictApplicative) {
-    var apply15 = apply(dictApplicative.Apply0());
+    var apply16 = apply(dictApplicative.Apply0());
     return function(fStack) {
       return function(vals) {
         return function(gVal) {
@@ -18680,7 +18655,7 @@ def average (xs: [Number]): Number =
           }
           ;
           if (fStack instanceof Cons) {
-            var gRes = apply15(fStack.value0.func)(gVal);
+            var gRes = apply16(fStack.value0.func)(gVal);
             var $31 = fStack.value0.count === 1;
             if ($31) {
               if (fStack.value1 instanceof Nil) {
@@ -19242,10 +19217,10 @@ def average (xs: [Number]): Number =
             var catMapMaybes1 = catMapMaybes(dictOrd);
             return liftF(new ChildQuery2(mkChildQueryBox(new ChildQuery(function(dictApplicative) {
               var map410 = map(dictApplicative.Apply0().Functor0());
-              var traverse16 = traverse8(dictApplicative);
+              var traverse17 = traverse8(dictApplicative);
               return function(k) {
                 var $173 = map410(catMapMaybes1);
-                var $174 = traverse16(k);
+                var $174 = traverse17(k);
                 var $175 = slots22(label5);
                 return function($176) {
                   return $173($174($175($176)));
@@ -19259,9 +19234,9 @@ def average (xs: [Number]): Number =
   };
   var query = function() {
     return function(dictIsSymbol) {
-      var lookup110 = lookup8(dictIsSymbol);
+      var lookup111 = lookup8(dictIsSymbol);
       return function(dictOrd) {
-        var lookup27 = lookup110(dictOrd);
+        var lookup27 = lookup111(dictOrd);
         return function(label5) {
           return function(p2) {
             return function(q2) {
@@ -22111,11 +22086,11 @@ def average (xs: [Number]): Number =
   }();
   var componentSlot = function() {
     return function(dictIsSymbol) {
-      var lookup110 = lookup9(dictIsSymbol);
+      var lookup111 = lookup9(dictIsSymbol);
       var pop12 = pop3(dictIsSymbol);
       var insert110 = insert12(dictIsSymbol);
       return function(dictOrd) {
-        var lookup27 = lookup110(dictOrd);
+        var lookup27 = lookup111(dictOrd);
         var pop22 = pop12(dictOrd);
         var insert23 = insert110(dictOrd);
         return function(label5) {
@@ -22375,22 +22350,22 @@ def average (xs: [Number]): Number =
   var bitraversableTuple = {
     bitraverse: function(dictApplicative) {
       var Apply0 = dictApplicative.Apply0();
-      var apply15 = apply(Apply0);
+      var apply16 = apply(Apply0);
       var map96 = map(Apply0.Functor0());
       return function(f) {
         return function(g) {
           return function(v) {
-            return apply15(map96(Tuple.create)(f(v.value0)))(g(v.value1));
+            return apply16(map96(Tuple.create)(f(v.value0)))(g(v.value1));
           };
         };
       };
     },
     bisequence: function(dictApplicative) {
       var Apply0 = dictApplicative.Apply0();
-      var apply15 = apply(Apply0);
+      var apply16 = apply(Apply0);
       var map96 = map(Apply0.Functor0());
       return function(v) {
-        return apply15(map96(Tuple.create)(v.value0))(v.value1);
+        return apply16(map96(Tuple.create)(v.value0))(v.value1);
       };
     },
     Bifunctor0: function() {
@@ -26834,21 +26809,21 @@ def average (xs: [Number]): Number =
   var mapp = function(dictFunctor) {
     var map96 = map(dictFunctor);
     return function(dictFunctor1) {
-      var map137 = map(dictFunctor1);
+      var map138 = map(dictFunctor1);
       return function(f) {
-        return map137(map96(f));
+        return map138(map96(f));
       };
     };
   };
   var filterByIndex = function(dictFilterable) {
-    var filterMap9 = filterMap(dictFilterable);
+    var filterMap8 = filterMap(dictFilterable);
     return function(dictFunctorWithIndex) {
       var mapWithIndex7 = mapWithIndex(dictFunctorWithIndex);
       return function(f) {
         var pred2 = function(v) {
           return whenPlus2(f(v.value0))(new Just(v.value1));
         };
-        var $20 = filterMap9(pred2);
+        var $20 = filterMap8(pred2);
         var $21 = mapWithIndex7(Tuple.create);
         return function($22) {
           return $20($21($22));
@@ -29750,16 +29725,22 @@ def average (xs: [Number]): Number =
   var eq35 = /* @__PURE__ */ eq(eqFnBody);
   var eq45 = /* @__PURE__ */ eq(/* @__PURE__ */ eqArray(eqType));
   var eq55 = /* @__PURE__ */ eq(eqType);
+  var map64 = /* @__PURE__ */ map(functorArray);
+  var lookup15 = /* @__PURE__ */ lookup3(ordTypeParam);
   var apply13 = /* @__PURE__ */ apply(applyParser);
-  var map64 = /* @__PURE__ */ map(functorParser);
+  var map127 = /* @__PURE__ */ map(functorParser);
   var applySecond10 = /* @__PURE__ */ applySecond(applyParser);
   var is9 = /* @__PURE__ */ is(isMatchString);
   var alt22 = /* @__PURE__ */ alt(altParser);
-  var filterMap5 = /* @__PURE__ */ filterMap(filterableArray);
-  var eq64 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqType));
+  var unions2 = /* @__PURE__ */ unions(ordTypeParam)(foldableArray);
+  var sum2 = /* @__PURE__ */ sum(foldableArray)(semiringInt);
+  var apply14 = /* @__PURE__ */ apply(applyMaybe);
+  var map217 = /* @__PURE__ */ map(functorMaybe);
+  var traverse13 = /* @__PURE__ */ traverse(traversableArray)(applicativeMaybe);
+  var any3 = /* @__PURE__ */ any(foldableMaybe)(heytingAlgebraBoolean);
   var foldMap8 = /* @__PURE__ */ foldMap(foldableMaybe)(monoidString);
   var show27 = /* @__PURE__ */ show(showModule);
-  var eq74 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqObject));
+  var eq64 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqObject));
   var FnName = /* @__PURE__ */ function() {
     function FnName2(value0) {
       this.value0 = value0;
@@ -29842,11 +29823,81 @@ def average (xs: [Number]): Number =
       };
     }
   };
+  var replaceParams = function(replacements) {
+    var replace4 = function(x) {
+      return replaceParams(replacements)(x);
+    };
+    return function(v) {
+      if (v instanceof TypeApply) {
+        return new TypeApply(replace4(v.value0), map64(replace4)(v.value1));
+      }
+      ;
+      if (v instanceof ArrowTypeApply) {
+        return new ArrowTypeApply(map64(replace4)(v.value0));
+      }
+      ;
+      if (v instanceof UnionTypeApply) {
+        return new UnionTypeApply(map64(replace4)(v.value0));
+      }
+      ;
+      if (v instanceof ArrayTypeApply) {
+        return new ArrayTypeApply(replace4(v.value0));
+      }
+      ;
+      var v1 = function(v2) {
+        if (v instanceof TypeParam$prime && otherwise) {
+          return new TypeParam$prime(v.value0);
+        }
+        ;
+        return v;
+      };
+      if (v instanceof TypeParam$prime) {
+        var $98 = lookup15(v.value0)(replacements);
+        if ($98 instanceof Just) {
+          return $98.value0;
+        }
+        ;
+        return v1(true);
+      }
+      ;
+      return v1(true);
+    };
+  };
   var parseFnFilter = function(str2) {
-    var signatureParser = apply13(map64(FnSignature.create)(betweenParens(token(someSepBy2(comma)(type$prime)))))(applySecond10(is9(":"))(type$prime));
-    var exampleParser = apply13(map64(FnExample.create)(betweenParens(token(someSepBy2(comma)(fnBody)))))(applySecond10(is9("="))(fnBody));
-    var parser = alt22(map64(FnName.create)(partialQVar))(alt22(map64(OpName.create)(partialQVarOp))(alt22(exampleParser)(signatureParser)));
+    var signatureParser = apply13(map127(FnSignature.create)(betweenParens(token(someSepBy2(comma)(type$prime)))))(applySecond10(is9(":"))(type$prime));
+    var exampleParser = apply13(map127(FnExample.create)(betweenParens(token(someSepBy2(comma)(fnBody)))))(applySecond10(is9("="))(fnBody));
+    var parser = alt22(map127(FnName.create)(partialQVar))(alt22(map127(OpName.create)(partialQVarOp))(alt22(exampleParser)(signatureParser)));
     return hush(runParser(parser)(str2));
+  };
+  var findParamReplacements = function(v) {
+    if (v.value0 instanceof TypeApply && v.value1 instanceof TypeApply) {
+      return unions2(map64(findParamReplacements)(zip(cons(v.value0.value0)(v.value0.value1))(cons(v.value1.value0)(v.value1.value1))));
+    }
+    ;
+    if (v.value0 instanceof ArrowTypeApply && v.value1 instanceof ArrowTypeApply) {
+      return unions2(map64(findParamReplacements)(zip(v.value0.value0)(v.value1.value0)));
+    }
+    ;
+    if (v.value0 instanceof UnionTypeApply && v.value1 instanceof ArrowTypeApply) {
+      return unions2(map64(findParamReplacements)(zip(v.value0.value0)(v.value1.value0)));
+    }
+    ;
+    if (v.value0 instanceof ArrayTypeApply && v.value1 instanceof ArrayTypeApply) {
+      return findParamReplacements(new Tuple(v.value0.value0, v.value1.value0));
+    }
+    ;
+    if (v.value0 instanceof TypeParam$prime) {
+      return singleton7(v.value0.value0)(v.value1);
+    }
+    ;
+    return empty3;
+  };
+  var matchesType = function(sourceType) {
+    return function(targetType) {
+      var replacements = findParamReplacements(new Tuple(sourceType, targetType));
+      var replacedType = replaceParams(replacements)(sourceType);
+      return eq55(replacedType)(targetType);
+    };
   };
   var evalResult = function(v) {
     return function(result) {
@@ -29893,13 +29944,51 @@ def average (xs: [Number]): Number =
       };
     };
   };
+  var countParams = function(v) {
+    if (v instanceof TypeApply) {
+      return sum2(map64(countParams)(cons(v.value0)(v.value1)));
+    }
+    ;
+    if (v instanceof ArrowTypeApply) {
+      return sum2(map64(countParams)(v.value0));
+    }
+    ;
+    if (v instanceof UnionTypeApply) {
+      return sum2(map64(countParams)(v.value0));
+    }
+    ;
+    if (v instanceof ArrayTypeApply) {
+      return countParams(v.value0);
+    }
+    ;
+    if (v instanceof TypeParam$prime) {
+      return 1;
+    }
+    ;
+    return 0;
+  };
+  var buildFunctionType = function(paramTypes) {
+    return function(returnType) {
+      return new ArrowTypeApply(snoc(paramTypes)(returnType));
+    };
+  };
+  var buildFnSigType = function(v) {
+    return apply14(map217(buildFunctionType)(traverse13(snd)(v.params)))(v.returnType);
+  };
+  var countFnSigParams = function(fnSig) {
+    return maybe(0)(countParams)(buildFnSigType(fnSig));
+  };
   var termPredicate = function(ctx) {
     return function(fnFilter) {
       return function(module$prime2) {
         return function(v) {
           var isSignatureOf = function(paramTypes) {
             return function(returnType) {
-              return eq45(filterMap5(snd)(v.fnSig.params))(paramTypes) && eq64(v.fnSig.returnType)(new Just(returnType));
+              var targetType = buildFunctionType(paramTypes)(returnType);
+              var sourceType = buildFnSigType(v.fnSig);
+              return any3(function(v12) {
+                return matchesType(v12)(targetType);
+              })(sourceType);
             };
           };
           var isNameLike = function(dictShow) {
@@ -29913,7 +30002,7 @@ def average (xs: [Number]): Number =
           var isNameLike1 = isNameLike(showQVar);
           var isExampleOf = function(args) {
             return function(result) {
-              return eq74(evalExample(v.fn)(args)(ctx))(evalResult(v.fn)(result)(ctx));
+              return eq64(evalExample(v.fn)(args)(ctx))(evalResult(v.fn)(result)(ctx));
             };
           };
           var v1 = new Tuple(fnFilter, v.term);
@@ -29945,7 +30034,7 @@ def average (xs: [Number]): Number =
             return false;
           }
           ;
-          throw new Error("Failed pattern match at App.Components.Explorer.FunctionFilter (line 58, column 3 - line 65, column 25): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at App.Components.Explorer.FunctionFilter (line 60, column 3 - line 67, column 25): " + [v1.constructor.name]);
         };
       };
     };
@@ -30506,15 +30595,15 @@ def average (xs: [Number]): Number =
   var toEvent2 = /* @__PURE__ */ toEvent();
   var fold9 = /* @__PURE__ */ fold(foldableArray)(monoidString);
   var map67 = /* @__PURE__ */ map(functorArray);
-  var map127 = /* @__PURE__ */ map(functorFn);
+  var map128 = /* @__PURE__ */ map(functorFn);
   var mempty13 = /* @__PURE__ */ mempty(monoidString);
   var unwrap11 = /* @__PURE__ */ unwrap();
-  var map217 = /* @__PURE__ */ map(functorEffect);
-  var filterMap6 = /* @__PURE__ */ filterMap(filterableArray);
-  var traverse13 = /* @__PURE__ */ traverse(traversableArray)(applicativeEffect);
+  var map218 = /* @__PURE__ */ map(functorEffect);
+  var filterMap5 = /* @__PURE__ */ filterMap(filterableArray);
+  var traverse14 = /* @__PURE__ */ traverse(traversableArray)(applicativeEffect);
   var pos2 = /* @__PURE__ */ pos(ordNumber)(semiringNumber);
   var join6 = /* @__PURE__ */ join(bindMaybe);
-  var traverse14 = /* @__PURE__ */ traverse(traversableMaybe)(applicativeEffect);
+  var traverse15 = /* @__PURE__ */ traverse(traversableMaybe)(applicativeEffect);
   var bindFlipped15 = /* @__PURE__ */ bindFlipped(bindEffect);
   var bindFlipped16 = /* @__PURE__ */ bindFlipped(bindMaybe);
   var show20 = /* @__PURE__ */ show(showElementId);
@@ -30547,7 +30636,7 @@ def average (xs: [Number]): Number =
   }();
   var setInnerHTML = function(elem9) {
     return function(children3) {
-      return setInnerHTML_(elem9)(fold9(map67(map127(render2($$const(mempty13)))(unwrap11))(children3)));
+      return setInnerHTML_(elem9)(fold9(map67(map128(render2($$const(mempty13)))(unwrap11))(children3)));
     };
   };
   var prevent = function(dictMonadEffect) {
@@ -30573,7 +30662,7 @@ def average (xs: [Number]): Number =
     var liftEffect14 = liftEffect(dictMonadEffect);
     return function(parseFn) {
       return function(elems) {
-        return liftEffect14(map217(filterMap6(parseFn))(traverse13(id2)(elems)));
+        return liftEffect14(map218(filterMap5(parseFn))(traverse14(id2)(elems)));
       };
     };
   };
@@ -30596,13 +30685,13 @@ def average (xs: [Number]): Number =
   var getElemWidth = function(dictMonadEffect) {
     var liftEffect14 = liftEffect(dictMonadEffect);
     return function(element3) {
-      return liftEffect14(map217(function(v) {
+      return liftEffect14(map218(function(v) {
         return v.width;
       })(getBoundingClientRect(element3)));
     };
   };
   var getDocument = /* @__PURE__ */ bindFlipped15(document)(windowImpl);
-  var getDocumentElement = /* @__PURE__ */ bindFlipped15(documentElement)(/* @__PURE__ */ map217(toDocument)(getDocument));
+  var getDocumentElement = /* @__PURE__ */ bindFlipped15(documentElement)(/* @__PURE__ */ map218(toDocument)(getDocument));
   var querySelectorHelper = function($$function) {
     return function(query4) {
       return bindFlipped15(function() {
@@ -30619,7 +30708,7 @@ def average (xs: [Number]): Number =
       return liftEffect14(function __do2() {
         var nodes = querySelectorHelper(querySelectorAll)(query4)();
         var elems = toArray3(nodes)();
-        return filterMap6(fromNode)(elems);
+        return filterMap5(fromNode)(elems);
       });
     };
   };
@@ -30656,7 +30745,7 @@ def average (xs: [Number]): Number =
   var getAncestorNodes = function(node2) {
     return function __do2() {
       var parentNode$prime = parentNode2(node2)();
-      var grandParentNode = map217(join6)(traverse14(parentNode2)(parentNode$prime))();
+      var grandParentNode = map218(join6)(traverse15(parentNode2)(parentNode$prime))();
       return compact2([parentNode$prime, grandParentNode]);
     };
   };
@@ -30691,10 +30780,10 @@ def average (xs: [Number]): Number =
     return function(elems) {
       return liftEffect14(function __do2() {
         var w = windowImpl();
-        var wHeight = map217(function($116) {
+        var wHeight = map218(function($116) {
           return Height(toNumber($116));
         })(innerHeight(w))();
-        var wWidth = map217(function($117) {
+        var wWidth = map218(function($117) {
           return Width(toNumber($117));
         })(innerWidth(w))();
         return filterA2(isInViewport1(wHeight)(wWidth))(elems)();
@@ -30749,11 +30838,11 @@ def average (xs: [Number]): Number =
   var map68 = /* @__PURE__ */ map(functorArray);
   var noneOf3 = /* @__PURE__ */ noneOf(isMatchChar);
   var alt23 = /* @__PURE__ */ alt(altParser);
-  var map128 = /* @__PURE__ */ map(functorParser);
+  var map129 = /* @__PURE__ */ map(functorParser);
   var is10 = /* @__PURE__ */ is(isMatchChar);
   var oneOf3 = /* @__PURE__ */ oneOf2(isMatchString);
   var show21 = /* @__PURE__ */ show(showVar);
-  var map218 = /* @__PURE__ */ map(functorFn);
+  var map219 = /* @__PURE__ */ map(functorFn);
   var foldMap9 = /* @__PURE__ */ foldMap(foldableMaybe)(monoidArray);
   var Cell$prime2 = /* @__PURE__ */ function() {
     function Cell$prime3(value0) {
@@ -30904,9 +30993,9 @@ def average (xs: [Number]): Number =
     var wrapParens2 = function(xs) {
       return append21([new OtherText("(")])(append21(xs)([new OtherText(")")]));
     };
-    var $80 = intercalate7([new OtherText(", ")]);
-    return function($81) {
-      return wrapParens2($80($81));
+    var $74 = intercalate7([new OtherText(", ")]);
+    return function($75) {
+      return wrapParens2($74($75));
     };
   }();
   var $lazy_typeToSyntaxAtoms = /* @__PURE__ */ $runtime_lazy15("typeToSyntaxAtoms", "App.Utils.SyntaxAtom", function() {
@@ -30914,37 +31003,28 @@ def average (xs: [Number]): Number =
       return append21([new OtherText("[")])(append21(xs)([new OtherText("]")]));
     };
     var $$var3 = function(dictShow) {
-      var $82 = show(dictShow);
-      return function($83) {
-        return Cell$prime2.create($82($83));
+      var $76 = show(dictShow);
+      return function($77) {
+        return Cell$prime2.create($76($77));
       };
     };
     var var1 = $$var3(showTypeVar);
     var var2 = $$var3(showTypeParam);
-    var typeApply = function(dictShow) {
-      var var3 = $$var3(dictShow);
-      return function(x) {
-        return function(ys) {
-          return append21([var3(x), new OtherText(" ")])(wrapArgList(map68($lazy_typeToSyntaxAtoms(85))(ys)));
-        };
+    var typeApply = function(x) {
+      return function(ys) {
+        return append21($lazy_typeToSyntaxAtoms(83)(x))(append21([new OtherText(" ")])(wrapArgList(map68($lazy_typeToSyntaxAtoms(85))(ys))));
       };
     };
-    var typeApply1 = typeApply(showTypeVar);
-    var typeApply2 = typeApply(showTypeParam);
     var infixTypeApply = function(op) {
-      var $84 = intercalate7([new Operator(" " + (op + " "))]);
-      var $85 = map68($lazy_typeToSyntaxAtoms(89));
-      return function($86) {
-        return $84($85($86));
+      var $78 = intercalate7([new Operator(" " + (op + " "))]);
+      var $79 = map68($lazy_typeToSyntaxAtoms(89));
+      return function($80) {
+        return $78($79($80));
       };
     };
     return function(v) {
-      if (v instanceof VarTypeApply) {
-        return typeApply1(v.value0)(v.value1);
-      }
-      ;
-      if (v instanceof ParamTypeApply) {
-        return typeApply2(v.value0)(v.value1);
+      if (v instanceof TypeApply) {
+        return typeApply(v.value0)(v.value1);
       }
       ;
       if (v instanceof ArrowTypeApply) {
@@ -30956,7 +31036,7 @@ def average (xs: [Number]): Number =
       }
       ;
       if (v instanceof ArrayTypeApply) {
-        return wrapSquare($lazy_typeToSyntaxAtoms(73)(v.value0));
+        return wrapSquare($lazy_typeToSyntaxAtoms(72)(v.value0));
       }
       ;
       if (v instanceof TypeVar$prime) {
@@ -30967,7 +31047,7 @@ def average (xs: [Number]): Number =
         return [var2(v.value0)];
       }
       ;
-      throw new Error("Failed pattern match at App.Utils.SyntaxAtom (line 68, column 21 - line 75, column 28): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at App.Utils.SyntaxAtom (line 68, column 21 - line 74, column 28): " + [v.constructor.name]);
     };
   });
   var typeToSyntaxAtoms = /* @__PURE__ */ $lazy_typeToSyntaxAtoms(67);
@@ -30976,25 +31056,25 @@ def average (xs: [Number]): Number =
     var $$var3 = notReservedKeyword(nonTokenIdent(lower2));
     var stringLit = noneOf3(['"', "\\"]);
     var module$prime2 = nonTokenIdent(upper2);
-    var charLitEscaped = alt23(map128(function($87) {
-      return char(wrapQuotes($87));
+    var charLitEscaped = alt23(map129(function($81) {
+      return char(wrapQuotes($81));
     })(parseAppend(toStringChar)(toStringChar)(is10("\\"))(alpha)))(applySecond(applyParser)(is10("\\"))(anyChar));
-    var string = map128(wrapDoubleQuotes)(betweenDoubleQuotes(manyChar(alt23(stringLit)(charLitEscaped))));
+    var string = map129(wrapDoubleQuotes)(betweenDoubleQuotes(manyChar(alt23(stringLit)(charLitEscaped))));
     var charLit = noneOf3(["'", "\\"]);
-    var $$char = map128(function($88) {
-      return wrapQuotes(singleton9($88));
+    var $$char = map129(function($82) {
+      return wrapQuotes(singleton9($82));
     })(betweenQuotes(alt23(charLit)(charLitEscaped)));
-    var atom = alt23(map128(Number$prime.create)(alt23(map128(show(showNumber))($$double))(map128(show(showInt))($$int))))(alt23(map128(Char$prime.create)($$char))(alt23(map128(String$prime.create)(string))(alt23(map128(function($89) {
-      return Cell$prime2.create(showCell($89));
-    })(cellParser))(alt23(map128($$Function.create)($$var3))(alt23(map128(Operator.create)(varOp2))(alt23(map128(Module2.create)(module$prime2))(alt23(map128(Keyword.create)(oneOf3(reservedKeywords)))(alt23(map128($$Symbol.create)(oneOf3(reservedSymbols)))(map128(function($90) {
-      return OtherText.create(singleton9($90));
+    var atom = alt23(map129(Number$prime.create)(alt23(map129(show(showNumber))($$double))(map129(show(showInt))($$int))))(alt23(map129(Char$prime.create)($$char))(alt23(map129(String$prime.create)(string))(alt23(map129(function($83) {
+      return Cell$prime2.create(showCell($83));
+    })(cellParser))(alt23(map129($$Function.create)($$var3))(alt23(map129(Operator.create)(varOp2))(alt23(map129(Module2.create)(module$prime2))(alt23(map129(Keyword.create)(oneOf3(reservedKeywords)))(alt23(map129($$Symbol.create)(oneOf3(reservedSymbols)))(map129(function($84) {
+      return OtherText.create(singleton9($84));
     })(anyChar))))))))));
     return some3(atom);
   }();
   var fnSigToSyntaxAtoms = function(v) {
     return function(v1) {
       var fnName$prime = [new $$Function(show21(v.value1) + " ")];
-      var annotation = map218(function(v2) {
+      var annotation = map219(function(v2) {
         return append21([new $$Symbol(": ")])(v2);
       })(typeToSyntaxAtoms);
       var param5 = function(v2) {
@@ -31012,9 +31092,9 @@ def average (xs: [Number]): Number =
           return snoc(v)(v1);
         };
         if (v1 instanceof OtherText) {
-          var $74 = unsnoc(v);
-          if ($74 instanceof Just && $74.value0.last instanceof OtherText) {
-            return snoc($74.value0.init)(new OtherText($74.value0.last.value0 + v1.value0));
+          var $68 = unsnoc(v);
+          if ($68 instanceof Just && $68.value0.last instanceof OtherText) {
+            return snoc($68.value0.init)(new OtherText($68.value0.last.value0 + v1.value0));
           }
           ;
           return v2(true);
@@ -32583,11 +32663,11 @@ def average (xs: [Number]): Number =
 
   // output/Halogen.Hooks.Extra.Hooks.UseStateFn/index.js
   var map72 = /* @__PURE__ */ map(functorHook);
-  var map129 = /* @__PURE__ */ map(functorTuple);
+  var map130 = /* @__PURE__ */ map(functorTuple);
   var wrap11 = /* @__PURE__ */ wrap10();
   var useStateFn = function(fn) {
     return function(initial) {
-      var hook = map72(map129(fn))(useState(initial));
+      var hook = map72(map130(fn))(useState(initial));
       return wrap11(hook);
     };
   };
@@ -32842,7 +32922,7 @@ def average (xs: [Number]): Number =
       };
     };
   };
-  var sum2 = function(dictGeneric) {
+  var sum3 = function(dictGeneric) {
     var from3 = from(dictGeneric);
     var to2 = to(dictGeneric);
     return function(dictGRouteDuplex) {
@@ -32916,7 +32996,7 @@ def average (xs: [Number]): Number =
   var map75 = /* @__PURE__ */ map(functorHook);
   var lmap6 = /* @__PURE__ */ lmap(bifunctorTuple);
   var alt25 = /* @__PURE__ */ alt(altParser);
-  var map130 = /* @__PURE__ */ map(functorParser);
+  var map131 = /* @__PURE__ */ map(functorParser);
   var SpreadsheetView = /* @__PURE__ */ function() {
     function SpreadsheetView2() {
     }
@@ -32978,7 +33058,7 @@ def average (xs: [Number]): Number =
     return map75(lmap6(fromMaybe(SpreadsheetView.value)))(useRouter2(dictMonadRouter));
   };
   var routeCodec = /* @__PURE__ */ function() {
-    var suggestionParser = alt25(map130(OpSuggestion.create)(qVarOp))(alt25(map130(FnSuggestion.create)(qVar))(map130(ModuleSuggestion.create)(module$prime)));
+    var suggestionParser = alt25(map131(OpSuggestion.create)(qVarOp))(alt25(map131(FnSuggestion.create)(qVar))(map131(ModuleSuggestion.create)(module$prime)));
     var suggestionToString = function() {
       var $73 = lmap(bifunctorEither)(foldMap(foldableArray)(monoidString)(show(showParseError)));
       var $74 = runParser(suggestionParser);
@@ -32987,7 +33067,7 @@ def average (xs: [Number]): Number =
       };
     }();
     var selectedTermDuplex = as2(showFullTerm)(suggestionToString);
-    return root2(sum2(genericRoute_)(gRouteSum(gRouteConstructor({
+    return root2(sum3(genericRoute_)(gRouteSum(gRouteConstructor({
       reflectSymbol: function() {
         return "SpreadsheetView";
       }
@@ -33311,13 +33391,14 @@ def average (xs: [Number]): Number =
   var show35 = /* @__PURE__ */ show(showElementId);
   var append110 = /* @__PURE__ */ append(semigroupArray);
   var filter14 = /* @__PURE__ */ filter4(filterableArray);
-  var filterMap7 = /* @__PURE__ */ filterMap(filterableArray);
+  var filterMap6 = /* @__PURE__ */ filterMap(filterableArray);
   var fromFoldable28 = /* @__PURE__ */ fromFoldable(foldableSet);
   var map78 = /* @__PURE__ */ map(functorMaybe);
   var unwrap15 = /* @__PURE__ */ unwrap();
   var alaF3 = /* @__PURE__ */ alaF()()()();
   var foldMap14 = /* @__PURE__ */ foldMap(foldableArray);
   var foldMap22 = /* @__PURE__ */ foldMap14(/* @__PURE__ */ monoidMax(boundedInt));
+  var sortWith2 = /* @__PURE__ */ sortWith(ordInt);
   var foldMap32 = /* @__PURE__ */ foldMap14(monoidArray);
   var mempty17 = /* @__PURE__ */ mempty(monoidArray);
   var slot2 = /* @__PURE__ */ slot()({
@@ -33361,7 +33442,7 @@ def average (xs: [Number]): Number =
           return mempty16;
         }
         ;
-        throw new Error("Failed pattern match at App.Components.Explorer.Renderer (line 114, column 14 - line 118, column 33): " + [v.term.constructor.name]);
+        throw new Error("Failed pattern match at App.Components.Explorer.Renderer (line 119, column 14 - line 123, column 33): " + [v.term.constructor.name]);
       }();
       var fnSyntaxAtom = function() {
         if (v.term instanceof OpSuggestion) {
@@ -33377,8 +33458,8 @@ def average (xs: [Number]): Number =
   };
   var commentPrefix = ">>>";
   var findExampleLength = function(docLine) {
-    return maybe(0)(function($70) {
-      return length4(trim($70));
+    return maybe(0)(function($78) {
+      return length4(trim($78));
     })(stripPrefix(commentPrefix)(trim(docLine)));
   };
   var renderDocLine = function(qVar2) {
@@ -33394,14 +33475,14 @@ def average (xs: [Number]): Number =
             return [span5([class_(functionDoc)])([text5(docLine)]), br_];
           }
           ;
-          throw new Error("Failed pattern match at App.Components.Explorer.Renderer (line 123, column 3 - line 126, column 69): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at App.Components.Explorer.Renderer (line 128, column 3 - line 131, column 69): " + [v.constructor.name]);
         };
       };
     };
   };
   var render3 = function(v) {
     var ctx = mkLocalContext(v.store);
-    var infos = filter14(termPredicate(ctx)(v.fnFilter)(v["module'"]))(filterMap7(getSuggestionInfo(ctx))(fromFoldable28(getAllAvailableFns(v["module'"])(ctx))));
+    var infos = filter14(termPredicate(ctx)(v.fnFilter)(v["module'"]))(filterMap6(getSuggestionInfo(ctx))(fromFoldable28(getAllAvailableFns(v["module'"])(ctx))));
     var selectedSuggestion = map78(unwrap15)(index(infos)(v.selectedRow));
     var doc = foldMap13(function(v1) {
       return v1.fnSig.doc;
@@ -33410,6 +33491,24 @@ def average (xs: [Number]): Number =
     var fn = map78(function(v1) {
       return v1.fn;
     })(selectedSuggestion);
+    var sortedInfos = function() {
+      var v1 = function(v2) {
+        if (otherwise) {
+          return infos;
+        }
+        ;
+        throw new Error("Failed pattern match at App.Components.Explorer.Renderer (line 37, column 1 - line 37, column 67): ");
+      };
+      if (v.fnFilter instanceof Just && v.fnFilter.value0 instanceof FnSignature) {
+        return sortWith2(function($79) {
+          return countFnSigParams(function(v2) {
+            return v2.fnSig;
+          }(unwrap15($79)));
+        })(infos);
+      }
+      ;
+      return v1(true);
+    }();
     return div6([class_(function() {
       if (v.route instanceof ExplorerView) {
         return explorerContainer;
@@ -33431,9 +33530,9 @@ def average (xs: [Number]): Number =
       initialOption: new Just(preludeModule),
       maxOptions: 5,
       placeholderText: "Module name"
-    })(handleModuleTypeaheadOutput), searchInput2([value14(v.fnFilterText), ref2(functionFilterInputRef), onValueInput(function($71) {
-      return UpdateFunctionFilter.create(parseFnFilter($71));
-    }), onKeyDown(mkKeyAction(FunctionFilterKeyDown.create)), placeholder3("Function name, signature or example")])])]), table2([class_(functionsList), style2("border-collapse: collapse"), onKeyDown(mkKeyAction(TableKeyDown.create))])(mapWithIndex5(renderFunctionRow)(infos))]);
+    })(handleModuleTypeaheadOutput), searchInput2([value14(v.fnFilterText), ref2(functionFilterInputRef), onValueInput(function($80) {
+      return UpdateFunctionFilter.create(parseFnFilter($80));
+    }), onKeyDown(mkKeyAction(FunctionFilterKeyDown.create)), placeholder3("Function name, signature or example")])])]), table2([class_(functionsList), style2("border-collapse: collapse"), onKeyDown(mkKeyAction(TableKeyDown.create))])(mapWithIndex5(renderFunctionRow)(sortedInfos))]);
   };
 
   // output/Halogen.Store.Connect/index.js
@@ -33447,7 +33546,7 @@ def average (xs: [Number]): Number =
   };
   var slot3 = /* @__PURE__ */ slot()(innerIsSymbol)(ordUnit);
   var discard22 = /* @__PURE__ */ discard(discardUnit)(bindHalogenM);
-  var map131 = /* @__PURE__ */ map(functorHalogenM);
+  var map132 = /* @__PURE__ */ map(functorHalogenM);
   var modify_8 = /* @__PURE__ */ modify_2(monadStateHalogenM);
   var gets5 = /* @__PURE__ */ gets(monadStateHalogenM);
   var unless4 = /* @__PURE__ */ unless(applicativeHalogenM);
@@ -33531,7 +33630,7 @@ def average (xs: [Number]): Number =
           var handleAction4 = function(v1) {
             if (v1 instanceof Initialize4) {
               return discard22(subscribe1(v)(Update.create))(function() {
-                return bind28(map131(v.select)(getStore3))(function(context) {
+                return bind28(map132(v.select)(getStore3))(function(context) {
                   return modify_8(function(v2) {
                     var $39 = {};
                     for (var $40 in v2) {
@@ -33890,14 +33989,14 @@ def average (xs: [Number]): Number =
   var bindFlipped18 = /* @__PURE__ */ bindFlipped(bindEffect);
   var traverse_7 = /* @__PURE__ */ traverse_(applicativeEffect)(foldableMaybe);
   var fold10 = /* @__PURE__ */ fold(foldableMaybe)(monoidString);
-  var traverse15 = /* @__PURE__ */ traverse(traversableMaybe)(applicativeEffect);
-  var any3 = /* @__PURE__ */ any(foldableMaybe)(heytingAlgebraBoolean);
+  var traverse16 = /* @__PURE__ */ traverse(traversableMaybe)(applicativeEffect);
+  var any4 = /* @__PURE__ */ any(foldableMaybe)(heytingAlgebraBoolean);
   var eq40 = /* @__PURE__ */ eq(eqString);
   var any1 = /* @__PURE__ */ any(foldableArray)(heytingAlgebraBoolean);
-  var filterMap8 = /* @__PURE__ */ filterMap(filterableArray);
+  var filterMap7 = /* @__PURE__ */ filterMap(filterableArray);
   var filter15 = /* @__PURE__ */ filter4(filterableArray);
   var join7 = /* @__PURE__ */ join(bindEffect);
-  var apply14 = /* @__PURE__ */ apply(applyEffect);
+  var apply15 = /* @__PURE__ */ apply(applyEffect);
   var resetRange = function(selection) {
     return function(range5) {
       return function __do2() {
@@ -33969,9 +34068,9 @@ def average (xs: [Number]): Number =
               return function __do2() {
                 var len = map81(length3)(textContent(node2))();
                 var textNode = getChildOrNode(node2)();
-                var nodeText = map81(fold10)(traverse15(innerText)(fromNode(textNode)))();
-                var anchorText = map81(fold10)(traverse15(innerText)(fromNode(textNode)))();
-                var isFont = any3(function() {
+                var nodeText = map81(fold10)(traverse16(innerText)(fromNode(textNode)))();
+                var anchorText = map81(fold10)(traverse16(innerText)(fromNode(textNode)))();
+                var isFont = any4(function() {
                   var $45 = eq40("font");
                   return function($46) {
                     return $45(localName($46));
@@ -33979,7 +34078,7 @@ def average (xs: [Number]): Number =
                 }())(fromNode2(textNode));
                 var $43 = any1(refEquals(anchor))([node2, textNode]) || isFont && nodeText === anchorText;
                 if ($43) {
-                  var children3 = map81(filterMap8(fromNode2))(bindFlipped18(toArray3)(childNodes(textNode)))();
+                  var children3 = map81(filterMap7(fromNode2))(bindFlipped18(toArray3)(childNodes(textNode)))();
                   var lineBreaks = length(filter15(function() {
                     var $47 = eq40("br");
                     return function($48) {
@@ -33997,7 +34096,7 @@ def average (xs: [Number]): Number =
           };
         };
         return liftEffect14(runMaybeT(bind112(firstChild2(parentNode3))(function(childNode) {
-          return join7(apply14(map81(go2(childNode))(anchorNode(selection)))(anchorOffset(selection)));
+          return join7(apply15(map81(go2(childNode))(anchorNode(selection)))(anchorOffset(selection)));
         })));
       };
     };
@@ -34029,8 +34128,8 @@ def average (xs: [Number]): Number =
   var map82 = /* @__PURE__ */ map(functorEffect);
   var getCaretPosition2 = /* @__PURE__ */ getCaretPosition(monadEffectEffect);
   var whenMonoid3 = /* @__PURE__ */ whenMonoid(/* @__PURE__ */ monoidMaybe(semigroupArray));
-  var any4 = /* @__PURE__ */ any(foldableArray)(heytingAlgebraBoolean);
-  var map132 = /* @__PURE__ */ map(functorMaybe);
+  var any5 = /* @__PURE__ */ any(foldableArray)(heytingAlgebraBoolean);
+  var map133 = /* @__PURE__ */ map(functorMaybe);
   var bindFlipped110 = /* @__PURE__ */ bindFlipped(bindMaybe);
   var discard23 = /* @__PURE__ */ discard(discardUnit);
   var inc9 = /* @__PURE__ */ inc(semiringInt);
@@ -34085,7 +34184,7 @@ def average (xs: [Number]): Number =
         var formulaBox2 = map82(toNode)(justSelectElementById2(formulaBoxId))();
         var formulaText = getEditorContent1();
         var idx = getCaretPosition2(selection)(formulaBox2)();
-        return whenMonoid3(any4(refEquals(formulaBox2))(ancestors))(map132(getSuggestionsAtIndex(ctx)(formulaText))(idx));
+        return whenMonoid3(any5(refEquals(formulaBox2))(ancestors))(map133(getSuggestionsAtIndex(ctx)(formulaText))(idx));
       });
     };
   };
@@ -34093,15 +34192,15 @@ def average (xs: [Number]): Number =
     var Monad0 = dictMonadEffect.Monad0();
     var Bind1 = Monad0.Bind1();
     var bind211 = bind(Bind1);
-    var map220 = map(Bind1.Apply0().Functor0());
+    var map221 = map(Bind1.Apply0().Functor0());
     var justSelectElementById12 = justSelectElementById(dictMonadEffect);
     var getEditorContent22 = getEditorContent(dictMonadEffect);
     var liftEffect14 = liftEffect(dictMonadEffect);
     var getCaretPosition1 = getCaretPosition(dictMonadEffect);
     var pure119 = pure(Monad0.Applicative0());
     return function(dictMonadStore) {
-      return bind211(map220(mkLocalContext)(getStore(dictMonadStore)))(function(ctx) {
-        return bind211(map220(toNode)(justSelectElementById12(formulaBoxId)))(function(formulaBox2) {
+      return bind211(map221(mkLocalContext)(getStore(dictMonadStore)))(function(ctx) {
+        return bind211(map221(toNode)(justSelectElementById12(formulaBoxId)))(function(formulaBox2) {
           return bind211(getEditorContent22)(function(formulaText) {
             return bind211(liftEffect14(bindFlipped19(getSelection)(windowImpl)))(function(selection) {
               return bind211(getCaretPosition1(selection)(formulaBox2))(function(caretPosition) {
@@ -34182,7 +34281,7 @@ def average (xs: [Number]): Number =
                 throw new Error("Failed pattern match at App.Components.Editor.HandlerHelpers (line 160, column 5 - line 162, column 55): ");
               }();
               return discard112(updateEditorContent22(newFormulaText))(function() {
-                return traverse_20(setCaretPosition2(selection)(toNode(formulaBox2)))(map132(inc9)(caretPosition));
+                return traverse_20(setCaretPosition2(selection)(toNode(formulaBox2)))(map133(inc9)(caretPosition));
               });
             });
           });
@@ -34193,7 +34292,7 @@ def average (xs: [Number]): Number =
   var performAutoComplete = function(dictMonadEffect) {
     var Bind1 = dictMonadEffect.Monad0().Bind1();
     var bind211 = bind(Bind1);
-    var map220 = map(Bind1.Apply0().Functor0());
+    var map221 = map(Bind1.Apply0().Functor0());
     var justSelectElementById12 = justSelectElementById(dictMonadEffect);
     var liftEffect14 = liftEffect(dictMonadEffect);
     var getEditorContent22 = getEditorContent(dictMonadEffect);
@@ -34205,10 +34304,10 @@ def average (xs: [Number]): Number =
       var updateEditorContent22 = updateEditorContent1(dictMonadState);
       return function(suggestion) {
         var suggestionText = show31(suggestion);
-        return bind211(map220(toNode)(justSelectElementById12(formulaBoxId)))(function(formulaBox2) {
+        return bind211(map221(toNode)(justSelectElementById12(formulaBoxId)))(function(formulaBox2) {
           return bind211(liftEffect14(bindFlipped19(getSelection)(windowImpl)))(function(selection) {
             return bind211(getEditorContent22)(function(formulaText) {
-              return bind211(map220(unsafeFromJust)(getCaretPosition1(selection)(formulaBox2)))(function(caretPosition) {
+              return bind211(map221(unsafeFromJust)(getCaretPosition1(selection)(formulaBox2)))(function(caretPosition) {
                 var v = getWordAtIndex(["."])(formulaText)(caretPosition);
                 var offset = length3(suggestionText) - length3(v.currentWord) | 0;
                 var newFormulaText = splitAt3(v.startIndex)(formulaText).before + (suggestionText + splitAt3(v.endIndex)(formulaText).after);
@@ -34226,7 +34325,7 @@ def average (xs: [Number]): Number =
     var Monad0 = dictMonadEffect.Monad0();
     var Bind1 = Monad0.Bind1();
     var bind211 = bind(Bind1);
-    var map220 = map(Bind1.Apply0().Functor0());
+    var map221 = map(Bind1.Apply0().Functor0());
     var justSelectElementById12 = justSelectElementById(dictMonadEffect);
     var liftEffect14 = liftEffect(dictMonadEffect);
     var getEditorContent22 = getEditorContent(dictMonadEffect);
@@ -34237,7 +34336,7 @@ def average (xs: [Number]): Number =
     var setCaretPosition2 = setCaretPosition(dictMonadEffect);
     return function(dictMonadState) {
       var updateEditorContent22 = updateEditorContent1(dictMonadState);
-      return bind211(map220(toNode)(justSelectElementById12(formulaBoxId)))(function(formulaBox2) {
+      return bind211(map221(toNode)(justSelectElementById12(formulaBoxId)))(function(formulaBox2) {
         return bind211(liftEffect14(bindFlipped19(getSelection)(windowImpl)))(function(selection) {
           return bind211(getEditorContent22)(function(formulaText) {
             return bind211(getCaretPosition1(selection)(formulaBox2))(function(caretPosition) {
@@ -34255,7 +34354,7 @@ def average (xs: [Number]): Number =
     var Bind1 = Monad0.Bind1();
     var bind211 = bind(Bind1);
     var liftEffect14 = liftEffect(dictMonadEffect);
-    var map220 = map(Bind1.Apply0().Functor0());
+    var map221 = map(Bind1.Apply0().Functor0());
     var justSelectElementById12 = justSelectElementById(dictMonadEffect);
     var getFnSuggestions1 = getFnSuggestions(dictMonadEffect);
     var getEditorContent22 = getEditorContent(dictMonadEffect);
@@ -34268,8 +34367,8 @@ def average (xs: [Number]): Number =
         var getStore3 = getStore(dictMonadStore);
         return bind211(get11)(function(st) {
           return bind211(liftEffect14(bindFlipped19(getBoundingClientRect2)(bindFlipped19(getFirstRange)(bindFlipped19(getSelection)(windowImpl)))))(function(rect) {
-            return bind211(map220(toElement)(justSelectElementById12(suggestionsDropdownId)))(function(suggestionsDropdown2) {
-              return bind211(map220(mkLocalContext)(getStore3))(function(ctx) {
+            return bind211(map221(toElement)(justSelectElementById12(suggestionsDropdownId)))(function(suggestionsDropdown2) {
+              return bind211(map221(mkLocalContext)(getStore3))(function(ctx) {
                 return bind211(getFnSuggestions1(ctx))(function(suggestions) {
                   return bind211(getEditorContent22)(function(formulaText) {
                     return when1($$null3(trim(formulaText)) || any12(function(v) {
@@ -34311,7 +34410,7 @@ def average (xs: [Number]): Number =
           var suggestion = alt27(index(st.suggestions)(unwrap16(st.selectedSuggestionId)))(bindFlipped110(getFnAtIndex(formulaText))(idx));
           var ctx = mkLocalContext(store);
           var fn = bindFlipped110(extractSuggestionFn(ctx))(suggestion);
-          var fnSig = whenPlus3(any4(refEquals(formulaBox2))(ancestors))(bindFlipped110(function(v) {
+          var fnSig = whenPlus3(any5(refEquals(formulaBox2))(ancestors))(bindFlipped110(function(v) {
             return getFnSig(v)(ctx);
           })(fn));
           return when9($$null3(trim(formulaText)) || isJust(idx))(maybe(emptyFnSig1)(uncurry(setFnSig1))(bisequence3(new Tuple(fn, fnSig))))();
@@ -34909,8 +35008,8 @@ def average (xs: [Number]): Number =
     }
   };
   var hashableRecord3 = /* @__PURE__ */ hashableRecord()(/* @__PURE__ */ hashableRecordCons(hashableColumn)(/* @__PURE__ */ hashableRecordCons(hashableRow)(hashableRecordNil)(rowIsSymbol7)())(columnIsSymbol7)())(/* @__PURE__ */ eqRowCons(/* @__PURE__ */ eqRowCons(eqRowNil)()(rowIsSymbol7)(eqRow))()(columnIsSymbol7)(eqColumn));
-  var lookup15 = /* @__PURE__ */ lookup5(hashableRecord3);
-  var map133 = /* @__PURE__ */ map(functorArray);
+  var lookup16 = /* @__PURE__ */ lookup5(hashableRecord3);
+  var map134 = /* @__PURE__ */ map(functorArray);
   var fromArray10 = /* @__PURE__ */ fromArray2(hashableRecord3);
   var bind210 = /* @__PURE__ */ bind(bindArray);
   var top7 = /* @__PURE__ */ top(boundedRow);
@@ -35242,7 +35341,7 @@ def average (xs: [Number]): Number =
       return function(tableData) {
         return intercalate8(newline)(map84(intercalate8(tab2))(mapp3(function() {
           var $164 = foldMap15(show37);
-          var $165 = flip(lookup15)(tableData);
+          var $165 = flip(lookup16)(tableData);
           return function($166) {
             return $164($165($166));
           };
@@ -35257,7 +35356,7 @@ def average (xs: [Number]): Number =
   };
   var deserializeSelectionValues = function(selectedCell) {
     return function(str2) {
-      var values2 = map133(split(tab2))(split(newline)(str2));
+      var values2 = map134(split(tab2))(split(newline)(str2));
       return fromArray10(bind210(zip(values2)(toArray2(enumFromTo13(selectedCell.row)(top7))))(function(v) {
         return bind210(zip(v.value0)(toArray2(enumFromTo5(selectedCell.column)(top12))))(function(v1) {
           return pure210(new Tuple({
@@ -35396,7 +35495,7 @@ def average (xs: [Number]): Number =
   var eq118 = /* @__PURE__ */ eq(eqColumn);
   var filter16 = /* @__PURE__ */ filter3(ordRecord4);
   var notElem4 = /* @__PURE__ */ notElem(foldableSet)(/* @__PURE__ */ eqRec()(/* @__PURE__ */ eqRowCons(/* @__PURE__ */ eqRowCons(eqRowNil)()(rowIsSymbol8)(eqRow))()(columnIsSymbol8)(eqColumn)));
-  var map134 = /* @__PURE__ */ map(functorEither);
+  var map135 = /* @__PURE__ */ map(functorEither);
   var composeKleisliFlipped5 = /* @__PURE__ */ composeKleisliFlipped(bindEither);
   var lmap8 = /* @__PURE__ */ lmap(bifunctorEither);
   var extractCellsFromPatternGuard = function(v) {
@@ -35557,7 +35656,7 @@ def average (xs: [Number]): Number =
         };
       };
       var depsFn = function(v) {
-        return map134(function(v1) {
+        return map135(function(v1) {
           return {
             result: v.result,
             affectedCells: v.affectedCells,
@@ -35568,7 +35667,7 @@ def average (xs: [Number]): Number =
       };
       var ctx = mkLocalContext(store);
       var evalFn2 = function(body4) {
-        return map134(evalFnHelper(body4))(evalFormula(ctx)(cell2)(body4));
+        return map135(evalFnHelper(body4))(evalFormula(ctx)(cell2)(body4));
       };
       return composeKleisliFlipped5(function() {
         var $124 = lmap8(DependencyError$prime.create);
@@ -35631,7 +35730,7 @@ def average (xs: [Number]): Number =
   var map86 = /* @__PURE__ */ map(functorEffect);
   var resolve3 = /* @__PURE__ */ resolve2();
   var alt28 = /* @__PURE__ */ alt(altMaybe);
-  var map135 = /* @__PURE__ */ map(functorMaybe);
+  var map136 = /* @__PURE__ */ map(functorMaybe);
   var readString3 = /* @__PURE__ */ readString(monadIdentity);
   var bind33 = /* @__PURE__ */ bind(bindAff);
   var liftEffect6 = /* @__PURE__ */ liftEffect(monadEffectAff);
@@ -35649,7 +35748,7 @@ def average (xs: [Number]): Number =
   var coerce7 = function(rej) {
     return fromMaybe$prime(function(v) {
       return error("Promise failed, couldn't extract JS Error or String");
-    })(alt28(toError(rej))(map135(error)(hush(runExcept(readString3(unsafeToForeign(rej)))))));
+    })(alt28(toError(rej))(map136(error)(hush(runExcept(readString3(unsafeToForeign(rej)))))));
   };
   var toAff = /* @__PURE__ */ toAff$prime(coerce7);
   var toAffE = function(f) {
@@ -35677,7 +35776,7 @@ def average (xs: [Number]): Number =
   var lookup24 = /* @__PURE__ */ lookup22(hashableRecord4)(hashableFormulaId);
   var discard25 = /* @__PURE__ */ discard(discardUnit);
   var getClipboard2 = /* @__PURE__ */ getClipboard(monadEffectEffect);
-  var lookup16 = /* @__PURE__ */ lookup5(hashableFormulaId);
+  var lookup17 = /* @__PURE__ */ lookup5(hashableFormulaId);
   var union7 = /* @__PURE__ */ union4(hashableRecord4);
   var updateJust2 = /* @__PURE__ */ updateJust(hashableFormulaId);
   var foldableCofree2 = /* @__PURE__ */ foldableCofree(foldableList);
@@ -35825,7 +35924,7 @@ def average (xs: [Number]): Number =
       return function(formulaId) {
         return bind211(get1)(function(st) {
           return bind211(getStore3)(function(store) {
-            var v = unsafeFromJust(lookup16(formulaId)(st.formulaCache));
+            var v = unsafeFromJust(lookup17(formulaId)(st.formulaCache));
             var eitherResult = runFormula(store)(v.startingCell)(v.formulaText);
             if (eitherResult instanceof Right) {
               return modify_1(function(v1) {
@@ -37120,7 +37219,7 @@ def average (xs: [Number]): Number =
   var foldMap18 = /* @__PURE__ */ foldMap(foldableMaybe)(monoidString);
   var show310 = /* @__PURE__ */ show(showCellValue);
   var bind36 = /* @__PURE__ */ bind(bindArray);
-  var lookup17 = /* @__PURE__ */ lookup5(/* @__PURE__ */ hashableRecord()(/* @__PURE__ */ hashableRecordCons(hashableColumn)(/* @__PURE__ */ hashableRecordCons(hashableRow)(hashableRecordNil)(rowIsSymbol11)())(columnIsSymbol11)())(eqRowCons3));
+  var lookup18 = /* @__PURE__ */ lookup5(/* @__PURE__ */ hashableRecord()(/* @__PURE__ */ hashableRecordCons(hashableColumn)(/* @__PURE__ */ hashableRecordCons(hashableRow)(hashableRecordNil)(rowIsSymbol11)())(columnIsSymbol11)())(eqRowCons3));
   var pure38 = /* @__PURE__ */ pure(applicativeArray);
   var eq119 = /* @__PURE__ */ eq(eqRoute);
   var slot4 = /* @__PURE__ */ slot()({
@@ -37166,7 +37265,7 @@ def average (xs: [Number]): Number =
           column: column2,
           row: row2
         };
-        var cellValue2 = lookup17(cell2)(v.tableData);
+        var cellValue2 = lookup18(cell2)(v.tableData);
         return pure38(renderBodyCell(v)(cell2)(cellValue2));
       });
     };
@@ -37510,7 +37609,7 @@ def average (xs: [Number]): Number =
   // output/Halogen.Aff.Driver.Eval/index.js
   var traverse_15 = /* @__PURE__ */ traverse_(applicativeEffect)(foldableMaybe);
   var bindFlipped27 = /* @__PURE__ */ bindFlipped(bindMaybe);
-  var lookup18 = /* @__PURE__ */ lookup3(ordSubscriptionId);
+  var lookup19 = /* @__PURE__ */ lookup3(ordSubscriptionId);
   var bind116 = /* @__PURE__ */ bind(bindAff);
   var liftEffect10 = /* @__PURE__ */ liftEffect(monadEffectAff);
   var discard28 = /* @__PURE__ */ discard(discardUnit);
@@ -37522,16 +37621,16 @@ def average (xs: [Number]): Number =
   var pure41 = /* @__PURE__ */ pure(applicativeAff);
   var map93 = /* @__PURE__ */ map(functorCoyoneda);
   var parallel3 = /* @__PURE__ */ parallel(parallelAff);
-  var map136 = /* @__PURE__ */ map(functorAff);
+  var map137 = /* @__PURE__ */ map(functorAff);
   var sequential2 = /* @__PURE__ */ sequential(parallelAff);
-  var map219 = /* @__PURE__ */ map(functorMaybe);
+  var map220 = /* @__PURE__ */ map(functorMaybe);
   var insert18 = /* @__PURE__ */ insert3(ordSubscriptionId);
   var retractFreeAp3 = /* @__PURE__ */ retractFreeAp(applicativeParAff);
   var $$delete6 = /* @__PURE__ */ $$delete2(ordForkId);
   var unlessM2 = /* @__PURE__ */ unlessM(monadEffect);
   var insert19 = /* @__PURE__ */ insert3(ordForkId);
   var traverse_32 = /* @__PURE__ */ traverse_16(foldableMaybe);
-  var lookup19 = /* @__PURE__ */ lookup3(ordForkId);
+  var lookup110 = /* @__PURE__ */ lookup3(ordForkId);
   var lookup26 = /* @__PURE__ */ lookup3(ordString);
   var foldFree2 = /* @__PURE__ */ foldFree(monadRecAff);
   var alter3 = /* @__PURE__ */ alter(ordString);
@@ -37540,7 +37639,7 @@ def average (xs: [Number]): Number =
       return function __do2() {
         var v = read(ref3)();
         var subs = read(v.subscriptions)();
-        return traverse_15(unsubscribe)(bindFlipped27(lookup18(sid))(subs))();
+        return traverse_15(unsubscribe)(bindFlipped27(lookup19(sid))(subs))();
       };
     };
   };
@@ -37613,7 +37712,7 @@ def average (xs: [Number]): Number =
                     })(dsx);
                   }));
                 };
-                return map136(v2.value2)(sequential2(v2.value0(applicativeParAff)(evalChild)(v1.children)));
+                return map137(v2.value2)(sequential2(v2.value0(applicativeParAff)(evalChild)(v1.children)));
               })(cqb);
             });
           };
@@ -37662,7 +37761,7 @@ def average (xs: [Number]): Number =
                   return handleAff(evalF(render6)(ref3)(new Action2(act)));
                 })))(function(finalize) {
                   return bind116(liftEffect10(read(ref3)))(function(v2) {
-                    return discard111(liftEffect10(modify_(map219(insert18(sid)(finalize)))(v2.subscriptions)))(function() {
+                    return discard111(liftEffect10(modify_(map220(insert18(sid)(finalize)))(v2.subscriptions)))(function() {
                       return pure41(v1.value1(sid));
                     });
                   });
@@ -37723,7 +37822,7 @@ def average (xs: [Number]): Number =
             if (v1 instanceof Join) {
               return bind116(liftEffect10(read(ref3)))(function(v2) {
                 return bind116(liftEffect10(read(v2.forks)))(function(forkMap) {
-                  return discard111(traverse_32(joinFiber)(lookup19(v1.value0)(forkMap)))(function() {
+                  return discard111(traverse_32(joinFiber)(lookup110(v1.value0)(forkMap)))(function() {
                     return pure41(v1.value1);
                   });
                 });
@@ -37733,7 +37832,7 @@ def average (xs: [Number]): Number =
             if (v1 instanceof Kill) {
               return bind116(liftEffect10(read(ref3)))(function(v2) {
                 return bind116(liftEffect10(read(v2.forks)))(function(forkMap) {
-                  return discard111(traverse_32(killFiber(error("Cancelled")))(lookup19(v1.value0)(forkMap)))(function() {
+                  return discard111(traverse_32(killFiber(error("Cancelled")))(lookup110(v1.value0)(forkMap)))(function() {
                     return pure41(v1.value1);
                   });
                 });
