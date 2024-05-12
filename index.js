@@ -12702,11 +12702,6 @@
       return "ArrowTypeApply";
     }
   };
-  var UnionTypeApplyIsSymbol = {
-    reflectSymbol: function() {
-      return "UnionTypeApply";
-    }
-  };
   var ArrayTypeApplyIsSymbol = {
     reflectSymbol: function() {
       return "ArrayTypeApply";
@@ -12724,12 +12719,10 @@
   };
   var encodeRepConstructor3 = /* @__PURE__ */ encodeRepConstructor(TypeApplyIsSymbol);
   var encodeRepConstructor12 = /* @__PURE__ */ encodeRepConstructor(ArrowTypeApplyIsSymbol);
-  var encodeRepConstructor22 = /* @__PURE__ */ encodeRepConstructor(UnionTypeApplyIsSymbol);
-  var encodeRepConstructor32 = /* @__PURE__ */ encodeRepConstructor(ArrayTypeApplyIsSymbol);
+  var encodeRepConstructor22 = /* @__PURE__ */ encodeRepConstructor(ArrayTypeApplyIsSymbol);
   var decodeRepConstructor3 = /* @__PURE__ */ decodeRepConstructor(TypeApplyIsSymbol);
   var decodeRepConstructorArg3 = /* @__PURE__ */ decodeRepConstructorArg(ArrowTypeApplyIsSymbol);
-  var decodeRepConstructorArg1 = /* @__PURE__ */ decodeRepConstructorArg(UnionTypeApplyIsSymbol);
-  var decodeRepConstructorArg22 = /* @__PURE__ */ decodeRepConstructorArg(ArrayTypeApplyIsSymbol);
+  var decodeRepConstructorArg1 = /* @__PURE__ */ decodeRepConstructorArg(ArrayTypeApplyIsSymbol);
   var TypeVar = function(x) {
     return x;
   };
@@ -12758,16 +12751,6 @@
       return new ArrowTypeApply2(value0);
     };
     return ArrowTypeApply2;
-  }();
-  var UnionTypeApply = /* @__PURE__ */ function() {
-    function UnionTypeApply2(value0) {
-      this.value0 = value0;
-    }
-    ;
-    UnionTypeApply2.create = function(value0) {
-      return new UnionTypeApply2(value0);
-    };
-    return UnionTypeApply2;
   }();
   var ArrayTypeApply = /* @__PURE__ */ function() {
     function ArrayTypeApply2(value0) {
@@ -12804,8 +12787,8 @@
     show: unwrap6
   };
   var showTypeParam = {
-    show: function($147) {
-      return singleton9(unwrap6($147));
+    show: function($132) {
+      return singleton9(unwrap6($132));
     }
   };
   var genericType_ = {
@@ -12819,22 +12802,18 @@
       }
       ;
       if (x instanceof Inr && (x.value0 instanceof Inr && x.value0.value0 instanceof Inl)) {
-        return new UnionTypeApply(x.value0.value0.value0);
+        return new ArrayTypeApply(x.value0.value0.value0);
       }
       ;
       if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && x.value0.value0.value0 instanceof Inl))) {
-        return new ArrayTypeApply(x.value0.value0.value0.value0);
+        return new TypeVar$prime(x.value0.value0.value0.value0);
       }
       ;
-      if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && (x.value0.value0.value0 instanceof Inr && x.value0.value0.value0.value0 instanceof Inl)))) {
-        return new TypeVar$prime(x.value0.value0.value0.value0.value0);
+      if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && x.value0.value0.value0 instanceof Inr))) {
+        return new TypeParam$prime(x.value0.value0.value0.value0);
       }
       ;
-      if (x instanceof Inr && (x.value0 instanceof Inr && (x.value0.value0 instanceof Inr && (x.value0.value0.value0 instanceof Inr && x.value0.value0.value0.value0 instanceof Inr)))) {
-        return new TypeParam$prime(x.value0.value0.value0.value0.value0);
-      }
-      ;
-      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 41, column 1 - line 41, column 31): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 40, column 1 - line 40, column 31): " + [x.constructor.name]);
     },
     from: function(x) {
       if (x instanceof TypeApply) {
@@ -12845,23 +12824,19 @@
         return new Inr(new Inl(x.value0));
       }
       ;
-      if (x instanceof UnionTypeApply) {
+      if (x instanceof ArrayTypeApply) {
         return new Inr(new Inr(new Inl(x.value0)));
       }
       ;
-      if (x instanceof ArrayTypeApply) {
+      if (x instanceof TypeVar$prime) {
         return new Inr(new Inr(new Inr(new Inl(x.value0))));
       }
       ;
-      if (x instanceof TypeVar$prime) {
-        return new Inr(new Inr(new Inr(new Inr(new Inl(x.value0)))));
-      }
-      ;
       if (x instanceof TypeParam$prime) {
-        return new Inr(new Inr(new Inr(new Inr(new Inr(x.value0)))));
+        return new Inr(new Inr(new Inr(new Inr(x.value0))));
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 41, column 1 - line 41, column 31): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.Type (line 40, column 1 - line 40, column 31): " + [x.constructor.name]);
     }
   };
   var genericEncodeJson3 = /* @__PURE__ */ genericEncodeJson(genericType_);
@@ -12893,10 +12868,6 @@
           return eq(eqArray(eqType))(x.value0)(y.value0);
         }
         ;
-        if (x instanceof UnionTypeApply && y instanceof UnionTypeApply) {
-          return eq(eqArray(eqType))(x.value0)(y.value0);
-        }
-        ;
         if (x instanceof ArrayTypeApply && y instanceof ArrayTypeApply) {
           return eq(eqType)(x.value0)(y.value0);
         }
@@ -12918,22 +12889,22 @@
   var encodeRepSum3 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(TypeVar$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonTypeVar)))(/* @__PURE__ */ encodeRepConstructor(TypeParam$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonTypeParam)));
   var encodeJsonType = {
     encodeJson: function(x) {
-      return genericEncodeJson3(encodeRepSum(encodeRepConstructor3(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonType))(encodeRepArgsArgument(encodeJsonArray(encodeJsonType)))))(encodeRepSum(encodeRepConstructor12(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor22(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor32(encodeRepArgsArgument(encodeJsonType)))(encodeRepSum3)))))(x);
+      return genericEncodeJson3(encodeRepSum(encodeRepConstructor3(encodeRepArgsProduct(encodeRepArgsArgument(encodeJsonType))(encodeRepArgsArgument(encodeJsonArray(encodeJsonType)))))(encodeRepSum(encodeRepConstructor12(encodeRepArgsArgument(encodeJsonArray(encodeJsonType))))(encodeRepSum(encodeRepConstructor22(encodeRepArgsArgument(encodeJsonType)))(encodeRepSum3))))(x);
     }
   };
   var decodeJsonTypeVar = decodeJsonString;
   var decodeJsonTypeParam = {
     decodeJson: /* @__PURE__ */ function() {
-      var $148 = map(functorEither)(wrap());
-      return function($149) {
-        return $148(decodeChar($149));
+      var $133 = map(functorEither)(wrap());
+      return function($134) {
+        return $133(decodeChar($134));
       };
     }()
   };
   var decodeRepSum3 = /* @__PURE__ */ decodeRepSum(/* @__PURE__ */ decodeRepConstructorArg(TypeVar$primeIsSymbol)(decodeJsonTypeVar))(/* @__PURE__ */ decodeRepConstructorArg(TypeParam$primeIsSymbol)(decodeJsonTypeParam));
   var decodeJsonType = {
     decodeJson: function(x) {
-      return genericDecodeJson3(decodeRepSum(decodeRepConstructor3(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonType))(decodeRepArgsArgument(decodeArray2(decodeJsonType)))))(decodeRepSum(decodeRepConstructorArg3(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg1(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg22(decodeJsonType))(decodeRepSum3)))))(x);
+      return genericDecodeJson3(decodeRepSum(decodeRepConstructor3(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonType))(decodeRepArgsArgument(decodeArray2(decodeJsonType)))))(decodeRepSum(decodeRepConstructorArg3(decodeArray2(decodeJsonType)))(decodeRepSum(decodeRepConstructorArg1(decodeJsonType))(decodeRepSum3))))(x);
     }
   };
 
@@ -12957,10 +12928,10 @@
   var apply8 = /* @__PURE__ */ apply(applyParser);
   var alt11 = /* @__PURE__ */ alt(altParser);
   var isToken3 = /* @__PURE__ */ isToken(isMatchString);
-  var typeVar = /* @__PURE__ */ map35(TypeVar)(/* @__PURE__ */ satisfy(function($15) {
+  var typeVar = /* @__PURE__ */ map35(TypeVar)(/* @__PURE__ */ satisfy(function($14) {
     return function(v) {
       return v > 1;
-    }(length4($15));
+    }(length4($14));
   })(/* @__PURE__ */ ident(upper2)));
   var typeParam = /* @__PURE__ */ map35(TypeParam)(upper2);
   var $lazy_type$prime = /* @__PURE__ */ $runtime_lazy7("type'", "App.Parser.Type", function() {
@@ -12970,7 +12941,7 @@
       return apply8(map35(TypeApply.create)(alt11(typeVar$prime)(typeParam$prime)))(argListOf($lazy_type$prime(26)));
     });
     var array2 = defer4(function(v) {
-      return map35(ArrayTypeApply.create)(betweenSquare($lazy_type$prime(34)));
+      return map35(ArrayTypeApply.create)(betweenSquare($lazy_type$prime(31)));
     });
     var atom = defer4(function(v) {
       return alt11(typeApply)(alt11(typeVar$prime)(alt11(typeParam$prime)(array2)));
@@ -12982,17 +12953,11 @@
     });
     var $lazy_complexType = $runtime_lazy7("complexType", "App.Parser.Type", function() {
       return defer4(function(v) {
-        return alt11($lazy_arrow(39))($lazy_union(39));
-      });
-    });
-    var $lazy_union = $runtime_lazy7("union", "App.Parser.Type", function() {
-      return defer4(function(v) {
-        return map35(UnionTypeApply.create)(multipleSepBy2(isToken3("|"))(alt11(atom)(betweenParens($lazy_complexType(32)))));
+        return $lazy_arrow(36);
       });
     });
     var arrow = $lazy_arrow(28);
-    var complexType = $lazy_complexType(39);
-    var union8 = $lazy_union(31);
+    var complexType = $lazy_complexType(36);
     return defer4(function(v) {
       return alt11(complexType)(atom);
     });
@@ -13623,7 +13588,7 @@
   var decodeRepArgsProduct22 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonMaybe2));
   var decodeRepArgsProduct32 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(decodeJsonString));
   var decodeRepConstructor1 = /* @__PURE__ */ decodeRepConstructor(FnApplyIsSymbol);
-  var decodeRepConstructorArg23 = /* @__PURE__ */ decodeRepConstructorArg(RecurIsSymbol);
+  var decodeRepConstructorArg22 = /* @__PURE__ */ decodeRepConstructorArg(RecurIsSymbol);
   var decodeRepConstructor22 = /* @__PURE__ */ decodeRepConstructor(LambdaFnIsSymbol);
   var decodeRepArgsProduct42 = /* @__PURE__ */ decodeRepArgsProduct(/* @__PURE__ */ decodeRepArgsArgument(/* @__PURE__ */ decodeArray2(decodeJsonVar)));
   var decodeRepConstructor32 = /* @__PURE__ */ decodeRepConstructor(InfixFnApplyIsSymbol);
@@ -13654,7 +13619,7 @@
   var encodeRepConstructor4 = /* @__PURE__ */ encodeRepConstructor(SerialListObjIsSymbol);
   var encodeRepConstructor13 = /* @__PURE__ */ encodeRepConstructor(SerialArrayObjIsSymbol);
   var encodeRepConstructor23 = /* @__PURE__ */ encodeRepConstructor(SerialNullObjIsSymbol)(encodeRepArgsNoArguments);
-  var encodeRepConstructor33 = /* @__PURE__ */ encodeRepConstructor(FnDefIsSymbol);
+  var encodeRepConstructor32 = /* @__PURE__ */ encodeRepConstructor(FnDefIsSymbol);
   var encodeRepArgsProduct4 = /* @__PURE__ */ encodeRepArgsProduct(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonVar));
   var encodeJsonMaybe2 = /* @__PURE__ */ encodeJsonMaybe(encodeJsonType);
   var encodeJsonArray2 = /* @__PURE__ */ encodeJsonArray(/* @__PURE__ */ encodeJsonTuple(encodeJsonVar)(encodeJsonMaybe2));
@@ -14493,7 +14458,7 @@
         return P12.value;
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 244, column 1 - line 244, column 37): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 249, column 1 - line 249, column 37): " + [x.constructor.name]);
     },
     from: function(x) {
       if (x instanceof P0) {
@@ -14548,7 +14513,7 @@
         return new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(NoArguments.value))))))))))));
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 244, column 1 - line 244, column 37): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 249, column 1 - line 249, column 37): " + [x.constructor.name]);
     }
   };
   var genericPatternGuard_ = {
@@ -14561,7 +14526,7 @@
         return new SimpleGuard(x.value0);
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 367, column 1 - line 367, column 39): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 375, column 1 - line 375, column 39): " + [x.constructor.name]);
     },
     from: function(x) {
       if (x instanceof PatternGuard) {
@@ -14572,7 +14537,7 @@
         return new Inr(x.value0);
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 367, column 1 - line 367, column 39): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 375, column 1 - line 375, column 39): " + [x.constructor.name]);
     }
   };
   var genericMaybeGuardedFnBody = {
@@ -14585,7 +14550,7 @@
         return new Standard(x.value0);
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 331, column 1 - line 331, column 45): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 339, column 1 - line 339, column 45): " + [x.constructor.name]);
     },
     from: function(x) {
       if (x instanceof Guarded) {
@@ -14596,7 +14561,7 @@
         return new Inr(x.value0);
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 331, column 1 - line 331, column 45): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 339, column 1 - line 339, column 45): " + [x.constructor.name]);
     }
   };
   var genericGuardedFnBody_ = {
@@ -14617,7 +14582,7 @@
         return Otherwise.value;
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 355, column 1 - line 355, column 32): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 363, column 1 - line 363, column 32): " + [x.constructor.name]);
     },
     from: function(x) {
       if (x instanceof Guard) {
@@ -14628,7 +14593,7 @@
         return new Inr(NoArguments.value);
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 355, column 1 - line 355, column 32): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 363, column 1 - line 363, column 32): " + [x.constructor.name]);
     }
   };
   var genericFnDef_ = {
@@ -14715,7 +14680,7 @@
         return new Object$prime(x.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0.value0);
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 307, column 1 - line 307, column 33): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 315, column 1 - line 315, column 33): " + [x.constructor.name]);
     },
     from: function(x) {
       if (x instanceof FnApply) {
@@ -14790,7 +14755,7 @@
         return new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(new Inr(x.value0)))))))))))))))));
       }
       ;
-      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 307, column 1 - line 307, column 33): " + [x.constructor.name]);
+      throw new Error("Failed pattern match at App.SyntaxTree.FnDef (line 315, column 1 - line 315, column 33): " + [x.constructor.name]);
     }
   };
   var genericDecodeJson22 = /* @__PURE__ */ genericDecodeJson(genericFnBody_);
@@ -15387,7 +15352,7 @@
   };
   var decodeJsonFnBody = {
     decodeJson: function(x) {
-      return genericDecodeJson22(decodeRepSum(decodeRepConstructor1(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructorArg23(decodeArray2(decodeJsonFnBody)))(decodeRepSum(decodeRepConstructor22(decodeRepArgsProduct42(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor32(decodeRepArgsProduct5(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructor42(decodeRepArgsProduct6(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor5(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument2)))(decodeRepSum(decodeRepConstructor6(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnDef)))))(decodeRepSum(decodeRepConstructorArg32(decodeArray2($lazy_decodeJsonGuardedFnBody(0))))(decodeRepSum(decodeRepConstructor7(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2($lazy_decodeJsonCaseBinding(0))))))(decodeRepSum5(decodeRepSum6(decodeRepSum(decodeRepConstructor8(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructorArg42(decodeArray2(decodeJsonFnBody)))(decodeRepSum7))))))))))))))(x);
+      return genericDecodeJson22(decodeRepSum(decodeRepConstructor1(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructorArg22(decodeArray2(decodeJsonFnBody)))(decodeRepSum(decodeRepConstructor22(decodeRepArgsProduct42(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor32(decodeRepArgsProduct5(decodeRepArgsArgument(decodeArray2(decodeJsonFnBody)))))(decodeRepSum(decodeRepConstructor42(decodeRepArgsProduct6(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructor5(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument2)))(decodeRepSum(decodeRepConstructor6(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2(decodeJsonFnDef)))))(decodeRepSum(decodeRepConstructorArg32(decodeArray2($lazy_decodeJsonGuardedFnBody(0))))(decodeRepSum(decodeRepConstructor7(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeArray2($lazy_decodeJsonCaseBinding(0))))))(decodeRepSum5(decodeRepSum6(decodeRepSum(decodeRepConstructor8(decodeRepArgsProduct(decodeRepArgsArgument(decodeJsonFnBody))(decodeRepArgsArgument(decodeJsonFnBody))))(decodeRepSum(decodeRepConstructorArg42(decodeArray2(decodeJsonFnBody)))(decodeRepSum7))))))))))))))(x);
     }
   };
   var $lazy_decodeJsonCaseBinding = /* @__PURE__ */ $runtime_lazy8("decodeJsonCaseBinding", "App.SyntaxTree.FnDef", function() {
@@ -15481,7 +15446,7 @@
   var encodeRepSum7 = /* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(FnVarIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonQVar)))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(FnOpIsSymbol)(encodeRepArgsArgument1))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(Cell$primeIsSymbol)(encodeRepArgsArgument22))(/* @__PURE__ */ encodeRepSum(/* @__PURE__ */ encodeRepConstructor(CellValue$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonCellValue)))(/* @__PURE__ */ encodeRepConstructor(Object$primeIsSymbol)(/* @__PURE__ */ encodeRepArgsArgument(encodeJsonObject))))));
   var encodeJsonFnDef = {
     encodeJson: function(x) {
-      return genericEncodeJson1(encodeRepConstructor33(encodeRepArgsProduct4(encodeRepArgsProduct1(encodeRepArgsProduct22(encodeRepArgsProduct32(encodeRepArgsArgument(encodeJsonFnBody)))))))(x);
+      return genericEncodeJson1(encodeRepConstructor32(encodeRepArgsProduct4(encodeRepArgsProduct1(encodeRepArgsProduct22(encodeRepArgsProduct32(encodeRepArgsArgument(encodeJsonFnBody)))))))(x);
     }
   };
   var encodeJsonFnBody = {
@@ -29836,10 +29801,6 @@ def average (xs: [Number]): Number =
         return new ArrowTypeApply(map64(replace4)(v.value0));
       }
       ;
-      if (v instanceof UnionTypeApply) {
-        return new UnionTypeApply(map64(replace4)(v.value0));
-      }
-      ;
       if (v instanceof ArrayTypeApply) {
         return new ArrayTypeApply(replace4(v.value0));
       }
@@ -29852,9 +29813,9 @@ def average (xs: [Number]): Number =
         return v;
       };
       if (v instanceof TypeParam$prime) {
-        var $98 = lookup15(v.value0)(replacements);
-        if ($98 instanceof Just) {
-          return $98.value0;
+        var $97 = lookup15(v.value0)(replacements);
+        if ($97 instanceof Just) {
+          return $97.value0;
         }
         ;
         return v1(true);
@@ -29875,10 +29836,6 @@ def average (xs: [Number]): Number =
     }
     ;
     if (v.value0 instanceof ArrowTypeApply && v.value1 instanceof ArrowTypeApply) {
-      return unions2(map64(findParamReplacements)(zip(v.value0.value0)(v.value1.value0)));
-    }
-    ;
-    if (v.value0 instanceof UnionTypeApply && v.value1 instanceof ArrowTypeApply) {
       return unions2(map64(findParamReplacements)(zip(v.value0.value0)(v.value1.value0)));
     }
     ;
@@ -29950,10 +29907,6 @@ def average (xs: [Number]): Number =
     }
     ;
     if (v instanceof ArrowTypeApply) {
-      return sum2(map64(countParams)(v.value0));
-    }
-    ;
-    if (v instanceof UnionTypeApply) {
       return sum2(map64(countParams)(v.value0));
     }
     ;
@@ -30986,16 +30939,16 @@ def average (xs: [Number]): Number =
         return v.value0;
       }
       ;
-      throw new Error("Failed pattern match at App.Utils.SyntaxAtom (line 108, column 1 - line 118, column 25): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at App.Utils.SyntaxAtom (line 107, column 1 - line 117, column 25): " + [v.constructor.name]);
     }
   };
   var wrapArgList = /* @__PURE__ */ function() {
     var wrapParens2 = function(xs) {
       return append21([new OtherText("(")])(append21(xs)([new OtherText(")")]));
     };
-    var $74 = intercalate7([new OtherText(", ")]);
-    return function($75) {
-      return wrapParens2($74($75));
+    var $73 = intercalate7([new OtherText(", ")]);
+    return function($74) {
+      return wrapParens2($73($74));
     };
   }();
   var $lazy_typeToSyntaxAtoms = /* @__PURE__ */ $runtime_lazy15("typeToSyntaxAtoms", "App.Utils.SyntaxAtom", function() {
@@ -31003,23 +30956,23 @@ def average (xs: [Number]): Number =
       return append21([new OtherText("[")])(append21(xs)([new OtherText("]")]));
     };
     var $$var3 = function(dictShow) {
-      var $76 = show(dictShow);
-      return function($77) {
-        return Cell$prime2.create($76($77));
+      var $75 = show(dictShow);
+      return function($76) {
+        return Cell$prime2.create($75($76));
       };
     };
     var var1 = $$var3(showTypeVar);
     var var2 = $$var3(showTypeParam);
     var typeApply = function(x) {
       return function(ys) {
-        return append21($lazy_typeToSyntaxAtoms(83)(x))(append21([new OtherText(" ")])(wrapArgList(map68($lazy_typeToSyntaxAtoms(85))(ys))));
+        return append21($lazy_typeToSyntaxAtoms(82)(x))(append21([new OtherText(" ")])(wrapArgList(map68($lazy_typeToSyntaxAtoms(84))(ys))));
       };
     };
     var infixTypeApply = function(op) {
-      var $78 = intercalate7([new Operator(" " + (op + " "))]);
-      var $79 = map68($lazy_typeToSyntaxAtoms(89));
-      return function($80) {
-        return $78($79($80));
+      var $77 = intercalate7([new Operator(" " + (op + " "))]);
+      var $78 = map68($lazy_typeToSyntaxAtoms(88));
+      return function($79) {
+        return $77($78($79));
       };
     };
     return function(v) {
@@ -31031,12 +30984,8 @@ def average (xs: [Number]): Number =
         return infixTypeApply("\u27BE")(v.value0);
       }
       ;
-      if (v instanceof UnionTypeApply) {
-        return infixTypeApply("|")(v.value0);
-      }
-      ;
       if (v instanceof ArrayTypeApply) {
-        return wrapSquare($lazy_typeToSyntaxAtoms(72)(v.value0));
+        return wrapSquare($lazy_typeToSyntaxAtoms(71)(v.value0));
       }
       ;
       if (v instanceof TypeVar$prime) {
@@ -31047,7 +30996,7 @@ def average (xs: [Number]): Number =
         return [var2(v.value0)];
       }
       ;
-      throw new Error("Failed pattern match at App.Utils.SyntaxAtom (line 68, column 21 - line 74, column 28): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at App.Utils.SyntaxAtom (line 68, column 21 - line 73, column 28): " + [v.constructor.name]);
     };
   });
   var typeToSyntaxAtoms = /* @__PURE__ */ $lazy_typeToSyntaxAtoms(67);
@@ -31056,18 +31005,18 @@ def average (xs: [Number]): Number =
     var $$var3 = notReservedKeyword(nonTokenIdent(lower2));
     var stringLit = noneOf3(['"', "\\"]);
     var module$prime2 = nonTokenIdent(upper2);
-    var charLitEscaped = alt23(map129(function($81) {
-      return char(wrapQuotes($81));
+    var charLitEscaped = alt23(map129(function($80) {
+      return char(wrapQuotes($80));
     })(parseAppend(toStringChar)(toStringChar)(is10("\\"))(alpha)))(applySecond(applyParser)(is10("\\"))(anyChar));
     var string = map129(wrapDoubleQuotes)(betweenDoubleQuotes(manyChar(alt23(stringLit)(charLitEscaped))));
     var charLit = noneOf3(["'", "\\"]);
-    var $$char = map129(function($82) {
-      return wrapQuotes(singleton9($82));
+    var $$char = map129(function($81) {
+      return wrapQuotes(singleton9($81));
     })(betweenQuotes(alt23(charLit)(charLitEscaped)));
-    var atom = alt23(map129(Number$prime.create)(alt23(map129(show(showNumber))($$double))(map129(show(showInt))($$int))))(alt23(map129(Char$prime.create)($$char))(alt23(map129(String$prime.create)(string))(alt23(map129(function($83) {
-      return Cell$prime2.create(showCell($83));
-    })(cellParser))(alt23(map129($$Function.create)($$var3))(alt23(map129(Operator.create)(varOp2))(alt23(map129(Module2.create)(module$prime2))(alt23(map129(Keyword.create)(oneOf3(reservedKeywords)))(alt23(map129($$Symbol.create)(oneOf3(reservedSymbols)))(map129(function($84) {
-      return OtherText.create(singleton9($84));
+    var atom = alt23(map129(Number$prime.create)(alt23(map129(show(showNumber))($$double))(map129(show(showInt))($$int))))(alt23(map129(Char$prime.create)($$char))(alt23(map129(String$prime.create)(string))(alt23(map129(function($82) {
+      return Cell$prime2.create(showCell($82));
+    })(cellParser))(alt23(map129($$Function.create)($$var3))(alt23(map129(Operator.create)(varOp2))(alt23(map129(Module2.create)(module$prime2))(alt23(map129(Keyword.create)(oneOf3(reservedKeywords)))(alt23(map129($$Symbol.create)(oneOf3(reservedSymbols)))(map129(function($83) {
+      return OtherText.create(singleton9($83));
     })(anyChar))))))))));
     return some3(atom);
   }();
@@ -31092,9 +31041,9 @@ def average (xs: [Number]): Number =
           return snoc(v)(v1);
         };
         if (v1 instanceof OtherText) {
-          var $68 = unsnoc(v);
-          if ($68 instanceof Just && $68.value0.last instanceof OtherText) {
-            return snoc($68.value0.init)(new OtherText($68.value0.last.value0 + v1.value0));
+          var $67 = unsnoc(v);
+          if ($67 instanceof Just && $67.value0.last instanceof OtherText) {
+            return snoc($67.value0.init)(new OtherText($67.value0.last.value0 + v1.value0));
           }
           ;
           return v2(true);
