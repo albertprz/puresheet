@@ -14,7 +14,6 @@ newtype TypeVar = TypeVar String
 data Type
   = TypeApply Type (Array Type)
   | ArrowTypeApply (Array Type)
-  | UnionTypeApply (Array Type)
   | ArrayTypeApply Type
   | TypeVar' TypeVar
   | TypeParam' TypeParam

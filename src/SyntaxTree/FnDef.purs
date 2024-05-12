@@ -233,6 +233,11 @@ instance Hashable Scope where
 derive instance Eq Associativity
 derive instance Generic Associativity _
 
+instance Show Associativity where
+  show = case _ of
+    L -> "L"
+    R -> "R"
+
 instance EncodeJson Associativity where
   encodeJson = genericEncodeJson
 
@@ -242,6 +247,9 @@ instance DecodeJson Associativity where
 derive instance Eq Precedence
 derive instance Ord Precedence
 derive instance Generic Precedence _
+
+instance Show Precedence where
+  show = show <<< fromEnum
 
 instance Enum Precedence where
   succ = genericSucc

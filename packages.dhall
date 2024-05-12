@@ -36,6 +36,40 @@ let overrides =
           , "tuples"
           ]
         }
+      , dodo-printer =
+        { version = "v2.2.1"
+        , repo = "https://github.com/natefaubion/purescript-dodo-printer"
+        , dependencies =
+          [ "aff"
+          , "ansi"
+          , "arrays"
+          , "avar"
+          , "console"
+          , "control"
+          , "effect"
+          , "either"
+          , "exceptions"
+          , "foldable-traversable"
+          , "integers"
+          , "lists"
+          , "maybe"
+          , "minibench"
+          , "newtype"
+          , "node-buffer"
+          , "node-child-process"
+          , "node-fs"
+          , "node-os"
+          , "node-path"
+          , "node-process"
+          , "node-streams"
+          , "parallel"
+          , "partial"
+          , "prelude"
+          , "safe-coerce"
+          , "strings"
+          , "tuples"
+          ]
+          }
       }
 
 in  upstream // overrides

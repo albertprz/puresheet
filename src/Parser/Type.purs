@@ -28,13 +28,10 @@ type' = defer \_ -> complexType <|> atom
   arrow = defer \_ -> ArrowTypeApply <$> multipleSepBy (isToken "->")
     (atom <|> betweenParens complexType)
 
-  union = defer \_ -> UnionTypeApply <$> multipleSepBy (isToken "|")
-    (atom <|> betweenParens complexType)
-
   array = defer \_ -> ArrayTypeApply <$> betweenSquare type'
 
   typeVar' = TypeVar' <$> typeVar
   typeParam' = TypeParam' <$> typeParam
 
-  complexType = defer \_ -> arrow <|> union
+  complexType = defer \_ -> arrow
   atom = defer \_ -> typeApply <|> typeVar' <|> typeParam' <|> array

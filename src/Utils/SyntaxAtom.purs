@@ -68,7 +68,6 @@ typeToSyntaxAtoms :: Type -> Array SyntaxAtom
 typeToSyntaxAtoms = case _ of
   TypeApply x ys -> typeApply x ys
   ArrowTypeApply xs -> infixTypeApply "➾" xs
-  UnionTypeApply xs -> infixTypeApply "|" xs
   ArrayTypeApply x -> wrapSquare $ typeToSyntaxAtoms x
   TypeVar' x -> [ var x ]
   TypeParam' x -> [ var x ]

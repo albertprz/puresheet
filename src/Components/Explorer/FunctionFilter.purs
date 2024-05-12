@@ -110,7 +110,6 @@ countParams :: Type -> Int
 countParams = case _ of
   TypeApply x xs -> sum $ map countParams (Array.cons x xs)
   ArrowTypeApply xs -> sum $ map countParams xs
-  UnionTypeApply xs -> sum $ map countParams xs
   ArrayTypeApply x -> countParams x
   TypeParam' _ -> one
   _ -> zero
@@ -129,8 +128,6 @@ findParamReplacements = case _ of
       $ Array.zip (Array.cons x xs) (Array.cons y ys)
   ArrowTypeApply xs /\ ArrowTypeApply ys ->
     Map.unions $ map findParamReplacements $ Array.zip xs ys
-  UnionTypeApply xs /\ ArrowTypeApply ys ->
-    Map.unions $ map findParamReplacements $ Array.zip xs ys
   ArrayTypeApply x /\ ArrayTypeApply y ->
     findParamReplacements (x /\ y)
   TypeParam' param /\ targetType ->
@@ -141,7 +138,6 @@ replaceParams :: Map TypeParam Type -> Type -> Type
 replaceParams replacements = case _ of
   TypeApply x xs -> TypeApply (replace x) (map replace xs)
   ArrowTypeApply xs -> ArrowTypeApply $ map replace xs
-  UnionTypeApply xs -> UnionTypeApply $ map replace xs
   ArrayTypeApply x -> ArrayTypeApply $ replace x
   TypeParam' param
     | Just targetType <- Map.lookup param replacements -> targetType

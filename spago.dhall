@@ -11,6 +11,7 @@
   , "console"
   , "control"
   , "debug"
+  , "dodo-printer"
   , "effect"
   , "either"
   , "enums"
