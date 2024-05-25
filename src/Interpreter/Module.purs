@@ -36,9 +36,10 @@ unRegisterModuleDef
   -> m Unit
 unRegisterModuleDef (ModuleDef module' _ _ _) =
   modify_ \st -> st
-    { fnsMap = HashMap.deleteWhen (\(QVar x _) -> x == Just module')
+    { fnsMap = HashMap.deleteWhen (case _ of QVar x _ -> x == Just module')
         st.fnsMap
-    , operatorsMap = HashMap.deleteWhen (\(QVarOp x _) -> x == Just module')
+    , operatorsMap = HashMap.deleteWhen
+        (case _ of QVarOp x _ -> x == Just module')
         st.operatorsMap
     , aliasedModulesMap = HashMap.deleteWhen (eq module' <<< fst)
         st.aliasedModulesMap

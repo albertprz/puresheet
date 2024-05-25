@@ -11,7 +11,7 @@ css = do
     display := flex
     flexDirection := column
 
-  div &. formulaBox ? Rule.do
+  universal &. formulaBox ? Rule.do
     width := vw 50
     height := px 100
     marginLeft := vw 6.5
@@ -26,7 +26,7 @@ css = do
     whiteSpace := breakSpaces
     overflow := auto
 
-  div &. formulaBox &:: PseudoElement "-webkit-scrollbar" ? Rule.do
+  universal &. formulaBox &:: PseudoElement "-webkit-scrollbar" ? Rule.do
     display := none
 
   div &. suggestionsDropdown ? Rule.do
@@ -55,15 +55,15 @@ css = do
     fontSize := signatureFontSize
     textAlign := center
 
-  div &. unknownFormula ? Rule.do
+  universal &. unknownFormula ? Rule.do
     backgroundColor := lighterYellow
     borderColor := yellow
 
-  div &. validFormula ? Rule.do
+  universal &. validFormula ? Rule.do
     backgroundColor := lighterGreen
     borderColor := green
 
-  div &. invalidFormula ? Rule.do
+  universal &. invalidFormula ? Rule.do
     backgroundColor := lighterRed
     borderColor := red
 

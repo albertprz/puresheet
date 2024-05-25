@@ -4,6 +4,7 @@ import FatPrelude
 
 import App.CSS.ClassNames (invalidFormula, unknownFormula, validFormula)
 import App.Components.Spreadsheet.Cell (Cell)
+import App.SyntaxTree.FnDef (FnBody(..), Object(..))
 import Data.Array as Array
 import Data.HashMap as HashMap
 import Data.List as List
@@ -32,7 +33,7 @@ getDependencies ctx affectedCells formulaCells =
   formulaId = newFormulaId $ HashMap.keys ctx.formulaCache
   newCtx = ctx
     { formulaCache = HashMap.insert formulaId
-        { formulaText: mempty
+        { formulaBody: Object' NullObj
         , affectedCells
         , startingCell: minimum1 affectedCells
         }
@@ -81,7 +82,7 @@ formulaStateToClass = case _ of
   UnknownFormula -> unknownFormula
 
 type Formula =
-  { formulaText :: String
+  { formulaBody :: FnBody
   , affectedCells :: NonEmptySet Cell
   , startingCell :: Cell
   }

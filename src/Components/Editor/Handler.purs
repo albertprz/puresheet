@@ -2,30 +2,28 @@ module App.Components.Editor.Handler where
 
 import FatPrelude
 
-import App.AppM (AppM)
 import App.CSS.Ids (formulaCellInputId)
 import App.Components.Editor.HandlerHelpers (displayFnSig, displayFnSuggestions, getEditorContent, getTermAtCaret, insertEditorNewLine, performAutoComplete, performSyntaxHighlight, subscribeSelectionChange, updateEditorContent)
 import App.Components.Editor.Models (EditorAction(..), EditorOutput(..), EditorQuery(..), EditorState)
+import App.Components.Editor.Renderer (formulaBoxRef)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
-import App.Routes (Route(..))
-import App.Utils.Dom (focusById, withPrevent)
+import App.Utils.Dom (focusById, focusRef, stopPropagation, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey, toEvent)
 import App.Utils.KeyCode (KeyCode(..), isModifierKeyCode)
 import App.Utils.Selection as Selection
 import Data.Array as Array
 import Halogen (HalogenM, raise)
-import Halogen.Router.Class (navigate)
-import Halogen.Store.Monad (getStore)
+import Record (merge)
 import Web.Event.Event (target)
 import Web.HTML (window)
 import Web.HTML.HTMLElement (fromEventTarget, toNode)
 
 handleAction
   :: EditorAction
-  -> HalogenM EditorState EditorAction () EditorOutput AppM Unit
+  -> HalogenM EditorState EditorAction () EditorOutput Aff Unit
 
 handleAction (KeyDown (Just suggestion) Enter ev) = withPrevent ev do
-  performAutoComplete suggestion
+  when (not ctrlKey ev) $ performAutoComplete suggestion
 
 handleAction (KeyDown (Just suggestion) Tab ev) = withPrevent ev do
   { suggestions } <- get
@@ -46,6 +44,9 @@ handleAction (KeyDown (Just _) keyCode ev)
               $ next st.selectedSuggestionId
         }
 
+handleAction (KeyDown Nothing keyCode ev)
+  | keyCode `elem` [ ArrowUp, ArrowDown ] = stopPropagation ev
+
 handleAction (KeyDown _ Enter ev)
   | ctrlKey ev = withPrevent ev do
       editorText <- getEditorContent
@@ -62,19 +63,27 @@ handleAction (KeyDown _ (CharKeyCode 'G') ev)
 
 handleAction (KeyDown _ (CharKeyCode 'D') ev)
   | ctrlKey ev = withPrevent ev do
-      traverse_ (navigate <<< ExplorerView <<< { selectedTerm: _ } <<< Just)
-        =<< getTermAtCaret
+      term <- getTermAtCaret
+      raise $ GoToDefinition term
+
+handleAction (KeyDown _ Delete _) =
+  modify_ _ { formulaState = UnknownFormula }
+
+handleAction (KeyDown _ (CharKeyCode ch) ev) =
+  unless (ctrlKey ev && ch `notElem` [ 'X', 'V' ])
+    $ modify_ _ { formulaState = UnknownFormula }
 
 handleAction (KeyDown _ _ _) =
-  modify_ _ { formulaState = UnknownFormula }
+  pure unit
 
 handleAction (KeyUp keyCode _) =
   unless (isModifierKeyCode keyCode)
     performSyntaxHighlight
 
-handleAction (MouseDown ev) = when (ctrlKey ev) do
-  traverse_ (navigate <<< ExplorerView <<< { selectedTerm: _ } <<< Just)
-    =<< getTermAtCaret
+handleAction (MouseDown ev) =
+  when (ctrlKey ev) do
+    term <- getTermAtCaret
+    raise $ GoToDefinition term
 
 handleAction (FocusIn ev) = do
   selection <- liftEffect $ Selection.getSelection =<< window
@@ -91,21 +100,28 @@ handleAction (HoverSuggestion suggestionId _) =
   modify_ _ { selectedSuggestionId = suggestionId }
 
 handleAction SelectionChange = do
-  st <- get
-  store <- getStore
-  displayFnSuggestions
+  st@{ store } <- get
+  displayFnSuggestions store
   displayFnSig st store
 
 handleAction Initialize =
   subscribeSelectionChange
 
-handleAction (Receive { formulaState }) =
-  modify_ _ { formulaState = formulaState }
+handleAction (Receive input) =
+  modify_ (merge input)
 
 handleQuery
   :: forall a
    . EditorQuery a
-  -> HalogenM EditorState EditorAction () EditorOutput AppM (Maybe a)
+  -> HalogenM EditorState EditorAction () EditorOutput Aff (Maybe a)
 handleQuery (UpdateEditorContent text next) = do
   updateEditorContent text
+  pure $ Just next
+
+handleQuery (GetEditorContents reply) = do
+  text <- getEditorContent
+  pure $ Just $ reply text
+
+handleQuery (FocusEditor next) = do
+  focusRef formulaBoxRef
   pure $ Just next

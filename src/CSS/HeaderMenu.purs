@@ -17,4 +17,3 @@ css = do
     marginLeft := pct 3
     left := px 0
     fontSize := px 40
-    cursor := pointer

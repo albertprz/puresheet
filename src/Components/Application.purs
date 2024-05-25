@@ -51,7 +51,8 @@ component = Hooks.component \_ _ -> Hooks.do
       | otherwise = pure unit
   Hooks.pure do
     div
-      [ onKeyDown $ mkKeyAction handleKeyDown ]
+      [ onKeyDown $ mkKeyAction handleKeyDown
+      ]
       [ styleSheet Application.css
       , slot_ _headerMenu unit HeaderMenu.component unit
       , slot_ _spreadsheet unit Spreadsheet.component { route }
@@ -66,7 +67,7 @@ subscribeWindowUnload = do
     eventListener
       (EventType "beforeunload")
       (Window.toEventTarget window)
-      (const $ Just (persistInLocalStorage =<< getStore))
+      (const $ Just $ persistInLocalStorage =<< getStore)
 
 toggleOverflow :: forall m. MonadEffect m => Route -> m Unit
 toggleOverflow route = liftEffect do

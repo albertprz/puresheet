@@ -149,6 +149,9 @@ functionContainer = ClassName "function-container"
 typeahead :: ClassName
 typeahead = ClassName "typeahead"
 
+typeaheadMenu :: ClassName
+typeaheadMenu = ClassName "typeahead-menu"
+
 typeaheadOption :: ClassName
 typeaheadOption = ClassName "typeahead-option"
 
@@ -166,3 +169,48 @@ searchInputContainer = ClassName "search-input-container"
 
 functionFiltersContainer :: ClassName
 functionFiltersContainer = ClassName "function-filters-container"
+
+editFunctionIcon :: ClassName
+editFunctionIcon = ClassName "edit-function-icon"
+
+modalContainer :: ClassName
+modalContainer = ClassName "modal-container"
+
+modalInnerContainer :: ClassName
+modalInnerContainer = ClassName "modal-inner-container"
+
+scrollable :: ClassName
+scrollable = ClassName "scrollable"
+
+functionEditorModal :: ClassName
+functionEditorModal = ClassName "function-editor-modal"
+
+operatorEditorModal :: ClassName
+operatorEditorModal = ClassName "operator-editor-modal"
+
+functionNameInput :: ClassName
+functionNameInput = ClassName "function-name-input"
+
+functionSignatureInput :: ClassName
+functionSignatureInput = ClassName "function-signature-input"
+
+functionDocString :: ClassName
+functionDocString = ClassName "function-doc-string"
+
+flexRow :: ClassName
+flexRow = ClassName "flex-row"
+
+flexColumn :: ClassName
+flexColumn = ClassName "flex-column"
+
+submitButton :: ClassName
+submitButton = ClassName "submit-button"
+
+addButton :: ClassName
+addButton = ClassName "add-button"
+
+addTermContainer :: ClassName
+addTermContainer = ClassName "add-term-container"
+
+deleteFunctionIcon :: ClassName
+deleteFunctionIcon = ClassName "delete-function-icon"

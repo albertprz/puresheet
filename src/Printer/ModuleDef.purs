@@ -12,8 +12,8 @@ moduleDef = case _ of
   ModuleDef x y z t -> text "module"
     <+> text (show x)
     <%> statements "import" moduleImport break y
-    <%> statements "op" opDef break z
-    <%> statements "def" fnDef break t
+    <%> statements "op" opDef (break <> break) z
+    <%> statements "def" (fnDef break) (break <> break) t
 
 moduleImport :: forall a. ModuleImport -> Doc a
 moduleImport = case _ of

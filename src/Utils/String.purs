@@ -2,11 +2,9 @@ module App.Utils.String where
 
 import Prelude
 
-import App.Utils.Monoid (unlessMonoid)
 import Data.Foldable (foldMap, intercalate)
 import Data.Maybe (Maybe)
 import Data.String (length)
-import Data.String (null) as String
 import Data.String.CodeUnits (charAt, dropRight, uncons)
 
 newline :: String
@@ -19,13 +17,10 @@ str :: forall a. Show a => String -> Array a -> String
 str sep xs = intercalate sep $ show <$> xs
 
 wrap :: String -> String -> String -> String
-wrap beg end x = unlessMonoid (String.null x) $ beg <> x <> end
+wrap beg end x = beg <> x <> end
 
 wrapBoth :: String -> String -> String
 wrapBoth x = wrap x x
-
-wrapCurly :: String -> String
-wrapCurly = wrap "{" "}"
 
 wrapQuotes :: String -> String
 wrapQuotes = wrapBoth "'"
@@ -33,11 +28,11 @@ wrapQuotes = wrapBoth "'"
 wrapDoubleQuotes :: String -> String
 wrapDoubleQuotes = wrapBoth "\""
 
-wrapBackQuotes :: String -> String
-wrapBackQuotes = wrapBoth "`"
-
 wrapParens :: String -> String
 wrapParens = wrap "(" ")"
+
+wrapSquare :: String -> String
+wrapSquare = wrap "[" "]"
 
 showParensCsv :: forall a. Show a => Array a -> String
 showParensCsv = wrapParens <<< str ", "

@@ -46,7 +46,7 @@ registerBindings bindings = do
   { scope, scopeLoc } <- get
   let (Scope maxScope) = fromMaybe scope $ maximum $ toTree scopeLoc
   let scopes = Scope <<< (_ + maxScope) <$> (1 .. length bindings)
-  traverse_ (\(n /\ x) -> registerLocalFn n x)
+  traverse_ (case _ of (n /\ x) -> registerLocalFn n x)
     ((NonEmptyArray.toArray scopes) `Array.zip` bindings)
   modify_ \st -> st
     { scopeLoc = appendChildren (mkLeaf <$> List.fromFoldable scopes)

@@ -14,20 +14,11 @@ functionRowId n = ElementId $ "functionRow" <> show n
 spreadsheetTableId :: ElementId
 spreadsheetTableId = ElementId "spreadsheet-table"
 
-formulaBoxId :: ElementId
-formulaBoxId = ElementId "formula-box"
-
 selectedCellInputId :: ElementId
 selectedCellInputId = ElementId "selected-cell-input"
 
 formulaCellInputId :: ElementId
 formulaCellInputId = ElementId "formula-cell-input"
-
-functionSignatureId :: ElementId
-functionSignatureId = ElementId "function-signature"
-
-suggestionsDropdownId :: ElementId
-suggestionsDropdownId = ElementId "suggestions-dropdown"
 
 inputElementType :: ElementType
 inputElementType = ElementType "input"

@@ -16,7 +16,12 @@ cellValue :: Parser CellValue
 cellValue = token
   $ (FloatVal <$> double)
   <|> (IntVal <$> int)
-  <|> (BoolVal <$> (true <$ isToken "true" <|> false <$ isToken "false"))
+  <|>
+    ( BoolVal <$>
+        ( true <$ isToken "true"
+            <|> (false <$ isToken "false")
+        )
+    )
   <|>
     ( CharVal <<< codePointFromChar <$> betweenQuotes
         (charLit <|> charLitEscaped)
@@ -26,9 +31,9 @@ cellValue = token
         ((||*) (stringLit <|> charLitEscaped))
     )
   where
-  stringLit = noneOf [ '"', '\\' ]
+  stringLit = noneOf [ '\"', '\\' ]
   charLit = noneOf [ '\'', '\\' ]
-  charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
+  charLitEscaped = String.char <$> (is '\\' ->>- alpha)
     <|> (is '\\' *> anyChar)
 
 var :: Parser Var

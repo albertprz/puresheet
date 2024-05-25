@@ -11,11 +11,12 @@ import App.Lib.Array (array)
 import App.Lib.Matrix (matrix)
 import App.Lib.Prelude (prelude)
 import App.SyntaxTree.Common (Module, QVar, QVarOp, preludeModule)
-import App.SyntaxTree.FnDef (FnInfo, OpInfo)
+import App.SyntaxTree.FnDef (FnBody, FnInfo, OpInfo)
+import App.Utils.Set (nonEmptyIntersection) as Set
 import Data.Argonaut.Decode (fromJsonString)
 import Data.Argonaut.Encode (toJsonString)
 import Data.HashMap as HashMap
-import Data.Set as Set
+import Data.Set (empty, fromFoldable, member) as Set
 import Data.Set.NonEmpty as NonEmptySet
 import Data.Tree.Zipper (fromTree)
 import Effect.Console as Logger
@@ -95,7 +96,20 @@ getFromLocalStorage = liftEffect do
 persistInLocalStorage :: forall m. MonadEffect m => Store -> m Unit
 persistInLocalStorage store = liftEffect do
   storage <- localStorage =<< window
-  Storage.setItem storageKey (serializeStore store) storage
+  Storage.setItem storageKey (serializeStore $ cleanupStore store) storage
+
+cleanupStore :: Store -> Store
+cleanupStore store@{ formulaCache, tableDependencies, tableFormulas } =
+  store
+    { formulaCache =
+        HashMap.filterKeys (flip Set.member formulaIds)
+          formulaCache
+    , tableDependencies =
+        HashMap.mapMaybe (Set.nonEmptyIntersection formulaIds)
+          tableDependencies
+    }
+  where
+  formulaIds = Set.fromFoldable $ HashMap.values tableFormulas
 
 serializeStore :: Store -> String
 serializeStore store = toJsonString
@@ -108,9 +122,9 @@ serializeStore store = toJsonString
   , tableFormulas: HashMap.toArrayBy Tuple $ store.tableFormulas
   , tableDependencies: HashMap.toArrayBy Tuple $ map Set.fromFoldable $
       store.tableDependencies
-  , formulaCache: HashMap.toArrayBy Tuple
-      $ map (\x -> merge { affectedCells: Set.fromFoldable x.affectedCells } x)
-          store.formulaCache
+  , formulaCache: HashMap.toArrayBy Tuple $
+      map (\x -> merge { affectedCells: Set.fromFoldable x.affectedCells } x)
+        store.formulaCache
   }
 
 deserializeStore :: String -> Maybe Store
@@ -132,7 +146,7 @@ deserializeStore = hush <<< map go <<< fromJsonString
           ( \x ->
               { affectedCells:
                   unsafeFromJust $ NonEmptySet.fromSet x.affectedCells
-              , formulaText: x.formulaText
+              , formulaBody: x.formulaBody
               , startingCell: x.startingCell
               }
           )
@@ -151,7 +165,7 @@ type SerialStore =
   , formulaCache ::
       Array
         ( FormulaId /\
-            { formulaText :: String
+            { formulaBody :: FnBody
             , affectedCells :: Set Cell
             , startingCell :: Cell
             }

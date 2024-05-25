@@ -6,7 +6,7 @@ import App.Evaluator.Builtins as Builtins
 import App.Evaluator.Common (EvalM, LocalFormulaCtx, getAvailableAliases, getAvailableModules, lookupBuiltinFn, lookupModuleFn, lookupOperator)
 import App.Parser.Common (ident, module', operator, qTerm, qVar, qVarOp)
 import App.SyntaxTree.Common (Module, QVar(..), QVarOp(..), Var(..), VarOp(..), preludeModule)
-import App.SyntaxTree.FnDef (BuiltinFnInfo, FnInfo, FnSig, OpInfo)
+import App.SyntaxTree.FnDef (BuiltinFnInfo, FnBody(..), FnInfo, FnSig, Object(..), OpInfo)
 import Bookhound.Parser (Parser, runParser)
 import Bookhound.ParserCombinators (is)
 import Bookhound.Parsers.Char (lower)
@@ -87,9 +87,11 @@ getWordAtIndex otherSeparators formulaText idx =
     $ map Pattern ([ ")", "]" ] <> separators)
   separators = [ " ", " ", "\n", "\t", "," ] <> otherSeparators
 
-getFnSig :: QVar -> LocalFormulaCtx -> Maybe FnSig
-getFnSig qVar ctx =
-  pick <$> builtinFnInfo <|> pick <$> fnInfo
+getFnSigAndBody :: QVar -> LocalFormulaCtx -> Maybe (FnSig /\ FnBody)
+getFnSigAndBody qVar ctx = bisequence
+  ( (pick <$> builtinFnInfo <|> pick <$> fnInfo)
+      /\ (_.body <$> fnInfo <|> Just (Object' NullObj))
+  )
   where
   builtinFnInfo =
     hush
@@ -102,6 +104,13 @@ getFnSig qVar ctx =
       $ flip evalState ctx
       $ runExceptT
       $ lookupModuleFn qVar
+
+getOpInfo :: QVarOp -> LocalFormulaCtx -> Maybe OpInfo
+getOpInfo qVarOp ctx =
+  hush
+    $ flip evalState ctx
+    $ runExceptT
+    $ lookupOperator qVarOp
 
 filterFns :: QVar -> LocalFormulaCtx -> Set SuggestionTerm
 filterFns (QVar fnModule fnVar) ctx = moduleFns <> builtinFns
@@ -175,8 +184,13 @@ extractSuggestionFn ctx = case _ of
     <$> hush (flip evalState ctx $ runExceptT $ lookupOperator op)
   ModuleSuggestion _ -> Nothing
 
-moduleFromSuggestion :: SuggestionTerm -> Maybe Module
-moduleFromSuggestion = case _ of
+extractSuggestionOp :: SuggestionTerm -> Maybe QVarOp
+extractSuggestionOp = case _ of
+  OpSuggestion op -> Just op
+  _ -> Nothing
+
+extractSuggestionModule :: SuggestionTerm -> Maybe Module
+extractSuggestionModule = case _ of
   FnSuggestion (QVar x _) -> x
   OpSuggestion (QVarOp x _) -> x
   BuiltinFnSuggestion (QVar x _) -> x
@@ -185,8 +199,9 @@ moduleFromSuggestion = case _ of
 getSuggestionInfo :: LocalFormulaCtx -> SuggestionTerm -> Maybe SuggestionInfo
 getSuggestionInfo ctx term = do
   fn <- extractSuggestionFn ctx term
-  fnSig <- getFnSig fn ctx
-  pure $ SuggestionInfo { term, fn, fnSig }
+  fnSig /\ fnBody <- getFnSigAndBody fn ctx
+  let opInfo = flip getOpInfo ctx =<< extractSuggestionOp term
+  pure $ SuggestionInfo { term, fn, fnSig, fnBody, opInfo }
 
 lookupTerm :: LocalFormulaCtx -> SuggestionTerm -> Maybe SuggestionTerm
 lookupTerm ctx = case _ of
@@ -221,7 +236,12 @@ data SuggestionTerm
 newtype SuggestionId = SuggestionId Int
 
 newtype SuggestionInfo = SuggestionInfo
-  { term :: SuggestionTerm, fn :: QVar, fnSig :: FnSig }
+  { term :: SuggestionTerm
+  , fn :: QVar
+  , fnSig :: FnSig
+  , fnBody :: FnBody
+  , opInfo :: Maybe OpInfo
+  }
 
 derive instance Generic SuggestionTerm _
 
@@ -237,9 +257,9 @@ instance Ord SuggestionTerm where
         comparing (String.length <<< show) x y
   compare x y
     | show x == show y =
-        if moduleFromSuggestion x == Just preludeModule then LT
-        else if moduleFromSuggestion y == Just preludeModule then GT
-        else comparing (show <<< moduleFromSuggestion) x y
+        if extractSuggestionModule x == Just preludeModule then LT
+        else if extractSuggestionModule y == Just preludeModule then GT
+        else comparing (show <<< extractSuggestionModule) x y
   compare x y = comparing show x y
 
 instance Show SuggestionTerm where

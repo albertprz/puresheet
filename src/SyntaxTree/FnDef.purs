@@ -146,8 +146,8 @@ instance Show Object where
     FloatObj x -> Number.toStringWith (Number.fixed 3) x
     CharObj x -> show x
     StringObj x -> show x
-    ListObj x -> show $ Array.fromFoldable x
-    ArrayObj x -> show x
+    ListObj x -> show $ ArrayObj $ Array.fromFoldable x
+    ArrayObj x -> wrapSquare $ intercalate ", " $ map show x
     FnObj _ -> "function"
     BuiltinFnObj _ -> "builtin-function"
     NullObj -> "null"
@@ -231,6 +231,7 @@ instance Hashable Scope where
   hash = unwrap
 
 derive instance Eq Associativity
+derive instance Ord Associativity
 derive instance Generic Associativity _
 
 instance Show Associativity where

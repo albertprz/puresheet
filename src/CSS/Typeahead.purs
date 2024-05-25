@@ -7,12 +7,20 @@ import Tecton.Rule as Rule
 css :: CSS
 css = do
 
+  div &. typeahead ? Rule.do
+    position := relative
+
+  div &. typeaheadMenu ? Rule.do
+    position := absolute
+    left := px (-10)
+    zIndex := 1
+
   div &. typeahead /\ button &. typeaheadButton ? Rule.do
-    width := px 175
+    width := px typeaheadWidth
 
   div &. typeahead |* universal /\ div &. searchInputContainer |* universal ?
     Rule.do
-      fontSize := px 20
+      fontSize := inputFontSize
       justifyContent := center
       boxSizing := borderBox
       padding := px 0 ~ px 10
@@ -24,6 +32,7 @@ css = do
     borderStyle := solid
     borderColor := darkGrey
     alignItems := center
+    backgroundColor := white
 
   div &. searchInputContainer |> universal ? Rule.do
     padding := px 0
@@ -31,7 +40,7 @@ css = do
 
   input &. searchInput ? Rule.do
     borderStyle := none
-    width := px 140
+    width := px searchInputWidth
     height := px 30
     padding := px 0 ~ px 10
 
@@ -41,6 +50,12 @@ css = do
     borderStyle := solid
     borderWidth := px 1.5
     borderColor := darkGrey
+    width := px typeaheadWidth
+    backgroundColor := white
 
   div &. selectedTypeaheadOption ? Rule.do
     backgroundColor := lightBlue
+
+  where
+  typeaheadWidth = 190
+  searchInputWidth = typeaheadWidth - 35

@@ -3,13 +3,15 @@ module App.Printer.Type where
 import FatPrelude
 import Prim hiding (Type)
 
+import App.Printer.Common (surroundDoc)
 import App.SyntaxTree.Type (Type(..), TypeParam, TypeVar)
-import Dodo (Doc, enclose, encloseWithSeparator, foldWithSeparator, text, (<+>))
+import Dodo (Doc, enclose, encloseWithSeparator, foldWithSeparator, space, text, (<+>))
 
 type' :: forall a. Type -> Doc a
 type' = case _ of
   TypeApply x ys -> type' x <+> encloseTypeArgs (type' <$> ys)
-  ArrowTypeApply xs -> foldWithSeparator (text "->") (type' <$> xs)
+  ArrowTypeApply xs ->
+    foldWithSeparator (surroundDoc space $ text "->") (type' <$> xs)
   ArrayTypeApply x -> encloseType $ type' x
   TypeVar' x -> typeVar x
   TypeParam' x -> typeParam x

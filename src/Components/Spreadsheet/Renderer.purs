@@ -18,7 +18,7 @@ import Bookhound.Parser (runParser)
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.HashMap as HashMap
-import Halogen (ComponentHTML)
+import Halogen (ComponentHTML, hoist)
 import Halogen.HTML (ClassName, HTML, div, input, slot, table, tbody_, td, text, th, thead_, tr_)
 import Halogen.HTML.Events (onClick, onDoubleClick, onDragOver, onDragStart, onDrop, onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseOver, onMouseUp, onValueChange, onWheel)
 import Halogen.HTML.Properties (AutocompleteType(..), InputType(..), autocomplete, class_, classes, draggable, id, readOnly, style, tabIndex, type_, value)
@@ -27,6 +27,7 @@ render :: SpreadsheetState -> ComponentHTML SpreadsheetAction Slots AppM
 render
   st@
     { route
+    , store
     , selectedCell
     , formulaCell
     , activeFormula
@@ -35,7 +36,7 @@ render
     } =
   div
     [ class_
-        if (route == SpreadsheetView) then spreadsheetContainer
+        if route == SpreadsheetView then spreadsheetContainer
         else invisibleContainer
     ]
     [ div [ class_ formulaSectionContainer ]
@@ -46,7 +47,8 @@ render
             , onValueChange $ WriteSelectedCellInput <<< parseCell
             , onKeyDown $ mkKeyAction SelectedCellInputKeyDown
             ]
-        , slot _editor unit Editor.component { formulaState }
+        , slot _editor unit (hoist liftAff Editor.component)
+            { placeholder: mempty, formulaState, store }
             handleEditorOutput
         , input
             [ id $ show formulaCellInputId

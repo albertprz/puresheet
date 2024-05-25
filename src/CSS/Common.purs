@@ -2,7 +2,7 @@ module App.CSS.Common where
 
 import FatPrelude
 
-import Color (Color, fromHexString)
+import Color (Color, fromHexString, rgba)
 import Color as Color
 import Tecton.Internal (Length, Measure, px)
 
@@ -18,6 +18,9 @@ functionDescriptionFontSize = px 30
 termTypeFontSize :: Measure Length
 termTypeFontSize = px 24
 
+inputFontSize :: Measure Length
+inputFontSize = px 20
+
 hex :: String -> Color
 hex = fromMaybe black <<< fromHexString
 
@@ -26,6 +29,12 @@ black = Color.black
 
 white :: Color
 white = Color.white
+
+modalBackground :: Color
+modalBackground = rgba 0 0 0 0.5
+
+placeholderColor :: Color
+placeholderColor = hex "#8e8e8e"
 
 darkerGrey :: Color
 darkerGrey = hex "#526066"

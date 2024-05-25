@@ -8,7 +8,6 @@ import App.Parser.Common (nonTokenIdent, nonTokenOperator, notReservedKeyword, n
 import App.SyntaxTree.Common (QVar(..))
 import App.SyntaxTree.FnDef (FnSig)
 import App.SyntaxTree.Type (Type(..))
-import App.Utils.String (wrapDoubleQuotes)
 import Bookhound.Parser (Parser)
 import Bookhound.ParserCombinators (is, noneOf, oneOf, (->>-), (|+), (||*))
 import Bookhound.Parsers.Char (alpha, lower, upper)
@@ -47,9 +46,9 @@ syntaxAtomParser = (|+) atom
   string = wrapDoubleQuotes
     <$> betweenDoubleQuotes ((||*) (stringLit <|> charLitEscaped))
   charLit = noneOf [ '\'', '\\' ]
-  charLitEscaped = String.char <<< wrapQuotes <$> (is '\\' ->>- alpha)
+  charLitEscaped = String.char <$> (is '\\' ->>- alpha)
     <|> (is '\\' *> Parsers.anyChar)
-  stringLit = noneOf [ '"', '\\' ]
+  stringLit = noneOf [ '\"', '\\' ]
   var = notReservedKeyword (nonTokenIdent lower)
   varOp = notReservedSymbol nonTokenOperator
   module' = nonTokenIdent upper

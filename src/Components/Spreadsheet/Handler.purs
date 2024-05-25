@@ -3,15 +3,18 @@ module App.Components.Spreadsheet.Handler where
 import FatPrelude
 
 import App.AppM (AppM)
-import App.CSS.Ids (cellId, formulaBoxId, inputElementType, selectedCellInputId)
+import App.CSS.Ids (cellId, inputElementType, selectedCellInputId)
 import App.Components.Editor (_editor)
 import App.Components.Editor.Models (EditorOutput, EditorQuery(..))
 import App.Components.Editor.Models as EditorOutput
 import App.Components.Spreadsheet.Cell (CellMove(..), Header(..), getColumnHeader, getRowHeader, mkColumn, mkRow, swapTableMapColumn, swapTableMapRow)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
 import App.Components.Spreadsheet.HandlerHelpers (cellArrowMove, cellMove, copyCells, deleteCells, focusCell, focusCellElem, insertFormula, lookupFormula, pasteCells, refreshCells, selectAllCells, selectCell, subscribeWindowResize)
-import App.Components.Spreadsheet.Models (EventTransition(..), Slots, SpreadsheetAction(..), SpreadsheetState)
+import App.Components.Spreadsheet.Models (EventTransition(..), Slots, SpreadsheetAction(..), SpreadsheetState, TableDataState)
 import App.Components.Spreadsheet.Selection (MultiSelection(..), SelectionState(..))
+import App.Printer.Common (printDefault)
+import App.Printer.FnDef as Printer
+import App.Routes (Route(..))
 import App.Utils.Dom (focusById, prevent, withPrevent)
 import App.Utils.Event (ctrlKey, shiftKey, toMouseEvent)
 import App.Utils.HashMap (lookup2) as HashMap
@@ -19,9 +22,11 @@ import App.Utils.KeyCode (KeyCode(..))
 import Data.HashMap (insert) as HashMap
 import Data.Set as Set
 import Halogen (HalogenM)
-import Halogen.Query (tellAll)
+import Halogen.Query (tell)
+import Halogen.Router.Class (navigate)
 import Halogen.Store.Monad (updateStore)
 import Record (merge)
+import Record.Extra (pick)
 import Web.HTML (window)
 import Web.HTML.Window (scroll)
 import Web.UIEvent.WheelEvent (deltaX, deltaY)
@@ -37,7 +42,8 @@ handleAction Initialize = do
   applyFocus
 
 handleAction (Receive { context, input }) = do
-  modify_ (merge context <<< merge input)
+  modify_ (merge (pick context :: TableDataState) <<< merge input)
+  modify_ _ { store = context }
   applyFocus
 
 handleAction ResizeWindow = do
@@ -60,7 +66,7 @@ handleAction (SelectedCellInputKeyDown _ _) =
   pure unit
 
 handleAction (FormulaCellInputKeyDown Tab ev) =
-  withPrevent ev $ focusById formulaBoxId
+  withPrevent ev $ tell _editor unit FocusEditor
 
 handleAction (FormulaCellInputKeyDown _ _) =
   pure unit
@@ -98,16 +104,16 @@ handleAction (DoubleClickCell cell ev) = withPrevent ev do
   focusCellElem selectedCell $ whenMaybe activeInput inputElementType
 
 handleAction (FocusInCell cell _) = do
-  formulaText <- _.formulaText <$$> lookupFormula cell
+  formulaBody <- _.formulaBody <$$> lookupFormula cell
   { selectedCell } <- get
   when (cell /= selectedCell)
-    $ tellAll _editor
+    $ tell _editor unit
     $ UpdateEditorContent
-    $ fromMaybe mempty formulaText
+    $ maybe mempty (printDefault <<< Printer.fnBody) formulaBody
   modify_ _
     { activeFormula = false
     , formulaState =
-        if isJust formulaText then ValidFormula
+        if isJust formulaBody then ValidFormula
         else UnknownFormula
     }
 
@@ -133,7 +139,7 @@ handleAction (KeyDown Enter ev)
         { activeInput = false
         , selectionState = NotStartedSelection
         }
-      focusById formulaBoxId
+      tell _editor unit FocusEditor
 
 handleAction (KeyDown Enter ev) = withPrevent ev do
   { selectedCell, activeInput } <-
@@ -285,11 +291,17 @@ handleAction (DragHeader Over _ ev) =
 handleAction (DragHeader _ _ _) =
   pure unit
 
+handleAction (GoToDefinition term@(Just _)) =
+  navigate $ ExplorerView { selectedTerm: term }
+handleAction (GoToDefinition _) =
+  pure unit
+
 handleEditorOutput :: EditorOutput -> SpreadsheetAction
 handleEditorOutput = case _ of
   EditorOutput.FocusInEditor -> FocusInEditor
   EditorOutput.FocusOutEditor -> FocusOutEditor
   EditorOutput.SubmitEditor x -> SubmitEditor x
+  EditorOutput.GoToDefinition x -> GoToDefinition x
 
 applyFocus
   :: forall o s. HalogenM SpreadsheetState SpreadsheetAction s o AppM Unit

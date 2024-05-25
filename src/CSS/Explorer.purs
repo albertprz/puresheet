@@ -29,16 +29,14 @@ css = do
     paddingRight := pct 10
     backgroundColor := white
 
-  div &. functionContainer |> div &. functionFiltersContainer ? Rule.do
-    display := flex
-    flexDirection := row
-    justifyContent := center
+  div &. functionFiltersContainer ? Rule.do
     width := pct 100
     marginTop := px 40
-    paddingBottom := px 30
+    paddingBottom := px 25
 
   div &. functionFiltersContainer |> div &. searchInputContainer ? Rule.do
-    marginLeft := px 150
+    marginLeft := px 100
+    marginRight := px 100
     width := px 400
     height := px 40
     justifyContent := center
@@ -48,9 +46,15 @@ css = do
     ? Rule.do
         width := px 370
 
+  div &. addTermContainer |> button &. addButton &: firstChild ? Rule.do
+    marginBottom := px 5
+
+  div &. addTermContainer |> button &. addButton &: lastChild ? Rule.do
+    marginTop := px 5
+
   table &. functionsList ? Rule.do
-    marginTop := px 320
-    maxWidth := pct 70
+    marginTop := px 350
+    maxWidth := pct 75
 
   tr &. functionRow ? Rule.do
     justifyContent := end
@@ -67,7 +71,17 @@ css = do
   tr &. functionRow |> td ? Rule.do
     padding := px 10 ~ px 40
 
-  td &. termTypeLabel ? Rule.do
+  tr &. functionRow |> td &. editFunctionIcon ? Rule.do
+    paddingLeft := px 20
+    paddingRight := px 0
+    color := darkerGrey
+
+  tr &. functionRow |> td &. deleteFunctionIcon ? Rule.do
+    color := darkerGrey
+    paddingLeft := px 20
+
+  tr &. functionRow |> td &. termTypeLabel ? Rule.do
+    paddingLeft := px 0
     fontSize := termTypeFontSize
     color := darkerGrey
     fontStyle := italic

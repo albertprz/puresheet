@@ -22,9 +22,14 @@ import Web.Event.Event as Event
 import Web.HTML (HTMLElement, window)
 import Web.HTML.HTMLDocument (HTMLDocument)
 import Web.HTML.HTMLDocument as HTMLDocument
-import Web.HTML.HTMLElement (focus, toElement, toNode)
+import Web.HTML.HTMLElement (blur, focus, toElement, toNode)
 import Web.HTML.HTMLElement as HTMLElement
 import Web.HTML.Window as Window
+
+justGetHTMLElementRef
+  :: forall s a slots o m. RefLabel -> HalogenM s a slots o m HTMLElement
+justGetHTMLElementRef =
+  map unsafeFromJust <<< getHTMLElementRef
 
 parseElements
   :: forall m a
@@ -35,12 +40,20 @@ parseElements
 parseElements parseFn elems = liftEffect
   (filterMap parseFn <$> traverse id elems)
 
-emptyContents :: forall m. ElementId -> MonadEffect m => m Unit
-emptyContents elementId = liftEffect
-  (setTextContent mempty <<< toNode =<< justSelectElementById elementId)
+emptyContents
+  :: forall s a slots o m
+   . MonadEffect m
+  => RefLabel
+  -> HalogenM s a slots o m Unit
+emptyContents elementRef = do
+  element <- justGetHTMLElementRef elementRef
+  liftEffect (setTextContent mempty $ toNode element)
 
 focusById :: forall m. MonadEffect m => ElementId -> m Unit
 focusById = flip actOnElementById focus
+
+blurById :: forall m. MonadEffect m => ElementId -> m Unit
+blurById = flip actOnElementById blur
 
 focusRef
   :: forall s a slots o m
@@ -162,6 +175,9 @@ prevent = liftEffect <<< Event.preventDefault <<< toEvent
 
 stopPropagation :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
 stopPropagation = liftEffect <<< Event.stopPropagation <<< toEvent
+
+preventPropagation :: forall m a. MonadEffect m => IsEvent a => a -> m Unit
+preventPropagation ev = prevent ev *> stopPropagation ev
 
 setStyle :: Element -> Array (String /\ String) -> Effect Unit
 setStyle = flip (setAttribute "style" <<< foldMap (uncurry formatKeyValue))

@@ -1,4 +1,4 @@
-module App.Interpreter.Formula (runFormula) where
+module App.Interpreter.Formula (runFormula, parseAndRunFormula) where
 
 import FatPrelude
 
@@ -6,9 +6,11 @@ import App.AppStore (Store, mkLocalContext)
 import App.Components.Spreadsheet.Cell (Cell, CellValue)
 import App.Components.Spreadsheet.Formula (FormulaId, getDependencies)
 import App.Evaluator.Formula (evalFormula)
-import App.Interpreter.Expression (RunError(..), run)
+import App.Interpreter.Expression (RunError(..))
+import App.Parser.FnDef as Parser
 import App.SyntaxTree.FnDef (CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), PatternGuard(..))
-import App.Utils.Set (fromUnfoldable) as Set
+import App.Utils.Set (fromArray) as Set
+import Bookhound.Parser (runParser)
 import Data.Set (filter, singleton) as Set
 import Data.Set.NonEmpty (toSet)
 import Data.Tree (Forest)
@@ -20,13 +22,9 @@ type FormulaResult =
   , cellDeps :: Forest FormulaId
   }
 
-runFormula
-  :: Store
-  -> Cell
-  -> String
-  -> Either RunError FormulaResult
+runFormula :: Store -> Cell -> FnBody -> Either RunError FormulaResult
 runFormula store cell =
-  (lmap DependencyError' <<< depsFn) <=< (run evalFn)
+  (lmap DependencyError' <<< depsFn) <=< (lmap EvalError' <<< evalFn)
   where
   ctx = mkLocalContext store
   depsFn { result, affectedCells, formulaCells } =
@@ -40,6 +38,13 @@ runFormula store cell =
     , formulaCells: Set.filter (flip notElem $ toSet affectedCells)
         (extractCells body)
     }
+
+parseAndRunFormula
+  :: Store -> Cell -> String -> Either RunError (FnBody /\ FormulaResult)
+parseAndRunFormula store cell formulaText = do
+  formulaBody <- lmap ParseErrors' $ runParser Parser.fnBody formulaText
+  result <- runFormula store cell formulaBody
+  pure (formulaBody /\ result)
 
 extractCells :: FnBody -> Set Cell
 extractCells (FnApply fnExpr args) =
@@ -73,7 +78,7 @@ extractCells (SwitchExpr matchee cases) =
 extractCells
   ( CellMatrixRange { column: colX, row: rowX }
       { column: colY, row: rowY }
-  ) = Set.fromUnfoldable do
+  ) = Set.fromArray do
   row <- rowX .. rowY
   column <- colX .. colY
   pure { column, row }
@@ -83,9 +88,9 @@ extractCells
       { column: colY, row: rowY }
   )
   | rowX == rowY =
-      Set.fromUnfoldable $ { column: _, row: rowX } <$> (colX .. colY)
+      Set.fromArray $ { column: _, row: rowX } <$> (colX .. colY)
   | colX == colY =
-      Set.fromUnfoldable $ { column: colX, row: _ } <$> (rowX .. rowY)
+      Set.fromArray $ { column: colX, row: _ } <$> (rowX .. rowY)
   | otherwise = mempty
 
 extractCells (ArrayRange x y) =

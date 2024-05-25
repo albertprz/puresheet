@@ -1,12 +1,15 @@
-module App.Parser.FnDef (opDef, fnDef, fnBody, statements) where
+module App.Parser.FnDef (opDef, fnDef, fnBody, fnSignature, fnDocs, statements) where
 
 import FatPrelude hiding (guard)
+import Prim hiding (Type)
 
 import App.Components.Spreadsheet.Cell (cellParser)
 import App.Parser.Common (argListOf, cellValue, isToken, qVar, qVarOp, token, var, varOp)
 import App.Parser.Pattern (pattern')
 import App.Parser.Type (type')
+import App.SyntaxTree.Common (Var)
 import App.SyntaxTree.FnDef (Associativity(..), CaseBinding(..), FnBody(..), FnDef(..), Guard(..), GuardedFnBody(..), MaybeGuardedFnBody(..), OpDef(..), PatternGuard(..))
+import App.SyntaxTree.Type (Type)
 import Bookhound.Parser (Parser, withError)
 import Bookhound.ParserCombinators (is, isNot, maybeSurroundedBy, sepByOps, someSepBy, surroundedBy, (</\>), (|*), (|+), (|?), (||*))
 import Bookhound.Parsers.Char (comma, quote)
@@ -28,17 +31,24 @@ opDef = defer \_ -> withError "Operator definition"
 
 fnDef :: Parser FnDef
 fnDef = defer \_ -> withError "Function definition"
-  $ FnDef
+  $ (uncurry <<< FnDef)
   <$> var
-  <*> (argListOf annotatedVar <|> pure [])
-  <*> (annotation <* isToken "=")
-  <*> map (String.joinWith "\n") comments
+  <*> fnSignature
+  <*> (isToken "=" *> fnDocs)
   <*> fnBody
+
+fnSignature :: Parser (Array (Var /\ Maybe Type) /\ Maybe Type)
+fnSignature =
+  (argListOf annotatedVar <|> pure []) </\> annotation
   where
   annotatedVar = var </\> annotation
   annotation = (|?) (isToken ":" *> type')
-  comment = ((is "//" *> ((|?) spacesOrTabs) *> (||*) (isNot '\n')))
+
+fnDocs :: Parser String
+fnDocs = map (String.joinWith "\n") comments
+  where
   comments = (|*) (maybeSurroundedBy spacesOrTabs comment <* is '\n')
+  comment = ((is "//" *> ((|?) spacesOrTabs) *> (||*) (isNot '\n')))
 
 fnBody :: Parser FnBody
 fnBody = whereExpr <|> topLevelExpr

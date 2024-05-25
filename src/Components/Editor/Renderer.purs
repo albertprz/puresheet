@@ -3,30 +3,31 @@ module App.Components.Editor.Renderer where
 import FatPrelude hiding (div)
 
 import App.CSS.ClassNames (formulaBox, formulaBoxContainer, functionSignature, invalidFormula, selectedSuggestionOption, suggestionOption, suggestionsDropdown, unknownFormula, validFormula)
-import App.CSS.Ids (formulaBoxId, functionSignatureId, suggestionsDropdownId)
 import App.Components.Editor.Models (EditorAction(..), EditorState)
 import App.Components.Spreadsheet.Formula (FormulaState(..))
 import App.Editor.Suggestion (SuggestionTerm)
 import App.Utils.HTML (materialIcon)
 import App.Utils.KeyCode (mkKeyAction)
 import Data.Array ((!!))
-import Halogen (AttrName(..))
+import Halogen (AttrName(..), RefLabel(..))
 import Halogen.HTML (ClassName, HTML, attr, div, text)
 import Halogen.HTML.Events (onFocusIn, onKeyDown, onKeyUp, onMouseDown, onMouseEnter)
-import Halogen.HTML.Properties (class_, classes, id, spellcheck)
+import Halogen.HTML.Properties (class_, classes, ref, spellcheck)
 
 render :: forall a. EditorState -> HTML a EditorAction
 render
   st@
     { formulaState
+    , placeholder
     , suggestions
     , selectedSuggestionId
     } =
   div
     [ class_ formulaBoxContainer ]
     [ div
-        [ id $ show formulaBoxId
+        [ ref formulaBoxRef
         , attr (AttrName "contentEditable") (show true)
+        , attr (AttrName "placeholder") placeholder
         , classes [ formulaBox, formulaStateToClass formulaState ]
         , spellcheck false
         , onKeyDown $ mkKeyAction $ KeyDown selectedSuggestion
@@ -36,12 +37,12 @@ render
         ]
         []
     , div
-        [ id $ show functionSignatureId
+        [ ref functionSignatureRef
         , class_ functionSignature
         ]
         []
     , div
-        [ id $ show suggestionsDropdownId
+        [ ref suggestionsDropdownRef
         , class_ suggestionsDropdown
         , onMouseDown $ ClickSuggestion selectedSuggestion
         ]
@@ -68,3 +69,12 @@ formulaStateToClass = case _ of
   ValidFormula -> validFormula
   InvalidFormula -> invalidFormula
   UnknownFormula -> unknownFormula
+
+formulaBoxRef :: RefLabel
+formulaBoxRef = RefLabel "formulaBox"
+
+functionSignatureRef :: RefLabel
+functionSignatureRef = RefLabel "functionSignature"
+
+suggestionsDropdownRef :: RefLabel
+suggestionsDropdownRef = RefLabel "suggestionsDropdown"

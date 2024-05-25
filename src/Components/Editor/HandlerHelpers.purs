@@ -3,14 +3,14 @@ module App.Components.Editor.HandlerHelpers where
 import FatPrelude
 
 import App.AppStore (Store, mkLocalContext)
-import App.CSS.Ids (formulaBoxId, functionSignatureId, suggestionsDropdownId)
 import App.Components.Editor.Models (EditorAction(..), EditorState)
-import App.Editor.Suggestion (SuggestionTerm, extractSuggestionFn, getFnAtIndex, getFnSig, getSuggestionsAtIndex, getTermAtIndex, getWordAtIndex)
+import App.Components.Editor.Renderer (formulaBoxRef, functionSignatureRef, suggestionsDropdownRef)
+import App.Editor.Suggestion (SuggestionTerm, extractSuggestionFn, getFnAtIndex, getFnSigAndBody, getSuggestionsAtIndex, getTermAtIndex, getWordAtIndex)
 import App.Evaluator.Common (LocalFormulaCtx)
 import App.SyntaxTree.Common (QVar)
 import App.SyntaxTree.FnDef (FnSig)
 import App.Utils.Common (refEquals)
-import App.Utils.Dom (emptyContents, getAncestorNodes, justSelectElementById, setInnerHTML, setStyle)
+import App.Utils.Dom (emptyContents, getAncestorNodes, justGetHTMLElementRef, setInnerHTML, setStyle)
 import App.Utils.HTML (fnSigElements, formulaElements)
 import App.Utils.Monoid (whenPlus)
 import App.Utils.Range as Range
@@ -21,7 +21,6 @@ import Data.String (null, splitAt) as String
 import Data.String.CodeUnits (length) as String
 import Halogen (HalogenM, subscribe)
 import Halogen.Query.Event (eventListener)
-import Halogen.Store.Monad (class MonadStore, getStore)
 import Web.Event.Event (EventType(..))
 import Web.HTML (window)
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -29,9 +28,11 @@ import Web.HTML.HTMLElement (toElement, toNode)
 import Web.HTML.Window as Window
 
 performSyntaxHighlight
-  :: forall m. MonadEffect m => MonadState EditorState m => m Unit
+  :: forall a slots o m
+   . MonadEffect m
+  => HalogenM EditorState a slots o m Unit
 performSyntaxHighlight = do
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
+  formulaBox <- toNode <$> justGetHTMLElementRef formulaBoxRef
   selection <- liftEffect $ getSelection =<< window
   formulaText <- getEditorContent
   caretPosition <- getCaretPosition selection formulaBox
@@ -39,13 +40,12 @@ performSyntaxHighlight = do
   traverse_ (setCaretPosition selection formulaBox) caretPosition
 
 performAutoComplete
-  :: forall m
+  :: forall a slots o m
    . MonadEffect m
-  => MonadState EditorState m
   => SuggestionTerm
-  -> m Unit
+  -> HalogenM EditorState a slots o m Unit
 performAutoComplete suggestion = do
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
+  formulaBox <- toNode <$> justGetHTMLElementRef formulaBoxRef
   selection <- liftEffect $ getSelection =<< window
   formulaText <- getEditorContent
   caretPosition <- unsafeFromJust <$> getCaretPosition selection formulaBox
@@ -62,42 +62,41 @@ performAutoComplete suggestion = do
   suggestionText = show suggestion
 
 displayFnSig
-  :: forall m
+  :: forall a slots o m
    . MonadEffect m
   => EditorState
   -> Store
-  -> m Unit
-displayFnSig st store = liftEffect do
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
-  selection <- getSelection =<< window
-  ancestors <- getAncestorNodes =<< Selection.anchorNode selection
+  -> HalogenM EditorState a slots o m Unit
+displayFnSig st store = do
+  formulaBox <- toNode <$> justGetHTMLElementRef formulaBoxRef
   formulaText <- getEditorContent
+  selection <- liftEffect $ getSelection =<< window
   idx <- getCaretPosition selection formulaBox
+  ancestors <- liftEffect $ getAncestorNodes =<< Selection.anchorNode selection
   let
     ctx = mkLocalContext store
     suggestion = (st.suggestions !! unwrap st.selectedSuggestionId)
       <|> (getFnAtIndex formulaText =<< idx)
     fn = extractSuggestionFn ctx =<< suggestion
     fnSig = whenPlus (any (refEquals formulaBox) ancestors)
-      ((_ `getFnSig` ctx) =<< fn)
+      ((map fst <<< (_ `getFnSigAndBody` ctx)) =<< fn)
   when (String.null (trim formulaText) || isJust idx)
     $ maybe emptyFnSig (uncurry setFnSig) (bisequence (fn /\ fnSig))
 
 displayFnSuggestions
-  :: forall a m
+  :: forall a slots o m
    . MonadEffect m
-  => MonadState EditorState m
-  => MonadStore a Store m
-  => m Unit
-displayFnSuggestions = do
+  => Store
+  -> HalogenM EditorState a slots o m Unit
+displayFnSuggestions store = do
   st <- get
   rect <- liftEffect $ Range.getBoundingClientRect
     =<< Selection.getFirstRange
     =<< getSelection
     =<< window
-  suggestionsDropdown <- toElement
-    <$> justSelectElementById suggestionsDropdownId
-  ctx <- mkLocalContext <$> getStore
+  suggestionsDropdown <- toElement <$>
+    justGetHTMLElementRef suggestionsDropdownRef
+  let ctx = mkLocalContext store
   suggestions <- getFnSuggestions ctx
   formulaText <- getEditorContent
   when
@@ -115,42 +114,50 @@ displayFnSuggestions = do
         }
 
 getFnSuggestions
-  :: forall m
+  :: forall st a slots o m
    . MonadEffect m
   => LocalFormulaCtx
-  -> m (Maybe (Array SuggestionTerm))
-getFnSuggestions ctx = liftEffect do
-  selection <- getSelection =<< window
-  ancestors <- getAncestorNodes =<< Selection.anchorNode selection
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
+  -> HalogenM st a slots o m (Maybe (Array SuggestionTerm))
+getFnSuggestions ctx = do
+  formulaBox <- toNode <$> justGetHTMLElementRef formulaBoxRef
   formulaText <- getEditorContent
-  idx <- getCaretPosition selection formulaBox
-  pure
-    $ whenMonoid (any (refEquals formulaBox) ancestors)
-    $ map (getSuggestionsAtIndex ctx formulaText) idx
+  liftEffect do
+    selection <- getSelection =<< window
+    ancestors <- getAncestorNodes =<< Selection.anchorNode selection
+    idx <- getCaretPosition selection formulaBox
+    pure
+      $ whenMonoid (any (refEquals formulaBox) ancestors)
+      $ map (getSuggestionsAtIndex ctx formulaText) idx
 
 getTermAtCaret
-  :: forall m a
+  :: forall a slots o m
    . MonadEffect m
-  => MonadStore a Store m
-  => m (Maybe SuggestionTerm)
+  => HalogenM EditorState a slots o m (Maybe SuggestionTerm)
 getTermAtCaret = do
-  ctx <- mkLocalContext <$> getStore
-  formulaBox <- toNode <$> justSelectElementById formulaBoxId
+  ctx <- mkLocalContext <$> gets _.store
+  formulaBox <- toNode <$> justGetHTMLElementRef formulaBoxRef
   formulaText <- getEditorContent
   selection <- liftEffect $ getSelection =<< window
   caretPosition <- getCaretPosition selection formulaBox
   pure $ getTermAtIndex ctx formulaText =<< caretPosition
 
-setFnSig :: forall m. MonadEffect m => QVar -> FnSig -> m Unit
-setFnSig fn fnSig = liftEffect do
-  formulaSignatureDisplay <- justSelectElementById functionSignatureId
-  setInnerHTML (toElement formulaSignatureDisplay) (fnSigElements fn fnSig)
+setFnSig
+  :: forall s a slots o m
+   . MonadEffect m
+  => QVar
+  -> FnSig
+  -> HalogenM s a slots o m Unit
+setFnSig fn fnSig = do
+  functionSignatureDisplay <- justGetHTMLElementRef functionSignatureRef
+  liftEffect $ setInnerHTML (toElement functionSignatureDisplay)
+    (fnSigElements fn fnSig)
 
 insertEditorNewLine
-  :: forall m. MonadEffect m => MonadState EditorState m => m Unit
+  :: forall a slots o m
+   . MonadEffect m
+  => HalogenM EditorState a slots o m Unit
 insertEditorNewLine = do
-  formulaBox <- justSelectElementById formulaBoxId
+  formulaBox <- justGetHTMLElementRef formulaBoxRef
   formulaText <- getEditorContent
   selection <- liftEffect $ getSelection =<< window
   caretPosition <- getCaretPosition selection (toNode formulaBox)
@@ -164,13 +171,20 @@ insertEditorNewLine = do
   traverse_ (setCaretPosition selection $ toNode formulaBox)
     (inc <$> caretPosition)
 
-setEditorContent :: forall m. MonadEffect m => String -> m Unit
+setEditorContent
+  :: forall s a slots o m
+   . MonadEffect m
+  => String
+  -> HalogenM s a slots o m Unit
 setEditorContent formulaText = do
-  formulaBox <- justSelectElementById formulaBoxId
+  formulaBox <- justGetHTMLElementRef formulaBoxRef
   liftEffect $ setInnerHTML (toElement formulaBox) (formulaElements formulaText)
 
 updateEditorContent
-  :: forall m. MonadEffect m => MonadState EditorState m => String -> m Unit
+  :: forall a slots o m
+   . MonadEffect m
+  => String
+  -> HalogenM EditorState a slots o m Unit
 updateEditorContent formulaText = do
   emptyEditor
   setEditorContent formulaText
@@ -178,23 +192,28 @@ updateEditorContent formulaText = do
     emptyFnSig
     modify_ _ { suggestions = [] }
 
-emptyEditor :: forall m. MonadEffect m => m Unit
-emptyEditor = emptyContents formulaBoxId
+emptyEditor
+  :: forall s a slots o m. MonadEffect m => HalogenM s a slots o m Unit
+emptyEditor = emptyContents formulaBoxRef
 
-emptyFnSig :: forall m. MonadEffect m => m Unit
-emptyFnSig = emptyContents functionSignatureId
+emptyFnSig
+  :: forall s a slots o m. MonadEffect m => HalogenM s a slots o m Unit
+emptyFnSig = emptyContents functionSignatureRef
 
-emptyFnSuggestions :: forall m. MonadEffect m => m Unit
-emptyFnSuggestions = emptyContents suggestionsDropdownId
+emptyFnSuggestions
+  :: forall s a slots o m. MonadEffect m => HalogenM s a slots o m Unit
+emptyFnSuggestions = emptyContents suggestionsDropdownRef
 
-getEditorContent :: forall m. MonadEffect m => m String
-getEditorContent = liftEffect
-  (innerText =<< justSelectElementById formulaBoxId)
+getEditorContent
+  :: forall s a slots o m. MonadEffect m => HalogenM s a slots o m String
+getEditorContent = do
+  formulaBox <- justGetHTMLElementRef formulaBoxRef
+  liftEffect $ innerText formulaBox
 
 subscribeSelectionChange
-  :: forall slots st o m
+  :: forall slots s o m
    . MonadEffect m
-  => HalogenM st EditorAction slots o m Unit
+  => HalogenM s EditorAction slots o m Unit
 subscribeSelectionChange = do
   doc <- liftEffect $ Window.document =<< window
   void $ subscribe $ eventListener

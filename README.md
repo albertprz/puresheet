@@ -4,8 +4,7 @@
 
 Spreadsheet management application implemented on [Halogen](https://github.com/purescript-halogen/purescript-halogen) 
 aiming to provide an extensible, expressive and simple to use platform
-for data representation, visualization, analysis and exploration available
-for use for enterprise, personal & educational purposes.
+for data visualization, analysis and exploration.
 
 ## Project Goals
 
@@ -13,27 +12,27 @@ for use for enterprise, personal & educational purposes.
 
 - [✔️] Develop a high level pure functional dynamic formula language interpreted at the browser, that supports currying, patterns and guards with expresiveness similar to the term level language in Haskell or Purescript, albeit with familiar syntax and idioms to popular spreadsheet applications and mainstream languages.
 
-- [✔️] Implement a prelude library with commonly used functions and combinators, loaded at startup.
+- [✔️] Expose a prelude library with commonly used functions and operators, loaded at startup.
 
 - [✔️] Support formula edition with syntax highlighting and function signatures for the current function at the cursor.
 
 - [✔️] Support IDE like autocomplete for imported and module aliased top-level functions and operators.
 
-- [✔️] Expose an Explorer view to query by function name, signature or a input / output example (in a similar fashion to Hoogle / Pursuit) and see global functions & operators along with their documentation on a per module basis.
+- [✔️] Surface an Explorer view to query by function name, signature (in a similar fashion to Hoogle / Pursuit) or a input / output example and see all global functions & operators along with their documentation on a per module basis.
 
 - [✔️] Support Go to documentation on the formula editor for modules, functions & operators.
 
 - [✔️] Persist user defined formulas, spreadsheet data, functions & operators in the browser local storage.
 
-- Format automatically formulas when evaluated.
+- [✔️] Format automatically formulas when evaluated and functions when created.
 
-- Add the capability for a user to create, modify or delete global functions & operators through an auxiliary modal in the Explorer view.
+- [✔️] Add the capability for a user to create, modify or delete global functions & operators through an auxiliary modal in the Explorer view.
 
 - Enable the use of formulas for filtering & sorting rows.
 
-- Support Import & Export of spreadsheets from and to Excel and Google Sheets with the proper mapping of cell values & formulas.
-
 - Support authenticated persistence & retrieval from a catalog of private spreadsheets via a future backend.
+
+- Support Import & Export of spreadsheets from and to Excel and Google Sheets with the proper mapping of cell values & formulas.
 
 
 ## Screenshots

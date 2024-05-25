@@ -14,6 +14,7 @@ data KeyCode
   | ArrowUp
   | ArrowDown
   | Enter
+  | Escape
   | Tab
   | Space
   | Delete
@@ -37,6 +38,7 @@ parseKeyCode "ArrowUp" = ArrowUp
 parseKeyCode "ArrowDown" = ArrowDown
 parseKeyCode "Enter" = Enter
 parseKeyCode "Tab" = Tab
+parseKeyCode "Escape" = Escape
 parseKeyCode "Space" = Space
 parseKeyCode "Delete" = Delete
 parseKeyCode "Backspace" = Delete

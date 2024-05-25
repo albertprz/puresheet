@@ -36,6 +36,23 @@ let overrides =
           , "tuples"
           ]
         }
+      , halogen-portal =
+        { repo = "https://github.com/thomashoneyman/purescript-halogen-portal"
+        , version = "main"
+        , dependencies = [ "aff"
+          , "console"
+          , "effect"
+          , "foldable-traversable"
+          , "free"
+          , "halogen"
+          , "halogen-store"
+          , "maybe"
+          , "prelude"
+          , "transformers"
+          , "typelevel-prelude"
+          , "web-html"
+          ]
+        }
       , dodo-printer =
         { version = "v2.2.1"
         , repo = "https://github.com/natefaubion/purescript-dodo-printer"

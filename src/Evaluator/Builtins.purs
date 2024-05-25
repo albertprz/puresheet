@@ -26,13 +26,14 @@ builtinFnsMap :: HashMap QVar BuiltinFnInfo
 builtinFnsMap = unsafePartial $ HashMap.fromArray
   $
     bimap (QVar (Just preludeModule) <<< Var)
-      ( \(fn /\ (params /\ returnType) /\ doc /\ nulls) ->
-          { fn
-          , params: rmap Just <$> params
-          , returnType: Just returnType
-          , defaultParams: Set.fromFoldable nulls
-          , doc
-          }
+      ( case _ of
+          (fn /\ (params /\ returnType) /\ doc /\ nulls) ->
+            { fn
+            , params: rmap Just <$> params
+            , returnType: Just returnType
+            , defaultParams: Set.fromFoldable nulls
+            , doc
+            }
       )
   <$>
     [ ("isCollection") /\
@@ -410,7 +411,7 @@ concatSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ] /\ arrayOf a
 concatDoc :: String
 concatDoc =
   """Concats a matrix of values into a flat collection
- >>> [[1, 2], [3, 4, 5], [6, 7]]
+ >>> [[1, 2], [3, 4, 5], [6]]
  >>> ["abc", "de", "fg"]
 """
 
@@ -435,7 +436,7 @@ transposeSig = [ Var "xss" /\ (arrayOf $ arrayOf a) ]
 transposeDoc :: String
 transposeDoc =
   """Transposes a matrix of values
- >>> [[1, 2], [3, 4], [5, 6]]
+ >>> [[1, 2], [3, 4]]
  >>> ["ab", "cd", "ef"]
 """
 

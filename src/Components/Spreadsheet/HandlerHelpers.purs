@@ -3,7 +3,7 @@ module App.Components.Spreadsheet.HandlerHelpers where
 import FatPrelude
 import Prim hiding (Row)
 
-import App.AppStore (Store, StoreAction)
+import App.AppStore (Store, StoreAction, cleanupStore)
 import App.CSS.Ids (ElementType, cellId)
 import App.Components.Editor (EditorSlot, _editor)
 import App.Components.Editor.Models (EditorQuery(..))
@@ -11,7 +11,7 @@ import App.Components.Spreadsheet.Cell (Cell, CellMove, Column, Row(..), columnP
 import App.Components.Spreadsheet.Formula (Formula, FormulaId, FormulaState(..), getDependencies, newFormulaId, toDependenciesMap)
 import App.Components.Spreadsheet.Models (SpreadsheetAction(..), SpreadsheetState)
 import App.Components.Spreadsheet.Selection (MultiSelection(..), SelectionState(..), computeNextSelection, deserializeSelectionValues, getCellFromMove, getTargetCells, serializeSelectionValues)
-import App.Interpreter.Formula (runFormula)
+import App.Interpreter.Formula (parseAndRunFormula, runFormula)
 import App.Utils.Dom (actOnElementById, getClipboard, getDocumentElement, getElemWidth, parseElements, selectAllVisibleElements, withPrevent)
 import App.Utils.Event (class IsEvent, shiftKey)
 import App.Utils.HashMap (bulkDelete, lookup2, updateJust) as HashMap
@@ -27,7 +27,7 @@ import Data.String.Utils as String
 import Data.Tree (Forest)
 import Effect.Class.Console as Logger
 import Halogen (HalogenM, subscribe)
-import Halogen.Query (tellAll)
+import Halogen.Query (tell)
 import Halogen.Query.Event (eventListener)
 import Halogen.Store.Monad (class MonadStore, getStore, updateStore)
 import Promise.Aff as Promise
@@ -127,9 +127,10 @@ deleteCells = do
     { tableData = HashMap.bulkDelete cellsToDelete store.tableData
     , tableFormulas = HashMap.bulkDelete cellsToDelete store.tableFormulas
     }
+  updateStore cleanupStore
   modify_ _ { formulaState = UnknownFormula }
   refreshCells $ Set.fromFoldable cellsToDelete
-  tellAll _editor $ UpdateEditorContent mempty
+  tell _editor unit $ UpdateEditorContent mempty
 
 selectCell
   :: forall m
@@ -239,8 +240,11 @@ insertFormula editorText = do
   let formulaText = String.normalize' NFKD editorText
   { formulaCell, selectedCell } <- get
   store <- getStore
-  case runFormula store formulaCell formulaText of
-    Right { result, affectedCells, formulaCells, cellDeps } -> do
+  case parseAndRunFormula store formulaCell formulaText of
+    Right
+      ( formulaBody /\
+          { result, affectedCells, formulaCells, cellDeps }
+      ) -> do
       let formulaId = newFormulaId $ HashMap.keys store.formulaCache
       updateStore _
         { tableData = HashMap.union result store.tableData
@@ -250,7 +254,7 @@ insertFormula editorText = do
             (toDependenciesMap formulaId formulaCells)
             store.tableDependencies
         , formulaCache = HashMap.insert formulaId
-            { formulaText
+            { formulaBody
             , affectedCells
             , startingCell: minimum1 affectedCells
             }
@@ -259,9 +263,9 @@ insertFormula editorText = do
       modify_ _ { formulaState = ValidFormula }
       refreshCellsFromDeps cellDeps
       focusCell selectedCell
-    Left err ->
-      Logger.error (show err) *>
-        modify_ _ { formulaState = InvalidFormula }
+    Left err -> do
+      Logger.error (show err)
+      modify_ _ { formulaState = InvalidFormula }
 
 applyFormula
   :: forall m
@@ -273,9 +277,9 @@ applyFormula formulaId = do
   st <- get
   store <- getStore
   let
-    { formulaText, startingCell } =
+    { formulaBody, startingCell } =
       unsafeFromJust $ HashMap.lookup formulaId st.formulaCache
-    eitherResult = runFormula store startingCell formulaText
+    eitherResult = runFormula store startingCell formulaBody
   case eitherResult of
     Right { result, affectedCells } ->
       modify_ _

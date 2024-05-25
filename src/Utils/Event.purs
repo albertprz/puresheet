@@ -35,6 +35,7 @@ instance IsEvent KeyboardEvent
 instance IsEvent InputEvent
 instance IsEvent DragEvent
 instance IsEvent WheelEvent
+instance IsEvent Event
 
 toEvent :: forall a. IsEvent a => a -> Event
 toEvent = unsafeCoerce

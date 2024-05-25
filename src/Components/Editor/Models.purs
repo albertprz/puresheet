@@ -2,6 +2,7 @@ module App.Components.Editor.Models where
 
 import FatPrelude
 
+import App.AppStore (Store)
 import App.Components.Spreadsheet.Formula (FormulaState)
 import App.Editor.Suggestion (SuggestionId, SuggestionTerm)
 import App.Utils.KeyCode (KeyCode)
@@ -11,8 +12,10 @@ import Web.UIEvent.MouseEvent (MouseEvent)
 
 type EditorState =
   { formulaState :: FormulaState
+  , placeholder :: String
   , suggestions :: Array SuggestionTerm
   , selectedSuggestionId :: SuggestionId
+  , store :: Store
   }
 
 data EditorAction
@@ -26,12 +29,16 @@ data EditorAction
   | Initialize
   | Receive EditorInput
 
-type EditorInput = { formulaState :: FormulaState }
+type EditorInput =
+  { placeholder :: String, formulaState :: FormulaState, store :: Store }
 
 data EditorOutput
   = FocusInEditor
   | FocusOutEditor
   | SubmitEditor String
+  | GoToDefinition (Maybe SuggestionTerm)
 
-data EditorQuery a =
-  UpdateEditorContent String a
+data EditorQuery a
+  = UpdateEditorContent String a
+  | GetEditorContents (String -> a)
+  | FocusEditor a
